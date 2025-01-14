@@ -1,3 +1,3 @@
 <script setup lang="ts"></script>
 <template></template>
-<style src="./Profile.css" lang="css" scoped></style>
+<style src="./DashBoardEvent.css" lang="css"></style>

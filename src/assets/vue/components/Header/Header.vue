@@ -1,3 +1,3 @@
 <script setup lang="ts"></script>
 <template></template>
-<style src="./Profile.css" lang="css" scoped></style>
+<style src="./Header.css" lang="css" scoped></style>

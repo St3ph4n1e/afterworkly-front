@@ -25,6 +25,9 @@ onMounted(() => {
     router.push('/404')
   }
 
+  // Initialisation de l'état "confirmé"
+  attendanceConfirmed.value = !!localStorage.getItem(`event-${eventId}-confirmed`)
+
   isLoading.value = false
 })
 
@@ -43,13 +46,20 @@ const eventImage = computed(() => {
   return event.value?.image ? event.value?.image : '/src/assets/images/logo.png'
 })
 
+// Gestion du toggle
 function toggleAttendance() {
   attendanceConfirmed.value = !attendanceConfirmed.value
+  const eventId = route.params.id
+  if (attendanceConfirmed.value) {
+    localStorage.setItem(`event-${eventId}-confirmed`, 'true')
+  } else {
+    localStorage.removeItem(`event-${eventId}-confirmed`)
+  }
 }
 
 function openGoogleMaps() {
   if (event.value) {
-    window.open('https://www.google.com/maps/search/?q=${event.value.location}', '_blank')
+    window.open(`https://www.google.com/maps/search/?q=${event.value.location}`, '_blank')
   }
 }
 </script>
@@ -88,21 +98,13 @@ function openGoogleMaps() {
 
           <!-- Localisation -->
           <div class="text-center">
-            <!-- Lieu cliquable -->
             <p
               @click="openGoogleMaps"
-              class="event-detail-location text-blue-500 font-medium cursor-pointer transition"
+              class="event-detail-location text-blue-500 font-medium cursor-pointer transition hover:text-blue-700"
               title="Ouvrir dans Google Maps"
             >
               📍 {{ event.location }}
             </p>
-            <!-- Bouton supplémentaire pour ouvrir Google Maps -->
-            <button
-              class="mt-2 bg-blue-500 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-600 transition"
-              @click="openGoogleMaps"
-            >
-              Ouvrir Google Maps
-            </button>
           </div>
 
           <!-- Liste des participants -->
@@ -114,7 +116,6 @@ function openGoogleMaps() {
                 :key="participant.name"
                 class="flex items-center space-x-4"
               >
-                <!-- Avatar ou image par défaut -->
                 <img
                   :src="participant.avatar || '/src/assets/images/default-avatar.png'"
                   alt="Avatar"
@@ -136,7 +137,7 @@ function openGoogleMaps() {
 
           <!-- Confirmation de présence -->
           <div class="flex items-center justify-center space-x-4 mt-4">
-            <span class="text-gray-800">
+            <span class="text-gray-800 font-medium">
               {{ attendanceConfirmed ? 'Présence confirmée' : 'Non confirmé' }}
             </span>
             <label class="relative inline-flex items-center cursor-pointer">
@@ -144,7 +145,8 @@ function openGoogleMaps() {
                 type="checkbox"
                 v-model="attendanceConfirmed"
                 class="sr-only peer"
-                @change="toggleAttendance"
+                @click="toggleAttendance"
+                aria-label="Confirmer ou annuler la présence"
               />
               <div
                 class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-500 peer-focus:ring-4 peer-focus:ring-blue-300 transition"

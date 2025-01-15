@@ -2,7 +2,6 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { mockUsers } from '../../mocks/users'
-import NotificationComponent from '../../components/NotificationComponent/NotificationComponent.vue'
 
 const router = useRouter()
 const isSignUp = ref(false)

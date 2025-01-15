@@ -11,14 +11,17 @@ function toggleMenu() {
 
 <template>
   <header class="bg-gray-800 text-white p-4 flex justify-between items-center">
-    <div class="flex items-center space-x-2">
-      <img src="/logo.png" alt="Afterworkly Logo" class="w-10 h-10" />
+    <!-- Logo et nom de l'application -->
+    <router-link to="/" class="flex items-center space-x-2 cursor-pointer">
+      <img src="@images/logo.png" alt="Afterworkly Logo" class="w-10 h-10" />
       <h1 class="text-lg font-bold">Afterworkly</h1>
-    </div>
+    </router-link>
+
     <!-- Bouton pour mobile uniquement -->
     <button @click="toggleMenu" class="text-lg">
       <i class="fas fa-bars"></i>
     </button>
+
     <!-- Menu -->
     <MenuComponent :isOpen="isMenuOpen" :toggleMenu="toggleMenu" />
   </header>

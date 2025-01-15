@@ -1,59 +1,52 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import HeaderComponent from '../../components/HeaderComponent/HeaderComponent.vue'
-import FooterComponent from '../../components/FooterComponent/FooterComponent.vue'
-import ParticipantListComponent from '../../components/ParticipantListComponent/ParticipantListComponent.vue'
+import { mockEvents } from '../../mocks/events'
+import type { Event } from '../../types/types'
 
-// Liste d'événements fictifs
-const events = [
-  {
-    id: '1',
-    title: 'Afterwork du Vendredi',
-    date: '20 Décembre 2024',
-    description: 'Une soirée conviviale pour échanger entre collègues et amis.',
-    location: 'Café de Paris',
-    participants: [
-      { name: 'Jean', status: 'Confirmé' },
-      { name: 'Marie', status: 'Indécis' },
-    ],
-  },
-  {
-    id: '2',
-    title: 'Afterwork du Lundi',
-    date: '18 Décembre 2024',
-    description: 'Un moment pour discuter entre collègues après un début de semaine chargé.',
-    location: 'Bar Le Coco',
-    participants: [
-      { name: 'Alice', status: 'Confirmé' },
-      { name: 'Bob', status: 'Indécis' },
-    ],
-  },
-]
-
-// Récupérer les paramètres de la route
 const route = useRoute()
 const router = useRouter()
-const event = ref(null) // Événement sélectionné
+const event = ref<Event | null>(null)
+const isLoading = ref(true)
+const attendanceConfirmed = ref(false)
 
 onMounted(() => {
-  const eventId = route.params.id // Récupère l'ID de l'événement
-  event.value = events.find((e) => e.id === eventId)
+  const eventId = Number(route.params.id)
+  if (isNaN(eventId)) {
+    console.error('Invalid event ID:', route.params.id)
+    router.push('/404')
+    return
+  }
 
-  // Redirige vers la page 404 si l'événement n'existe pas
+  event.value = mockEvents.find((e) => e.id === eventId) || null
+
   if (!event.value) {
+    console.error('Event not found for ID:', eventId)
     router.push('/404')
   }
+
+  isLoading.value = false
 })
 
-// Gestion de la confirmation de présence
-const attendanceConfirmed = ref(false)
+// Computed pour le style du thème
+const themeStyle = computed(() => {
+  if (event.value) {
+    return {
+      backgroundColor: event.value.color || '#f9f9f9',
+    }
+  }
+  return {}
+})
+
+// Computed pour l'image ou le logo par défaut
+const eventImage = computed(() => {
+  return event.value?.image ? event.value?.image : '/src/assets/images/logo.png'
+})
 
 function toggleAttendance() {
   attendanceConfirmed.value = !attendanceConfirmed.value
 }
 
-// Ouvrir Google Maps
 function openGoogleMaps() {
   if (event.value) {
     window.open(`https://www.google.com/maps/search/?q=${event.value.location}`, '_blank')
@@ -65,49 +58,102 @@ function openGoogleMaps() {
   <div class="min-h-screen flex flex-col bg-gray-100">
     <HeaderComponent />
 
-    <main class="container mx-auto p-4 flex-grow space-y-6">
-      <!-- Affichage de l'événement s'il est trouvé -->
-      <div v-if="event">
-        <h2 class="text-2xl font-bold text-gray-800">{{ event.title }}</h2>
-        <p class="text-gray-600">{{ event.date }}</p>
-        <p class="mt-4 text-gray-700">{{ event.description }}</p>
+    <main class="container mx-auto p-4 flex-grow flex justify-center items-center">
+      <!-- Affichage pendant le chargement -->
+      <div v-if="isLoading" class="text-center">
+        <p class="text-gray-500">Chargement...</p>
+      </div>
 
-        <!-- Localisation -->
-        <div class="mt-4">
-          <p
-            @click="openGoogleMaps"
-            class="text-blue-500 underline cursor-pointer"
-            title="Ouvrir dans Google Maps"
-          >
-            {{ event.location }}
-          </p>
-          <button
-            class="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
-            @click="openGoogleMaps"
-          >
-            Ouvrir Google Maps
-          </button>
+      <!-- Affichage de l'événement -->
+      <div v-else-if="event" class="w-full max-w-4xl bg-white shadow-lg rounded-lg overflow-hidden">
+        <!-- Section supérieure : Couleur de thème avec image centrée -->
+        <div class="relative flex items-center justify-center h-64" :style="themeStyle">
+          <img
+            :src="eventImage"
+            alt="Image de l'événement"
+            class="absolute w-3/4 h-auto object-cover rounded-lg shadow-md"
+          />
         </div>
 
-        <!-- Liste des participants -->
-        <div class="mt-6">
-          <h3 class="font-semibold text-gray-800">Participants</h3>
-          <ParticipantListComponent :participants="event.participants" />
-        </div>
+        <!-- Contenu de la carte -->
+        <div class="p-6 space-y-6">
+          <!-- Titre et date -->
+          <div class="text-center">
+            <h2 class="text-2xl font-bold text-gray-800">{{ event.title }}</h2>
+            <p class="text-gray-600">{{ event.date }}</p>
+          </div>
 
-        <!-- Confirmation de présence -->
-        <div class="mt-6">
-          <label class="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              v-model="attendanceConfirmed"
-              @change="toggleAttendance"
-              class="rounded border-gray-300 focus:ring focus:ring-blue-300"
-            />
+          <!-- Description -->
+          <p class="text-gray-700 text-center">{{ event.description }}</p>
+
+          <!-- Localisation -->
+          <div class="text-center">
+            <!-- Lieu cliquable -->
+            <p
+              @click="openGoogleMaps"
+              class="event-detail-location text-blue-500 font-medium cursor-pointer transition"
+              title="Ouvrir dans Google Maps"
+            >
+              📍 {{ event.location }}
+            </p>
+            <!-- Bouton supplémentaire pour ouvrir Google Maps -->
+            <button
+              class="mt-2 bg-blue-500 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-600 transition"
+              @click="openGoogleMaps"
+            >
+              Ouvrir Google Maps
+            </button>
+          </div>
+
+          <!-- Liste des participants -->
+          <div>
+            <h3 class="font-semibold text-gray-800">Participants</h3>
+            <ul class="space-y-2">
+              <li
+                v-for="participant in event.participants"
+                :key="participant.name"
+                class="flex items-center space-x-4"
+              >
+                <!-- Avatar ou image par défaut -->
+                <img
+                  :src="participant.avatar || '/src/assets/images/default-avatar.png'"
+                  alt="Avatar"
+                  class="w-10 h-10 rounded-full object-cover border border-gray-300"
+                />
+                <span class="text-gray-800 font-medium">{{ participant.name }}</span>
+                <span
+                  class="text-sm"
+                  :class="{
+                    'text-green-600': participant.status === 'Confirmé',
+                    'text-yellow-600': participant.status === 'Indécis',
+                  }"
+                >
+                  ({{ participant.status }})
+                </span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Confirmation de présence -->
+          <div class="flex items-center justify-center space-x-4 mt-4">
             <span class="text-gray-800">
               {{ attendanceConfirmed ? 'Présence confirmée' : 'Non confirmé' }}
             </span>
-          </label>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                v-model="attendanceConfirmed"
+                class="sr-only peer"
+                @change="toggleAttendance"
+              />
+              <div
+                class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-500 peer-focus:ring-4 peer-focus:ring-blue-300 transition"
+              ></div>
+              <div
+                class="absolute w-4 h-4 bg-white rounded-full top-1 left-1 peer-checked:left-6 transition"
+              ></div>
+            </label>
+          </div>
         </div>
       </div>
 
@@ -130,9 +176,4 @@ function openGoogleMaps() {
   </div>
 </template>
 
-<style scoped>
-/* Ajout de styles spécifiques */
-.container {
-  margin-top: 1rem;
-}
-</style>
+<style src="./EventDetailPage.css" lang="css" scoped></style>

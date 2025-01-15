@@ -1,3 +1,12 @@
 .container {
   max-width: 1200px;
 }
+
+.grid {
+  margin-top: 1rem;
+}
+
+.grid > div {
+  max-width: 300px;
+  text-align: center;
+}

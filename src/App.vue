@@ -2,8 +2,8 @@
 
 <template>
   <div id="app">
-    <div class="flex-grow">
-      <router-view />
+    <div class="h-full w-full flex flex-col">
+      <router-view></router-view>
     </div>
   </div>
 </template>

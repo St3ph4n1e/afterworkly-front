@@ -3,7 +3,7 @@
 <template>
   <div id="app">
     <div class="h-full w-full flex flex-col">
-      <router-view></router-view>
+      <router-view class="flex-grow"></router-view>
     </div>
   </div>
 </template>

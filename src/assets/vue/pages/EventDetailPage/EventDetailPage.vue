@@ -49,13 +49,13 @@ function toggleAttendance() {
 
 function openGoogleMaps() {
   if (event.value) {
-    window.open(`https://www.google.com/maps/search/?q=${event.value.location}`, '_blank')
+    window.open('https://www.google.com/maps/search/?q=${event.value.location}', '_blank')
   }
 }
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-gray-100">
+  <div class="event-detail min-h-screen flex flex-col bg-gray-100">
     <HeaderComponent />
 
     <main class="container mx-auto p-4 flex-grow flex justify-center items-center">
@@ -67,11 +67,11 @@ function openGoogleMaps() {
       <!-- Affichage de l'événement -->
       <div v-else-if="event" class="w-full max-w-4xl bg-white shadow-lg rounded-lg overflow-hidden">
         <!-- Section supérieure : Couleur de thème avec image centrée -->
-        <div class="relative flex items-center justify-center h-64" :style="themeStyle">
+        <div class="relative flex items-center justify-center h-64 sm:h-80" :style="themeStyle">
           <img
             :src="eventImage"
             alt="Image de l'événement"
-            class="absolute w-3/4 h-auto object-cover rounded-lg shadow-md"
+            class="absolute w-5/6 h-auto object-contain rounded-lg"
           />
         </div>
 

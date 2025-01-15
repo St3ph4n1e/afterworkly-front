@@ -2,7 +2,12 @@
 import { ref, computed } from 'vue'
 import { mockEvents } from '../../mocks/events'
 import Multiselect from 'vue-multiselect'
+import { Swiper, SwiperSlide } from 'swiper/vue'
+import { Navigation, Pagination } from 'swiper/modules' // Import des modules
 import 'vue-multiselect/dist/vue-multiselect.min.css'
+import 'swiper/css'
+import 'swiper/css/navigation'
+import 'swiper/css/pagination'
 
 const user = ref({
   name: 'Jean Dupont',
@@ -11,7 +16,7 @@ const user = ref({
   availability: ['Lundi', 'Jeudi', 'Vendredi'],
   preferences: ['vegan'],
   notifications: true,
-  events: [1, 3],
+  events: [1, 3, 4, 5, 6],
 })
 
 const allDays = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi']
@@ -48,12 +53,6 @@ const userEvents = computed(() =>
       image: event.image || '/src/assets/images/logo.png',
     })),
 )
-
-defineExpose({
-  components: {
-    Multiselect,
-  },
-})
 </script>
 
 <template>
@@ -153,8 +152,11 @@ defineExpose({
         </form>
       </div>
 
+      <!-- Tab: Mes Événements -->
       <div v-if="activeTab === 'events'" class="bg-white shadow-lg rounded-lg p-6 space-y-6">
         <h3 class="text-xl font-bold text-gray-800">Mes événements</h3>
+
+        <!-- Affichage classique des événements
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           <EventCardComponent
             v-for="event in userEvents"
@@ -165,6 +167,32 @@ defineExpose({
             :date="event.date"
             :image="event.image"
           />
+        </div> -->
+
+        <!-- Carrousel des événements si plus de 3 -->
+        <div v-if="userEvents.length > 3" class="mt-6">
+          <h4 class="text-lg font-semibold text-gray-800 mb-4">Parcourir les événements</h4>
+          <Swiper
+            :modules="[Navigation, Pagination]"
+            navigation
+            pagination
+            :slides-per-view="1"
+            :space-between="10"
+            :breakpoints="{
+              640: { slidesPerView: 2 },
+              768: { slidesPerView: 3 },
+            }"
+          >
+            <SwiperSlide v-for="event in userEvents" :key="event.id">
+              <EventCardComponent
+                :id="event.id"
+                :title="event.title"
+                :location="event.location"
+                :date="event.date"
+                :image="event.image"
+              />
+            </SwiperSlide>
+          </Swiper>
         </div>
       </div>
     </main>

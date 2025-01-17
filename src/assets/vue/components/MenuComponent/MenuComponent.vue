@@ -9,9 +9,17 @@ defineProps<{
 const router = useRouter()
 
 function logout() {
-  localStorage.removeItem('user') // Supprime l'utilisateur du localStorage
-  router.push('/auth') // Redirige vers la page d'authentification
+  localStorage.removeItem('user') 
+  router.push('/auth') 
 }
+
+const menuItems = [
+  {color:'text-blue-400', icon: 'fa-solid fa-tachometer-alt', text: 'Dashboard', link: '/' },
+  {color:'text-green-400', icon: 'fa-solid fa-calendar-plus', text: 'Créer un événement', link: '/create-event' },
+  { color:'text-yellow-400',icon: 'fa-solid fa-user', text: 'Mon Profil', link: '/profile' },
+  {color:'text-pink-400', icon: 'fa-solid fa-calendar-days', text: 'Tous les événements', link: '/all-events' },
+]
+
 </script>
 
 <template>
@@ -29,40 +37,13 @@ function logout() {
 
     <!-- Menu items -->
     <ul class="space-y-6 px-4 mt-4">
-      <li>
+      <li v-for="item in menuItems" :key="item.text">
         <router-link
-          to="/"
+          :to="item.link"
           class="flex items-center space-x-3 p-3 rounded-md hover:bg-gray-700 hover:shadow-lg transition"
         >
-          <i class="fa-solid fa-tachometer-alt text-blue-400"></i>
-          <span class="text-lg font-medium">Dashboard</span>
-        </router-link>
-      </li>
-      <li>
-        <router-link
-          to="/create-event"
-          class="flex items-center space-x-3 p-3 rounded-md hover:bg-gray-700 hover:shadow-lg transition"
-        >
-          <i class="fa-solid fa-calendar-plus text-green-400"></i>
-          <span class="text-lg font-medium">Créer un événement</span>
-        </router-link>
-      </li>
-      <li>
-        <router-link
-          to="/profile"
-          class="flex items-center space-x-3 p-3 rounded-md hover:bg-gray-700 hover:shadow-lg transition"
-        >
-          <i class="fa-solid fa-user text-yellow-400"></i>
-          <span class="text-lg font-medium">Mon Profil</span>
-        </router-link>
-      </li>
-      <li>
-        <router-link
-          to="/all-events"
-          class="flex items-center space-x-3 p-3 rounded-md hover:bg-gray-700 hover:shadow-lg transition"
-        >
-          <i class="fa-solid fa-calendar-days text-pink-400"></i>
-          <span class="text-lg font-medium">Tous les événements</span>
+          <i :class="[item.icon, item.color]" ></i>
+          <span class="text-lg font-medium">{{item.text}}</span>
         </router-link>
       </li>
       <li>

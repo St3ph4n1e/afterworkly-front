@@ -54,7 +54,7 @@ async function handleSubmit() {
   try {
     await createEvent(eventData);
     notification.value = {
-      message: 'Événement créé avec succès !',
+      message: 'Événement créé avec succès !',
       type: 'success',
       isVisible: true,
     };

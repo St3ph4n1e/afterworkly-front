@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import MenuComponent from '../MenuComponent/MenuComponent.vue'
 
 const isMenuOpen = ref(false)
 

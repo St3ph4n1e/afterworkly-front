@@ -135,7 +135,7 @@ onMounted(() => {
 
       <!-- Toggle entre Inscription et Connexion -->
       <p class="text-center mt-6 text-gray-700">
-        {{ isSignUp ? 'Déjà un compte ?' : 'Pas encore de compte ?' }}
+        {{ isSignUp ? 'Déjà un compte ?' : 'Pas encore de compte ?' }}
         <button @click="isSignUp = !isSignUp" class="text-purple-600 font-semibold hover:underline">
           {{ isSignUp ? 'Se connecter' : 'Créer un compte' }}
         </button>

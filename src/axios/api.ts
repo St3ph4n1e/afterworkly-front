@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL, // Base URL pour vos API
+  baseURL: import.meta.env.VITE_API_BASE_URL, 
   headers: {
     'Content-Type': 'application/json',
   },
@@ -15,6 +15,19 @@ apiClient.interceptors.request.use((config) => {
   }
   return config;
 });
+
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token'); // Supprime le token si non valide
+      window.location.href = '/auth'; // Redirige l'utilisateur vers le login
+    }
+    return Promise.reject(error.response?.data || error.message);
+  }
+);
+
 
 // Gestion des erreurs
 apiClient.interceptors.response.use(
@@ -51,12 +64,27 @@ export async function createEvent(eventData: FormData) {
 
 
 
-export async function getEvents() {
-  const response = await apiClient.get('/events')
-  return response.data
+export async function getEvents(params?: { page?: number; limit?: number }) {
+  const response = await apiClient.get('/events', { params });
+  return response.data;
 }
 
+
 export async function getEventById(eventId: string) {
-  const response = await apiClient.get(`/events/${eventId}`)
-  return response.data
+  const response = await apiClient.get(`/events/${eventId}`);
+  return response.data ;
 }
+
+
+export async function updateEvent(eventId: string, updatedData: FormData | Record<string, any>) {
+  const response = await apiClient.put(`/events/${eventId}`, updatedData, {
+    headers: updatedData instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : {},
+  });
+  return response.data;
+}
+
+export async function toggleParticipantStatus(eventId: string, participantData: { userId: string; status: string }) {
+  const response = await apiClient.post(`/events/${eventId}/participants`, participantData);
+  return response.data;
+}
+

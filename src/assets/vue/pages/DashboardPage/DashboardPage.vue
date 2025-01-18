@@ -1,34 +1,39 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { mockEvents } from '../../mocks/events';
+import { getEvents } from '@/axios/api';
+import type { Event } from '@/assets/vue/types/types';
 
 const router = useRouter();
 const userName = ref('');
-const isAnimationActive = ref(true); // Contrôle l'état de l'animation
+const events = ref<Event[]>([]);
 
-// Filtre pour les 3 derniers événements à venir
-const upcomingEvents = computed(() => mockEvents.slice(0, 3));
+const isLoading = ref(true);
+const errorMessage = ref<string | null>(null);
 
 // Vérifie si l'utilisateur est connecté
-onMounted(() => {
+onMounted(async () => {
   const storedUser = localStorage.getItem('user');
   if (storedUser) {
     const user = JSON.parse(storedUser);
-    if (user.name) {
-      userName.value = user.name; // Utilise le nom s'il existe dans le localStorage
-    } else {
-      console.warn("Nom d'utilisateur introuvable dans les données sauvegardées.");
-      userName.value = "Utilisateur";
-    }
+    userName.value = user.name || 'Utilisateur';
   } else {
     router.push('/auth');
+    return;
   }
 
-  // Arrête l'animation après 5 secondes
-  setTimeout(() => {
-    isAnimationActive.value = false;
-  }, 5000);
+  // Charge les événements depuis l'API
+  try {
+    const response = await getEvents({ page: 1, limit: 3 }); // Appel API avec pagination
+    events.value = response;
+    console.log('Événements chargés :', events.value);
+    
+  } catch (error: any) {
+    console.error('Erreur lors du chargement des événements :', error);
+    errorMessage.value = 'Impossible de charger les événements. Veuillez réessayer plus tard.';
+  } finally {
+    isLoading.value = false;
+  }
 });
 
 // Navigation vers les pages
@@ -47,22 +52,23 @@ function createEvent() {
     <div class="container mx-auto p-4">
       <!-- Message de bienvenue -->
       <h1
-        :class="[
-          'text-3xl font-bold mb-8 text-center lg:text-left',
-          isAnimationActive ? 'sparkle-animation' : '',
-          'bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 text-transparent bg-clip-text',
-        ]"
+        class="text-3xl font-bold mb-8 text-center lg:text-left bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 text-transparent bg-clip-text"
       >
         Bienvenue, {{ userName }} <span class="text-gray-800">😃</span> !
       </h1>
 
-      <!-- Notifications -->
-      <NotificationComponent
-        message="📢 Annulation d'un événement : Tous les participants ont été notifiés."
-      />
+      <!-- Indicateur de chargement -->
+      <div v-if="isLoading" class="text-center">
+        <p class="text-gray-500">Chargement des événements...</p>
+      </div>
+
+      <!-- Message d'erreur -->
+      <div v-if="errorMessage" class="text-center text-red-500">
+        <p>{{ errorMessage }}</p>
+      </div>
 
       <!-- Liste des événements et carte d'action -->
-      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6 items-start">
+      <section v-if="!isLoading && !errorMessage" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6 items-start">
         <!-- Carte d'action -->
         <div
           class="bg-white shadow-lg rounded-lg p-6 flex flex-col justify-center items-center space-y-4 h-full"
@@ -88,14 +94,16 @@ function createEvent() {
 
         <!-- Cartes des événements -->
         <EventCardComponent
-          v-for="event in upcomingEvents"
+          v-for="event in events"
           :key="event.id"
-          :id="event.id"
-          :title="event.title"
-          :location="event.location"
+          :id="event.id" 
+          :title="event.title || 'Titre indisponible'"
+          :location="event.location || 'Lieu indisponible'"
           :date="event.date"
+          :time="event.time"
           :image="event.image || '/src/assets/images/logo.png'"
         />
+
       </section>
     </div>
     <FooterComponent />

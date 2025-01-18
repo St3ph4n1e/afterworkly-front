@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { createEvent } from '@/axios/api';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
 
 const formData = ref({
   eventName: '',
@@ -12,11 +15,18 @@ const formData = ref({
 });
 
 const previewImage = ref<string | null>(null);
-const notification = ref({
+  const notification = ref<{
+  message: string;
+  type: 'success' | 'error' | 'info'; // Type strict ici
+  isVisible: boolean;
+}>({
   message: '',
-  type: '', // 'success' ou 'error'
+  type: 'info', // Valeur par défaut
   isVisible: false,
 });
+
+const showModal = ref(false); // État de la modale
+const createdEventId = ref<string | null>(null);
 
 function handleFileUpload(event: Event) {
   const target = event.target as HTMLInputElement;
@@ -46,19 +56,16 @@ async function handleSubmit() {
     eventData.append('image', formData.value.eventImage); // Ajoute uniquement si une image est sélectionnée
   }
 
-  console.log('FormData Content:');
-  eventData.forEach((value, key) => {
-    console.log(`${key}:`, value);
-  });
-
   try {
-    await createEvent(eventData);
+    const response = await createEvent(eventData);
+    createdEventId.value = response.event._id; // Récupère l'ID de l'événement créé
     notification.value = {
       message: 'Événement créé avec succès !',
       type: 'success',
       isVisible: true,
     };
     resetForm();
+    showModal.value = true; // Affiche la modale
   } catch (error: any) {
     notification.value = {
       message: error.message || 'Une erreur est survenue.',
@@ -67,7 +74,6 @@ async function handleSubmit() {
     };
   }
 }
-
 
 function resetForm() {
   formData.value = {
@@ -80,7 +86,21 @@ function resetForm() {
   };
   previewImage.value = null;
 }
+
+function viewEventDetails() {
+  if (createdEventId.value) {
+    router.push(`/event-detail/${createdEventId.value}`);
+  }
+  showModal.value = false;
+}
+
+function createAnotherEvent() {
+  showModal.value = false;
+}
+
+
 </script>
+
 
 <template>
   <div>
@@ -93,49 +113,55 @@ function resetForm() {
         :type="notification.type"
       />
 
-      <form @submit.prevent="handleSubmit" class="space-y-6 bg-white p-6 shadow-lg rounded-lg">
+      <!-- Formulaire -->
+      <form @submit.prevent="handleSubmit" class="space-y-6 bg-white p-8 shadow-lg rounded-lg">
+        <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">Créer un nouvel événement</h2>
         <div>
-          <label for="eventName" class="block font-medium">Nom de l'événement</label>
+          <label for="eventName" class="block font-medium text-gray-700">Nom de l'événement</label>
           <input
             v-model="formData.eventName"
             id="eventName"
             type="text"
-            class="w-full border rounded p-2"
+            placeholder="Entrez le nom de l'événement"
+            class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
           />
         </div>
-        <div>
-          <label for="eventDate" class="block font-medium">Date</label>
-          <input
-            v-model="formData.eventDate"
-            id="eventDate"
-            type="date"
-            class="w-full border rounded p-2"
-          />
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="eventDate" class="block font-medium text-gray-700">Date</label>
+            <input
+              v-model="formData.eventDate"
+              id="eventDate"
+              type="date"
+              class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label for="eventTime" class="block font-medium text-gray-700">Heure</label>
+            <input
+              v-model="formData.eventTime"
+              id="eventTime"
+              type="time"
+              class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            />
+          </div>
         </div>
         <div>
-          <label for="eventTime" class="block font-medium">Heure</label>
-          <input
-            v-model="formData.eventTime"
-            id="eventTime"
-            type="time"
-            class="w-full border rounded p-2"
-          />
-        </div>
-        <div>
-          <label for="eventLocation" class="block font-medium">Lieu</label>
+          <label for="eventLocation" class="block font-medium text-gray-700">Lieu</label>
           <input
             v-model="formData.eventLocation"
             id="eventLocation"
             type="text"
-            class="w-full border rounded p-2"
+            placeholder="Entrez le lieu de l'événement"
+            class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
           />
         </div>
         <div>
-          <label for="eventImage" class="block font-medium">Photo de l'événement</label>
+          <label for="eventImage" class="block font-medium text-gray-700">Photo de l'événement</label>
           <input
             id="eventImage"
             type="file"
-            class="block w-full text-gray-700 border rounded p-2"
+            class="block w-full text-gray-700 border rounded-lg p-3 mt-1"
             accept="image/*"
             @change="handleFileUpload"
           />
@@ -145,29 +171,58 @@ function resetForm() {
             <img
               :src="previewImage"
               alt="Aperçu de l'image"
-              class="w-full max-w-sm rounded shadow-md"
+              class="w-full max-w-sm rounded-lg shadow-md"
             />
           </div>
         </div>
         <div>
-          <label for="eventColor" class="block font-medium">Thème couleur</label>
+          <label for="eventColor" class="block font-medium text-gray-700">Thème couleur</label>
           <input
             v-model="formData.eventColor"
             id="eventColor"
             type="color"
-            class="w-16 h-10 border rounded"
+            class="w-16 h-10 border rounded-lg mt-1"
           />
         </div>
         <button
           type="submit"
-          class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+          class="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-3 rounded-lg font-medium hover:from-purple-500 hover:to-blue-500 transition"
         >
           Créer l'événement
         </button>
       </form>
     </div>
+
+    <!-- Modale après création -->
+    <div
+      v-if="showModal"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    >
+      <div class="bg-white rounded-lg shadow-lg p-6 w-11/12 md:w-1/3">
+        <h3 class="text-xl font-bold text-gray-800">Événement créé avec succès !</h3>
+        <p class="text-gray-600 mt-2">
+          Souhaitez-vous voir les détails de l'événement ou en créer un nouveau ?
+        </p>
+        <div class="mt-6 flex justify-between">
+          <button
+            @click="viewEventDetails"
+            class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
+          >
+            Voir les détails
+          </button>
+          <button
+            @click="createAnotherEvent"
+            class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition"
+          >
+            Créer un autre événement
+          </button>
+        </div>
+      </div>
+    </div>
+
     <FooterComponent />
   </div>
 </template>
+
 
 <style src="./CreateEventPage.css" lang="css" scoped></style>

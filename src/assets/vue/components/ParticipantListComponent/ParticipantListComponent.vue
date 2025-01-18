@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import type { EventParticipant } from '@/assets/vue/types/types'
+import type { PropType } from 'vue';
 
-// Définir les props avec l'interface
-defineProps<{
-  participants: EventParticipant[]
-}>()
+defineProps({
+  participants: {
+    type: Array as PropType<EventParticipant[]>,
+    required: true,
+  },
+})
 </script>
 
 <template>
@@ -14,13 +17,15 @@ defineProps<{
       v-for="participant in participants"
       :key="participant.name"
       :class="{
-        'text-green-600': participant.status === 'Confirmé',
-        'text-yellow-600': participant.status === 'Indécis',
+        'text-green-600 font-semibold': participant.status === 'Confirmé',
+        'text-yellow-600 italic': participant.status === 'Indécis',
       }"
     >
       {{ participant.name }} ({{ participant.status }})
     </li>
   </ul>
 </template>
+
+
 
 <style src="./ParticipantListComponent.css" scoped></style>

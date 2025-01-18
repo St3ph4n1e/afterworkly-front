@@ -1,96 +1,160 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { mockEvents } from '../../mocks/events'
-import type { Event } from '../../types/types'
+import { ref, computed, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { getEventById, toggleParticipantStatus } from '@/axios/api';
+import { getImageUrl } from '@/utils/url';
+import type { Event, EventParticipant } from '@/assets/vue/types/types';
+import dayjs from 'dayjs';
+import 'dayjs/locale/fr';
 
-const route = useRoute()
-const router = useRouter()
-const event = ref<Event | null>(null)
-const isLoading = ref(true)
-const attendanceConfirmed = ref(false)
+dayjs.locale('fr');
 
-onMounted(() => {
-  const eventId = Number(route.params.id)
-  if (isNaN(eventId)) {
-    console.error('Invalid event ID:', route.params.id)
-    router.push('/404')
-    return
+const route = useRoute();
+const router = useRouter();
+const event = ref<Event | null>(null);
+const isLoading = ref(true);
+const errorMessage = ref<string | null>(null);
+const currentUserId = ref<string | null>(null); // ID de l'utilisateur connecté
+const attendanceConfirmed = ref(false);
+
+// Mock de participants si non disponibles en BDD
+const mockParticipants: EventParticipant[] = [
+  { userId: '1', name: 'Grace', status: 'Confirmé', avatar: '/src/assets/images/grace-avatar.jpeg' },
+  { userId: '2', name: 'Henry', status: 'Indécis', avatar: '/src/assets/images/henry-avatar.jpeg' },
+];
+
+// Récupération de l'événement et initialisation
+onMounted(async () => {
+  const eventId = route.params.id as string;
+
+  // Récupérer l'utilisateur connecté depuis le localStorage
+  const storedUser = localStorage.getItem('user');
+  if (storedUser) {
+    const user = JSON.parse(storedUser);
+    currentUserId.value = user.userId;
   }
 
-  event.value = mockEvents.find((e) => e.id === eventId) || null
+  try {
+    isLoading.value = true;
+    const fetchedEvent = await getEventById(eventId);
 
-  if (!event.value) {
-    console.error('Event not found for ID:', eventId)
-    router.push('/404')
+    // Utilisation de participants moqués si aucun participant en BDD
+    event.value = {
+      ...fetchedEvent,
+      id: fetchedEvent._id, // Transformation de `_id` en `id`
+      participants: fetchedEvent?.participants.length > 0 ? fetchedEvent?.participants : mockParticipants,
+    };
+
+    // Initialisation de l'état de participation
+    attendanceConfirmed.value = event.value?.participants.some(
+      (participant) => participant.userId === currentUserId.value && participant.status === 'Confirmé'
+    ) ?? false;
+  } catch (error: any) {
+    console.error("Erreur lors de la récupération de l'événement :", error);
+    errorMessage.value = "Impossible de charger l'événement.";
+  } finally {
+    isLoading.value = false;
   }
-
-  // Initialisation de l'état "confirmé"
-  attendanceConfirmed.value = !!localStorage.getItem(`event-${eventId}-confirmed`)
-
-  isLoading.value = false
-})
+});
 
 // Computed pour le style du thème
 const themeStyle = computed(() => {
   if (event.value) {
     return {
       backgroundColor: event.value.color || '#f9f9f9',
-    }
+    };
   }
-  return {}
-})
+  return {};
+});
 
-// Computed pour l'image ou le logo par défaut
+// Computed pour l'image de l'événement
 const eventImage = computed(() => {
-  return event.value?.image ? event.value?.image : '/src/assets/images/logo.png'
-})
+  return getImageUrl(event.value?.image || '/logo.png');
+});
 
-// Gestion du toggle
-function toggleAttendance() {
-  attendanceConfirmed.value = !attendanceConfirmed.value
-  const eventId = route.params.id
-  if (attendanceConfirmed.value) {
-    localStorage.setItem(`event-${eventId}-confirmed`, 'true')
-  } else {
-    localStorage.removeItem(`event-${eventId}-confirmed`)
+// Computed pour le formatage de la date et de l'heure
+const formattedDate = computed(() => {
+  return event.value ? dayjs(event.value.date).format('D MMMM YYYY') : '';
+});
+
+const formattedTime = computed(() => {
+  return event.value?.time || '';
+});
+
+// Fonction pour confirmer/annuler la participation
+async function toggleAttendance() {
+  if (!event.value || !currentUserId.value) return;
+
+  try {
+    attendanceConfirmed.value = !attendanceConfirmed.value;
+    await toggleParticipantStatus(event.value.id, {
+      userId: currentUserId.value,
+      status: attendanceConfirmed.value ? 'Confirmé' : 'Indécis',
+    });
+  } catch (error: any) {
+    console.error('Erreur lors de la mise à jour de la participation :', error);
   }
 }
 
+// Fonction pour ouvrir Google Maps
 function openGoogleMaps() {
   if (event.value) {
-    window.open(`https://www.google.com/maps/search/?q=${event.value.location}`, '_blank')
+    window.open(`https://www.google.com/maps/search/?q=${event.value.location}`, '_blank');
+  }
+}
+
+// Fonction pour aller à la page de modification
+function goToEditPage() {
+  if (event.value) {
+    router.push(`/edit-event/${event.value.id}`);
   }
 }
 </script>
-
 <template>
   <div class="event-detail min-h-screen flex flex-col bg-gray-100">
     <HeaderComponent />
 
     <main class="container mx-auto p-4 flex-grow flex justify-center items-center">
-      <!-- Affichage pendant le chargement -->
+      <!-- Indicateur de chargement -->
       <div v-if="isLoading" class="text-center">
         <p class="text-gray-500">Chargement...</p>
       </div>
 
       <!-- Affichage de l'événement -->
       <div v-else-if="event" class="w-full max-w-4xl bg-white shadow-lg rounded-lg overflow-hidden">
-        <!-- Section supérieure : Couleur de thème avec image centrée -->
-        <div class="relative flex items-center justify-center h-64 sm:h-80" :style="themeStyle">
+        <!-- Image de l'événement -->
+        <div class="relative flex items-center justify-center h-72 sm:h-96" :style="themeStyle">
           <img
             :src="eventImage"
             alt="Image de l'événement"
-            class="absolute w-5/6 h-auto object-contain rounded-lg"
+            class="absolute w-4/6 h-auto object-contain rounded-lg"
           />
+          <!-- Bouton Modifier (seulement pour le créateur) -->
+          <button
+            v-if="event.creator === currentUserId"
+            @click="goToEditPage"
+            class="absolute top-4 right-4 bg-blue-500 text-white p-2 rounded-full shadow-md hover:bg-blue-600"
+            title="Modifier l'événement"
+          >
+            <i class="fas fa-edit"></i>
+          </button>
         </div>
 
-        <!-- Contenu de la carte -->
+        <!-- Contenu principal -->
         <div class="p-6 space-y-6">
-          <!-- Titre et date -->
+          <!-- Titre -->
           <div class="text-center">
             <h2 class="text-2xl font-bold text-gray-800">{{ event.title }}</h2>
-            <p class="text-gray-600">{{ event.date }}</p>
+          </div>
+
+          <!-- Date et heure -->
+          <div class="flex justify-center items-center space-x-4 text-gray-600">
+            <p class="flex items-center">
+              🗓️ <span class="ml-2 font-medium">{{ formattedDate }}</span>
+            </p>
+            <p class="flex items-center">
+              🕒 <span class="ml-2 font-medium">{{ formattedTime }}</span>
+            </p>
           </div>
 
           <!-- Description -->
@@ -113,7 +177,7 @@ function openGoogleMaps() {
             <ul class="space-y-2">
               <li
                 v-for="participant in event.participants"
-                :key="participant.name"
+                :key="participant.userId"
                 class="flex items-center space-x-4"
               >
                 <img
@@ -135,8 +199,8 @@ function openGoogleMaps() {
             </ul>
           </div>
 
-          <!-- Confirmation de présence -->
-          <div class="flex items-center justify-center space-x-4 mt-4">
+          <!-- Confirmation de présence (si non créateur) -->
+          <div v-if="event.creator !== currentUserId" class="flex items-center justify-center space-x-4 mt-4">
             <span class="text-gray-800 font-medium">
               {{ attendanceConfirmed ? 'Présence confirmée' : 'Non confirmé' }}
             </span>
@@ -177,5 +241,4 @@ function openGoogleMaps() {
     <FooterComponent />
   </div>
 </template>
-
 <style src="./EventDetailPage.css" lang="css" scoped></style>

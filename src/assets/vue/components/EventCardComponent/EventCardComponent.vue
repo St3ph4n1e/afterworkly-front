@@ -1,48 +1,73 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { getImageUrl } from '@/utils/url';
+import dayjs from 'dayjs';
+import 'dayjs/locale/fr';
 
+dayjs.locale('fr');
+
+// Définition des props
 const props = defineProps<{
-  id: number
-  title: string
-  location: string
-  date: string
-  image?: string 
-}>()
+  id: string;
+  title: string;
+  location: string;
+  date: string;
+  time: string;
+  image?: string;
+}>();
 
-const router = useRouter()
+const router = useRouter();
 
-// Computed 
+// Computed pour l'image de l'événement
 const eventImage = computed(() => {
-  return props.image ? new URL(props.image, import.meta.url).href : './logo.png'
-})
+  return getImageUrl(props.image || '/logo.png');
+});
 
-// Methods
-function viewEvent(eventId: number) {
-  router.push(`/event-detail/${eventId}`)
+// Computed pour formater la date et l'heure
+const formattedDate = computed(() => {
+  return dayjs(props.date).format('D MMMM YYYY');
+});
+
+
+// Méthode pour naviguer vers la page de détail de l'événement
+function viewEvent(eventId: string) {
+  router.push(`/event-detail/${eventId}`);
+}
+
+// Méthode pour ouvrir la localisation dans Google Maps
+function openGoogleMaps(location: string) {
+  window.open(`https://www.google.com/maps/search/?q=${location}`, '_blank');
 }
 </script>
 
 <template>
   <div
-    class="aftw-event-card bg-white shadow rounded-lg p-6 flex flex-col items-center space-y-4 transition transform hover:scale-105 hover:shadow-xl"
+    class="aftw-event-card bg-white shadow rounded-lg p-6 flex flex-col items-center space-y-4 mx-6 transition transform hover:scale-105 hover:shadow-xl"
   >
     <!-- Image ou logo -->
     <div class="w-full h-56 overflow-hidden rounded-lg bg-gray-200">
-      <img :src="eventImage" alt="Image de l'événement" class="w-full h-full object-cover" />
+      <img :src="eventImage" :alt="`Image de l'événement : ${title}`" class="w-full h-full object-cover" />
     </div>
 
     <!-- Titre de l'événement -->
-    <h3 class="text-lg font-bold text-center text-gray-800">{{ title }}</h3>
+    <h3 class="text-lg font-bold text-center text-gray-800">{{ title || 'Titre indisponible' }}</h3>
 
     <!-- Localisation -->
-    <p class="text-gray-600 text-center">
-      📍 <span class="font-medium">{{ location }}</span>
+    <p
+      class="text-gray-600 text-center cursor-pointer hover:text-blue-500 transition"
+      @click="openGoogleMaps(location)"
+      title="Ouvrir la localisation dans Google Maps"
+    >
+      📍 <span class="font-medium">{{ location || 'Lieu indisponible' }}</span>
     </p>
 
-    <!-- Date -->
+    <!-- Date et heure -->
     <p class="text-gray-600 text-center">
-      🕒 <span class="font-medium">{{ date }}</span>
+      🗓️ <span class="font-medium">{{ formattedDate }}</span>
+    </p>
+    <p class="text-gray-600 text-center">
+      🕒 <span class="font-medium">{{ time }}</span>
     </p>
 
     <!-- Bouton -->
@@ -55,4 +80,7 @@ function viewEvent(eventId: number) {
   </div>
 </template>
 
-<style src="./EventCardComponent.css" lang="css" scoped></style>
+
+ 
+
+<style src="./EventCardComponent.css" module></style>

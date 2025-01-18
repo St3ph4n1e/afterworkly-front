@@ -1,10 +1,18 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, type PropType } from 'vue'
 
+// Définition des props avec PropType
 defineProps({
-  message: { type: String, required: true },
-  type: { type: String, default: 'info' }, // Types : 'info', 'success', 'error'
+  message: { 
+    type: String, 
+    required: true 
+  },
+  type: { 
+    type: String as PropType<'info' | 'success' | 'error'>, 
+    default: 'info' 
+  },
 })
+
 
 const isVisible = ref(true)
 

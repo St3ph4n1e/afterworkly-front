@@ -38,3 +38,15 @@
   font-weight: bold;
   transform: scale(1.05);
 }
+
+
+.notification-component {
+  height: auto;
+  max-height: 100px !important;
+  overflow: hidden !important;
+  padding: 10px 20px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+

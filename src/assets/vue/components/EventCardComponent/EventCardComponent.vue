@@ -8,27 +8,26 @@ import 'dayjs/locale/fr';
 dayjs.locale('fr');
 
 // Définition des props
-const props = defineProps<{
-  id: string;
-  title: string;
-  location: string;
-  date: string;
-  time: string;
-  image?: string;
-}>();
+const props = defineProps({
+  id: { type: String, required: true },
+  title: { type: String, default: 'Titre indisponible' },
+  location: { type: String, default: 'Lieu indisponible' },
+  date: { type: String, required: true },
+  time: { type: String, required: true },
+  image: { type: String, default: '/logo.png' },
+});
 
 const router = useRouter();
 
 // Computed pour l'image de l'événement
-const eventImage = computed(() => {
-  return getImageUrl(props.image || '/logo.png');
-});
+const eventImage = computed(() => getImageUrl(props.image));
 
-// Computed pour formater la date et l'heure
+// Computed pour formater la date
 const formattedDate = computed(() => {
-  return dayjs(props.date).format('D MMMM YYYY');
+  return dayjs(props.date).isValid()
+    ? dayjs(props.date).format('D MMMM YYYY')
+    : 'Date invalide';
 });
-
 
 // Méthode pour naviguer vers la page de détail de l'événement
 function viewEvent(eventId: string) {
@@ -37,7 +36,12 @@ function viewEvent(eventId: string) {
 
 // Méthode pour ouvrir la localisation dans Google Maps
 function openGoogleMaps(location: string) {
-  window.open(`https://www.google.com/maps/search/?q=${location}`, '_blank');
+  if (!location) {
+    console.error('Lieu non disponible');
+    return;
+  }
+  const encodedLocation = encodeURIComponent(location);
+  window.open(`https://www.google.com/maps/search/?q=${encodedLocation}`, '_blank');
 }
 </script>
 
@@ -51,7 +55,7 @@ function openGoogleMaps(location: string) {
     </div>
 
     <!-- Titre de l'événement -->
-    <h3 class="text-lg font-bold text-center text-gray-800">{{ title || 'Titre indisponible' }}</h3>
+    <h3 class="text-lg font-bold text-center text-gray-800">{{ title }}</h3>
 
     <!-- Localisation -->
     <p
@@ -59,7 +63,7 @@ function openGoogleMaps(location: string) {
       @click="openGoogleMaps(location)"
       title="Ouvrir la localisation dans Google Maps"
     >
-      📍 <span class="font-medium">{{ location || 'Lieu indisponible' }}</span>
+      📍 <span class="font-medium">{{ location }}</span>
     </p>
 
     <!-- Date et heure -->
@@ -74,13 +78,11 @@ function openGoogleMaps(location: string) {
     <button
       @click="viewEvent(id)"
       class="mt-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-8 py-3 rounded-lg hover:from-purple-500 hover:to-blue-500 transition"
+      aria-label="Voir les détails de l'événement"
     >
       Voir l'événement
     </button>
   </div>
 </template>
-
-
- 
 
 <style src="./EventCardComponent.css" module></style>

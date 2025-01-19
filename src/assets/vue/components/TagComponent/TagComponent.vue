@@ -5,13 +5,21 @@ import { ref, watch, computed, type PropType, defineEmits } from 'vue'
 const props = defineProps({
   label: { type: String, required: true },
   selected: { type: Boolean, default: false },
-})
+  selectedColor: { type: String, default: 'blue' },
+  unselectedColor: { type: String, default: 'gray' },
+  size: { type: String as PropType<'small' | 'medium' | 'large'>, default: 'medium' },
+});
+
 
 // Déclarer les événements émis
 const emit = defineEmits(['update:selected'])
 
 // Utiliser une référence locale pour la sélection
-const isSelected = ref(props.selected)
+const isSelected = computed({
+  get: () => props.selected,
+  set: (value) => emit('update:selected', value),
+});
+
 
 // Gestion du clic pour basculer la sélection
 function toggleSelection() {
@@ -30,16 +38,21 @@ watch(
 
 <template>
   <span
-    :class="[
-      'px-4 py-2 border rounded cursor-pointer transition',
-      isSelected
-        ? 'bg-blue-500 text-white border-blue-500'
-        : 'bg-gray-200 text-gray-800 border-gray-300',
-    ]"
-    @click="toggleSelection"
-  >
-    {{ label }}
-  </span>
+  role="button"
+  :aria-pressed="isSelected"
+  tabindex="0"
+  @keyup.space="toggleSelection"
+  @keyup.enter="toggleSelection"
+  :class="[
+  size === 'small' ? 'text-sm px-2 py-1' : size === 'large' ? 'text-lg px-6 py-3' : 'text-base px-4 py-2',
+  isSelected ? 'bg-blue-500 text-white border-blue-500' : 'bg-gray-200 text-gray-800 border-gray-300',
+]"
+
+  @click="toggleSelection"
+>
+  {{ label }}
+</span>
+
 </template>
 
 <style scoped>

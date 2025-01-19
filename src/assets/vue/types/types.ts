@@ -2,7 +2,7 @@
 export interface EventParticipant {
   userId: string; // Identifiant utilisateur
   name: string; // Nom du participant
-  status: 'Confirmé' | 'Indécis'; // Statut du participant
+  status: 'Confirmé' | 'Indécis' | string; // Statut du participant
   avatar?: string | null; // Avatar optionnel
 }
 
@@ -18,4 +18,5 @@ export interface Event {
   color: string; // Couleur associée à l'événement
   creator: string; // Identifiant du créateur de l'événement
   participants: EventParticipant[]; // Liste des participants
+  isPublic: boolean; // Visibilité de l'événement
 }

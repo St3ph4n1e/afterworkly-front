@@ -11,21 +11,23 @@ const formData = ref({
   eventTime: '',
   eventLocation: '',
   eventImage: null as File | null,
-  eventColor: '#ffffff', // Couleur par défaut
+  eventColor: '#ffffff',
+  isPublic: true, // Nouveau champ pour définir si l'événement est public ou privé
 });
 
 const previewImage = ref<string | null>(null);
-  const notification = ref<{
+
+const notification = ref<{
   message: string;
-  type: 'success' | 'error' | 'info'; // Type strict ici
+  type: 'success' | 'error' | 'info';
   isVisible: boolean;
 }>({
   message: '',
-  type: 'info', // Valeur par défaut
+  type: 'info',
   isVisible: false,
 });
 
-const showModal = ref(false); // État de la modale
+const showModal = ref(false);
 const createdEventId = ref<string | null>(null);
 
 function handleFileUpload(event: Event) {
@@ -51,21 +53,22 @@ async function handleSubmit() {
   eventData.append('time', formData.value.eventTime);
   eventData.append('location', formData.value.eventLocation);
   eventData.append('color', formData.value.eventColor);
+  eventData.append('isPublic', formData.value.isPublic.toString());
 
   if (formData.value.eventImage) {
-    eventData.append('image', formData.value.eventImage); // Ajoute uniquement si une image est sélectionnée
+    eventData.append('image', formData.value.eventImage);
   }
 
   try {
     const response = await createEvent(eventData);
-    createdEventId.value = response.event._id; // Récupère l'ID de l'événement créé
+    createdEventId.value = response.event._id;
     notification.value = {
       message: 'Événement créé avec succès !',
       type: 'success',
       isVisible: true,
     };
     resetForm();
-    showModal.value = true; // Affiche la modale
+    showModal.value = true;
   } catch (error: any) {
     notification.value = {
       message: error.message || 'Une erreur est survenue.',
@@ -83,6 +86,7 @@ function resetForm() {
     eventLocation: '',
     eventImage: null,
     eventColor: '#ffffff',
+    isPublic: true,
   };
   previewImage.value = null;
 }
@@ -97,10 +101,7 @@ function viewEventDetails() {
 function createAnotherEvent() {
   showModal.value = false;
 }
-
-
 </script>
-
 
 <template>
   <div>
@@ -184,6 +185,23 @@ function createAnotherEvent() {
             class="w-16 h-10 border rounded-lg mt-1"
           />
         </div>
+
+        <!-- Toggle public/privé -->
+        <div class="flex items-center justify-between mt-4">
+          <label class="text-gray-700 font-medium">Événement public</label>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              v-model="formData.isPublic"
+              class="sr-only peer"
+            />
+            <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-500 peer-focus:ring-2 peer-focus:ring-blue-300 transition"></div>
+            <div
+              class="absolute w-4 h-4 bg-white rounded-full top-1 left-1 peer-checked:left-6 transition"
+            ></div>
+          </label>
+        </div>
+
         <button
           type="submit"
           class="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-3 rounded-lg font-medium hover:from-purple-500 hover:to-blue-500 transition"
@@ -194,35 +212,23 @@ function createAnotherEvent() {
     </div>
 
     <!-- Modale après création -->
-    <div
+    <ModalComponent
       v-if="showModal"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      title="Événement créé avec succès !"
+      :isVisible="showModal"
+      :buttons="[
+         { text: 'Créer un autre événement', action: createAnotherEvent, class: 'bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition' },
+        { text: 'Voir les détails', action: viewEventDetails, class: 'bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition' },
+       
+      ]"
+      @close="createAnotherEvent"
     >
-      <div class="bg-white rounded-lg shadow-lg p-6 w-11/12 md:w-1/3">
-        <h3 class="text-xl font-bold text-gray-800">Événement créé avec succès !</h3>
-        <p class="text-gray-600 mt-2">
-          Souhaitez-vous voir les détails de l'événement ou en créer un nouveau ?
-        </p>
-        <div class="mt-6 flex justify-between">
-          <button
-            @click="viewEventDetails"
-            class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
-          >
-            Voir les détails
-          </button>
-          <button
-            @click="createAnotherEvent"
-            class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition"
-          >
-            Créer un autre événement
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <FooterComponent />
+      <p class="text-gray-600">
+        Souhaitez-vous voir les détails de l'événement ou en créer un nouveau ?
+      </p>
+      
+    </ModalComponent>
   </div>
 </template>
-
 
 <style src="./CreateEventPage.css" lang="css" scoped></style>

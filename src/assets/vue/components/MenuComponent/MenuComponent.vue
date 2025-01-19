@@ -26,7 +26,7 @@ const menuItems = [
   <nav
     :class="[
       'fixed inset-y-0 left-0 w-64 bg-gradient-to-b from-gray-800 to-gray-900 text-white shadow-xl transform transition-transform duration-300 ease-in-out',
-      isOpen ? 'translate-x-0' : '-translate-x-full',
+      isOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0',
     ]"
   >
     <!-- Logo -->

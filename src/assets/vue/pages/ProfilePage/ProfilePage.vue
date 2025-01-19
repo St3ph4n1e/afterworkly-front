@@ -1,204 +1,279 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { mockEvents } from '../../mocks/events'
-import Multiselect from 'vue-multiselect'
-import { Swiper, SwiperSlide } from 'swiper/vue'
-import { Navigation, Pagination } from 'swiper/modules'
-import 'vue-multiselect/dist/vue-multiselect.min.css'
-import 'swiper/css'
-import 'swiper/css/navigation'
-import 'swiper/css/pagination'
+import { ref, computed, onMounted } from 'vue';
+import Multiselect from 'vue-multiselect';
+import { Swiper, SwiperSlide } from 'swiper/vue';
+import { Navigation, Pagination } from 'swiper/modules';
+import { getUserProfile, updateUserProfile, updateUserAvatar } from '@/axios/api';
+import type { Event } from '@/assets/vue/types/types';
+import { getImageUrl } from '@/utils/url';
+import 'vue-multiselect/dist/vue-multiselect.min.css';
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
 
+// État global
+const isEditing = ref(false);
+const isAvatarUploading = ref(false);
+const notification = ref<string | null>(null);
+const activeTab = ref('profile');
+const loading = ref(true);
+
+// Données utilisateur avec valeurs par défaut
 const user = ref({
-  name: 'Jean Dupont',
-  bio: 'Passionné par les afterworks conviviaux !',
-  photo: '/src/assets/images/user.jpeg',
-  availability: ['Lundi', 'Jeudi', 'Vendredi'],
-  preferences: ['vegan'],
+  name: '',
+  bio: '',
+  photo: '/src/assets/images/default-avatar.png',
+  availability: [] as string[],
+  preferences: [] as { label: string; value: string }[],
   notifications: true,
-  events: [1, 3, 4, 5, 6],
-})
+});
+const eventsCreated = ref<Event[]>([]);
+const eventsParticipating = ref<Event[]>([]);
 
-const allDays = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi']
+const allDays = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'];
 const allPreferences = [
   { label: 'Végan', value: 'vegan' },
   { label: 'Consomme de l’alcool', value: 'alcool' },
   { label: 'Halal', value: 'halal' },
   { label: 'Viandard', value: 'viandard' },
-]
+];
 
-const activeTab = ref('profile') // Onglet actif
-const notification = ref<string | null>(null) // Notification
+// Charger les données utilisateur et ses événements
+onMounted(async () => {
+  try {
+    const response = await getUserProfile();
+    Object.assign(user.value, response.user);
+    eventsCreated.value = response.eventsCreated;
+    eventsParticipating.value = response.eventsParticipating;
 
-function toggleDay(day: string) {
-  if (user.value.availability.includes(day)) {
-    user.value.availability = user.value.availability.filter((d) => d !== day)
-  } else {
-    user.value.availability.push(day)
+    // Affiche une notification uniquement si les champs critiques sont vides
+    if (!user.value.name || !user.value.bio || user.value.availability.length === 0) {
+      notification.value = 'Votre profil est incomplet. Pensez à le compléter !';
+    }
+  } catch (error) {
+    console.error('Erreur lors du chargement des données utilisateur :', error);
+    notification.value = 'Impossible de charger vos données.';
+  } finally {
+    loading.value = false;
+  }
+});
+
+// Mise à jour du profil utilisateur
+async function updateProfile() {
+  try {
+    const cleanedPreferences = user.value.preferences.filter(pref => pref && pref.value);
+
+    const updatedUser = await updateUserProfile({
+      ...user.value,
+      preferences: cleanedPreferences,
+    });
+
+    Object.assign(user.value, updatedUser);
+    notification.value = 'Votre profil a été mis à jour avec succès !';
+    isEditing.value = false; // Fermer le formulaire
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour du profil :', error);
+    notification.value = 'Une erreur s’est produite. Veuillez réessayer.';
   }
 }
 
-function updateProfile() {
-  notification.value = 'Votre profil a été mis à jour avec succès !'
-  setTimeout(() => {
-    notification.value = null
-  }, 3000)
+// Upload d'avatar
+async function handleAvatarUpload(event: Event & { target: HTMLInputElement }) {
+  const file = event.target.files?.[0];
+  if (file) {
+    isAvatarUploading.value = true;
+    try {
+      const response = await updateUserAvatar(file);
+      user.value.photo = response.photo;
+      notification.value = 'Avatar mis à jour avec succès !';
+    } catch (error) {
+      console.error('Erreur lors de l\'upload de l\'avatar :', error);
+      notification.value = 'Erreur lors de l\'upload. Veuillez réessayer.';
+    } finally {
+      isAvatarUploading.value = false;
+    }
+  }
 }
 
-const userEvents = computed(() =>
-  mockEvents
-    .filter((event) => user.value.events.includes(event.id))
-    .map((event) => ({
-      ...event,
-      image: event.image || '/src/assets/images/logo.png',
-    })),
-)
-</script>
+// Gestion des jours de disponibilité
+function toggleDay(day: string) {
+  if (user.value.availability.includes(day)) {
+    user.value.availability = user.value.availability.filter((d) => d !== day);
+  } else {
+    user.value.availability.push(day);
+  }
+}
 
+const userAvatar = computed(() => getImageUrl(user.value.photo));
+</script>
 <template>
-  <div class="min-h-screen flex flex-col bg-gray-100">
+  <div class="min-h-screen flex flex-col bg-gray-50">
     <HeaderComponent />
 
     <main class="container mx-auto p-6 flex-grow space-y-6">
       <!-- Notification -->
-      <NotificationComponent v-if="notification" :message="notification" type="success" />
+      <NotificationComponent v-if="notification" :message="notification" type="warning" />
 
-      <!-- Profil utilisateur toujours visible -->
-      <div class="bg-white shadow-lg rounded-lg p-6 flex flex-col items-center text-center">
-        <img
-          :src="user.photo"
-          alt="Photo Profil"
-          class="w-32 h-32 rounded-full mx-auto shadow-md object-cover"
-        />
-        <h2 class="text-2xl font-bold text-gray-800 mt-4">{{ user.name }}</h2>
-        <p class="text-gray-600 mt-2">{{ user.bio }}</p>
+      <!-- Chargement -->
+      <div v-if="loading" class="text-center py-20">
+        <i class="fas fa-spinner fa-spin text-gray-500 text-3xl"></i>
       </div>
 
-      <!-- Tabs -->
-      <div class="flex justify-center space-x-8 text-center">
-        <button
-          @click="activeTab = 'profile'"
-          :class="[
-            'px-6 py-3 font-medium transition duration-300 ease-in-out rounded-t-lg',
-            activeTab === 'profile'
-              ? 'bg-blue-600 text-white shadow-lg'
-              : 'bg-gray-200 text-gray-600 hover:bg-gray-300',
-          ]"
-        >
-          Infos du Profil
-        </button>
-        <button
-          @click="activeTab = 'events'"
-          :class="[
-            'px-6 py-3 font-medium transition duration-300 ease-in-out rounded-t-lg',
-            activeTab === 'events'
-              ? 'bg-blue-600 text-white shadow-lg'
-              : 'bg-gray-200 text-gray-600 hover:bg-gray-300',
-          ]"
-        >
-          Mes Événements
-        </button>
-      </div>
-
-      <!-- Contenu des Tabs -->
-      <div v-if="activeTab === 'profile'" class="bg-white shadow-lg rounded-lg p-6 space-y-6">
-        <form @submit.prevent="updateProfile" class="space-y-6">
-          <div>
-            <h3 class="text-lg font-semibold text-gray-800">Jours de disponibilité</h3>
-            <div class="flex flex-wrap gap-2 mt-2">
-              <TagComponent
-                v-for="day in allDays"
-                :key="day"
-                :label="day"
-                :selected="user.availability.includes(day)"
-                @click="toggleDay(day)"
-              />
-            </div>
-          </div>
-
-          <div>
-            <h3 class="text-lg font-semibold text-gray-800">Préférences alimentaires</h3>
-            <div class="border rounded p-2">
-              <Multiselect
-                v-model="user.preferences"
-                :options="allPreferences"
-                label="label"
-                track-by="value"
-                placeholder="Sélectionnez vos préférences"
-                :multiple="true"
-              />
-            </div>
-          </div>
-
-          <div class="flex items-center justify-between">
-            <span class="text-lg text-gray-800">Recevoir des notifications</span>
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" v-model="user.notifications" class="sr-only peer" />
-              <div
-                class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-500 peer-focus:ring-4 peer-focus:ring-blue-300 transition"
-              ></div>
-              <div
-                class="absolute w-4 h-4 bg-white rounded-full top-1 left-1 peer-checked:left-6 transition"
-              ></div>
-            </label>
-          </div>
-
+      <!-- Contenu principal -->
+      <div v-else>
+        <!-- Onglets -->
+        <div class="flex justify-center space-x-4 mb-6">
           <button
-            type="submit"
-            class="w-full bg-blue-500 text-white py-3 rounded-lg font-medium shadow-md hover:bg-blue-600 transition"
+            @click="activeTab = 'profile'"
+            :class="[
+              'px-6 py-2 font-medium rounded-t-lg transition',
+              activeTab === 'profile' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300',
+            ]"
           >
-            Modifier le Profil
+            Mon Profil
           </button>
-        </form>
-      </div>
+          <button
+            @click="activeTab = 'events'"
+            :class="[
+              'px-6 py-2 font-medium rounded-t-lg transition',
+              activeTab === 'events' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300',
+            ]"
+          >
+            Mes Événements
+          </button>
+        </div>
 
-      <!-- Tab: Mes Événements -->
-      <div v-if="activeTab === 'events'" class="bg-white shadow-lg rounded-lg p-6 space-y-6">
-        <h3 class="text-xl font-bold text-gray-800">Mes événements</h3>
+        <!-- Profil -->
+        <div v-if="activeTab === 'profile'" class="bg-white shadow-lg rounded-lg p-6">
+          <div class="flex flex-col items-center text-center relative">
+            <!-- Avatar et appareil photo -->
+            <div class="relative">
+              <img
+                :src="userAvatar"
+                alt="Photo de profil"
+                class="w-32 h-32 rounded-full shadow-md object-cover"
+              />
+              <label
+                for="avatar-upload"
+                class="absolute bottom-0 right-0 bg-blue-500 p-2 rounded-full cursor-pointer hover:bg-blue-600 transition"
+                title="Modifier l'avatar"
+              >
+                <i class="fas fa-camera text-white"></i>
+                <input
+                  id="avatar-upload"
+                  type="file"
+                  accept="image/*"
+                  class="hidden"
+                  @change="handleAvatarUpload"
+                />
+              </label>
+            </div>
 
-        <!-- Affichage classique des événements
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          <EventCardComponent
-            v-for="event in userEvents"
+            <!-- Crayon pour mode édition -->
+            <button
+              @click="isEditing = !isEditing"
+              class="absolute top-4 right-4 bg-gray-200 p-2 rounded-full hover:bg-gray-300"
+              title="Modifier le profil"
+            >
+              <i class="fas fa-pencil-alt text-gray-600"></i>
+            </button>
+
+            <!-- Affichage des données -->
+            <div v-if="!isEditing" class="mt-4">
+              <h2 class="text-2xl font-bold text-gray-800">{{ user.name }}</h2>
+              <p class="text-gray-600 mt-2">{{ user.bio }}</p>
+              <div class="mt-4">
+                <h3 class="text-lg font-semibold">Disponibilités :</h3>
+                <p>{{ user.availability.join(', ') || 'Non renseigné' }}</p>
+              </div>
+              <div class="mt-4">
+                <h3 class="text-lg font-semibold">Préférences alimentaires :</h3>
+                <p>
+                  <span
+                    v-for="pref in user.preferences"
+                    :key="pref.value"
+                    class="inline-block bg-blue-100 text-blue-700 px-2 py-1 rounded-md mr-2"
+                  >
+                    {{ pref.label }}
+                  </span>
+                  <span v-if="user.preferences.length === 0">Non renseigné</span>
+                </p>
+              </div>
+            </div>
+
+            <!-- Formulaire de modification -->
+            <form v-else @submit.prevent="updateProfile" class="w-full max-w-md mt-6 space-y-4">
+              <input v-model="user.name" type="text" class="w-full border rounded p-2" placeholder="Nom" />
+              <textarea v-model="user.bio" class="w-full border rounded p-2" placeholder="Bio"></textarea>
+              <div>
+                <label class="block text-gray-800 font-medium mb-2">Jours de disponibilité :</label>
+                <div class="flex flex-wrap gap-2">
+                  <TagComponent
+                    v-for="day in allDays"
+                    :key="day"
+                    :label="day"
+                    :selected="user.availability.includes(day)"
+                    @click="toggleDay(day)"
+                  />
+                </div>
+              </div>
+              <div>
+                <label class="block text-gray-800 font-medium mb-2">Préférences alimentaires :</label>
+                <Multiselect
+                  v-model="user.preferences"
+                  :options="allPreferences"
+                  label="label"
+                  track-by="value"
+                  :multiple="true"
+                />
+              </div>
+              <div>
+                <label class="flex items-center">
+                  <input type="checkbox" v-model="user.notifications" class="mr-2" />
+                  Recevoir des notifications
+                </label>
+              </div>
+              <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded-lg">Enregistrer</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Événements -->
+        <div v-if="activeTab === 'events'" class="bg-white shadow-lg rounded-lg p-6">
+          <h3 class="text-xl font-bold text-gray-800 mb-4">Mes événements</h3>
+          <Swiper :modules="[Navigation, Pagination]" navigation pagination>
+            <SwiperSlide v-for="event in eventsCreated" :key="event.id">
+              <EventCardComponent
             :key="event.id"
             :id="event.id"
             :title="event.title"
             :location="event.location"
             :date="event.date"
-            :image="event.image"
+            :time="event.time"
+            :image="event.image ?? undefined"
           />
-        </div> -->
-
-        <!-- Carrousel des événements -->
-        <div v-if="userEvents.length > 3" class="mt-6">
-          <h4 class="text-lg font-semibold text-gray-800 mb-4">Parcourir les événements</h4>
-          <Swiper
-            :modules="[Navigation, Pagination]"
-            navigation
-            pagination
-            :slides-per-view="1"
-            :space-between="10"
-            :breakpoints="{
-              640: { slidesPerView: 2 },
-              768: { slidesPerView: 3 },
-            }"
-          >
-            <SwiperSlide v-for="event in userEvents" :key="event.id">
+            </SwiperSlide>
+            <SwiperSlide v-for="event in eventsParticipating" :key="event.id">
               <EventCardComponent
-                :id="event.id"
-                :title="event.title"
-                :location="event.location"
-                :date="event.date"
-                :image="event.image"
-              />
+            :key="event.id"
+            :id="event.id"
+            :title="event.title"
+            :location="event.location"
+            :date="event.date"
+            :time="event.time"
+            :image="event.image ?? undefined"
+          />
             </SwiperSlide>
           </Swiper>
         </div>
       </div>
     </main>
-
-    <FooterComponent />
   </div>
 </template>
 
-<style src="./ProfilePage.css" lang="css" scoped></style>
+
+
+
+
+<style src="./ProfilePage.css" scoped></style>`;
+

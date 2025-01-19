@@ -1,10 +1,9 @@
 import axios from 'axios';
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL, 
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+  timeout: 10000, 
+  headers: { 'Content-Type': 'application/json' },
 });
 
 // Ajout du token JWT aux en-têtes si présent dans le localStorage
@@ -27,6 +26,18 @@ apiClient.interceptors.response.use(
     return Promise.reject(error.response?.data || error.message);
   }
 );
+
+
+if (import.meta.env.MODE === 'development') {
+  apiClient.interceptors.request.use((config) => {
+    console.debug('Request:', config);
+    return config;
+  });
+  apiClient.interceptors.response.use((response) => {
+    console.debug('Response:', response);
+    return response;
+  });
+}
 
 
 // Gestion des erreurs
@@ -88,3 +99,41 @@ export async function toggleParticipantStatus(eventId: string, participantData: 
   return response.data;
 }
 
+// Suppression d'un événement
+export async function deleteEvent(eventId: string) {
+  const response = await apiClient.delete(`/events/${eventId}`);
+  return response.data;
+}
+
+
+// Récupération des événements de l'utilisateur
+export async function getUserEvents() {
+  const response = await apiClient.get('/user-events');
+  return response.data;
+}
+
+
+
+
+/// Récupération du profil utilisateur
+export async function getUserProfile() {
+  const response = await apiClient.get('/profile');
+  return response.data;
+}
+
+// Mise à jour du profil utilisateur
+export async function updateUserProfile(updatedData: Record<string, any>) {
+  const response = await apiClient.put('/profile', updatedData);
+  return response.data;
+}
+
+// Mise à jour de l'avatar utilisateur
+export async function updateUserAvatar(file: File) {
+  const formData = new FormData();
+  formData.append('avatar', file);
+
+  const response = await apiClient.post('/profile/avatar', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+}

@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { useRouter } from "vue-router";
+import { logoutFromKeycloak } from "@/auth/keycloak";
 
 defineProps<{
-  isOpen: boolean
-  toggleMenu: () => void
-}>()
+  isOpen: boolean;
+  toggleMenu: () => void;
+}>();
 
-const router = useRouter()
+const router = useRouter();
 
 function logout() {
-  localStorage.removeItem('user') 
-  router.push('/auth') 
+  logoutFromKeycloak();
+  router.push("/auth");
 }
 
 const menuItems = [

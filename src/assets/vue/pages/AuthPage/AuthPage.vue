@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import { createUser, loginWithKeycloak } from '@/auth/keycloak'
+import { createUser, loginUser } from '@/auth/keycloak'
 
 const router = useRouter();
 const notification = ref({
@@ -39,7 +39,7 @@ async function handleKeycloakLoginRegister() {
 
   } else {
     try {
-      const token = await loginWithKeycloak(formData.value.email, formData.value.password);
+      const token = await loginUser(formData.value.email, formData.value.password);
       if (token) {
         console.log("redirect")
         await router.push("/");

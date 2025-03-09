@@ -1,5 +1,5 @@
 import axios from "axios";
-import { signUp } from '@/axios/api.ts'
+import { login, signUp } from '@/axios/api.ts'
 
 async function getClientToken() {
   const data = new URLSearchParams();
@@ -22,29 +22,18 @@ async function getClientToken() {
 }
 
 
-export async function loginWithKeycloak(username: string, password: string) {
+export async function loginUser(mail: string, password: string) {
   try {
-    const response = await axios.post(
-      import.meta.env.VITE_KEYCLOAK_URL,
-      new URLSearchParams({
-        client_id: import.meta.env.VITE_CLIENT_ID,
-        client_secret: import.meta.env.VITE_CLIENT_SECRET,
-        grant_type: "password",
-        username,
-        password,
-      }),
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      }
-    );
-
-    console.log(response.data)
-    localStorage.setItem("token", response.data.access_token);
-    return response.data.access_token;
+    const response = await login({mail: mail, password: password});
+    console.log(response)
+    localStorage.setItem("token", response.token);
+    localStorage.setItem("user", JSON.stringify(response.user));
+    return response.data;
   } catch (error: any) {
-    console.error("Keycloak login failed:", error.response?.data || error.message);
+    if (error.response?.status === 404) {
+      throw new Error("User not registered. Please sign up first.");
+    }
+    console.error("Login failed:", error);
     throw new Error("Échec de la connexion");
   }
 }

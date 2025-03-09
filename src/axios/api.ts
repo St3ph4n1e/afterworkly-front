@@ -28,12 +28,12 @@ apiClient.interceptors.response.use(
 export default apiClient;
 
 // Exemple d'export de fonctions pour des API spécifiques
-export async function signUp(userData: any) {
+export async function signUp(userData: User) {
   const response = await apiClient.post('/auth/signup', userData);
   return response.data;
 }
 
-export async function login(userData: { email: string; password: string }) {
+export async function login(userData: { mail: string; password: string }) {
   const response = await apiClient.post('/auth/login', userData);
   return response.data;
 }

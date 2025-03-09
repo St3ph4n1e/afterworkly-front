@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from "vue-router";
-import { logoutFromKeycloak } from "@/auth/keycloak";
+import { logoutUser } from "@/auth/keycloak";
 
 defineProps<{
   isOpen: boolean;
@@ -10,7 +10,7 @@ defineProps<{
 const router = useRouter();
 
 function logout() {
-  logoutFromKeycloak();
+  logoutUser();
   router.push("/auth");
 }
 

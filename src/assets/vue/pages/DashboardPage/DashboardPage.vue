@@ -15,8 +15,8 @@ onMounted(() => {
   const storedUser = localStorage.getItem('user');
   if (storedUser) {
     const user = JSON.parse(storedUser);
-    if (user.name) {
-      userName.value = user.name; // Utilise le nom s'il existe dans le localStorage
+    if (user.username) {
+      userName.value = user.username; // Utilise le nom s'il existe dans le localStorage
     } else {
       console.warn("Nom d'utilisateur introuvable dans les données sauvegardées.");
       userName.value = "Utilisateur";

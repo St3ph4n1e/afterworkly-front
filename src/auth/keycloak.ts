@@ -28,7 +28,7 @@ export async function loginUser(mail: string, password: string) {
     console.log(response)
     localStorage.setItem("token", response.token);
     localStorage.setItem("user", JSON.stringify(response.user));
-    return response.data;
+    return response;
   } catch (error: any) {
     if (error.response?.status === 404) {
       throw new Error("User not registered. Please sign up first.");
@@ -47,8 +47,9 @@ export async function createUser(userData) {
   }
 }
 
-export function logoutFromKeycloak() {
+export function logoutUser() {
   localStorage.removeItem("token");
-  localStorage.removeItem("refresh_token");
-  localStorage.removeItem("id_token");
+  localStorage.removeItem("user");
+  // localStorage.removeItem("refresh_token");
+  // localStorage.removeItem("id_token");
 }

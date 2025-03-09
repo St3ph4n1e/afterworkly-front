@@ -39,11 +39,11 @@ async function handleKeycloakLoginRegister() {
 
   } else {
     try {
-      const token = await loginUser(formData.value.email, formData.value.password);
-      if (token) {
-        console.log("redirect")
-        await router.push("/");
-      }
+      await loginUser(formData.value.email, formData.value.password).then(
+        _ => {
+          router.push("/");
+        }
+      )
     } catch (error) {
       notification.value = {
         message: "Échec de la connexion avec Keycloak.",
@@ -96,11 +96,6 @@ async function handleKeycloakLoginRegister() {
           {{ isSignUp ? "S'inscrire" : 'Se connecter' }}
         </button>
       </form>
-
-      <button @click="handleKeycloakLoginRegister"
-              class="w-full mt-4 bg-gray-800 text-white py-3 px-4 rounded-lg hover:bg-gray-700 transition">
-        Se connecter avec Keycloak
-      </button>
 
       <p class="text-center mt-6 text-gray-700">
         {{ isSignUp ? 'Déjà un compte ?' : 'Pas encore de compte ?' }}

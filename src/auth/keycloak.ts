@@ -1,4 +1,5 @@
 import axios from "axios";
+import { signUp } from '@/axios/api.ts'
 
 async function getClientToken() {
   const data = new URLSearchParams();
@@ -48,47 +49,14 @@ export async function loginWithKeycloak(username: string, password: string) {
   }
 }
 
-export async function createUser(userData: { email: string; username: string; password: string }) {
-
+export async function createUser(userData) {
   try {
-    // Get token using client credentials flow
-    const token = await getClientToken();
-
-    // Set up the user object for Keycloak
-    const user = {
-      username: userData.username,
-      email: userData.email,
-      firstName: userData.username,
-      lastName: "User", // Default lastName to "User" if not provided
-      enabled: true,
-      credentials: [
-        {
-          type: "password",
-          value: userData.password,
-          temporary: false,
-        },
-      ],
-    };
-
-    // Create the user via the Admin API
-    const response = await axios.post(
-      `http://localhost:8080/admin/realms/${import.meta.env.VITE_REALM_NAME}/users`, // Admin API endpoint to create a user
-      user,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,  // Use the client token for authentication
-        },
-      }
-    );
-
-    console.log("User created successfully:", response.data);
-    return response.data;
-  } catch (error) {
-    console.error("Error creating user:", error);
+    const response = await signUp(userData)
+    console.log("User created:", response.data);
+  } catch (error: any) {
+    console.error("Error signing up:", error);
   }
 }
-
-
 
 export function logoutFromKeycloak() {
   localStorage.removeItem("token");

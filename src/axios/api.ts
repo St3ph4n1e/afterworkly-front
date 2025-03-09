@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { User } from '@/assets/vue/types/types.ts'
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL, // Base URL pour vos API
@@ -27,7 +28,7 @@ apiClient.interceptors.response.use(
 export default apiClient;
 
 // Exemple d'export de fonctions pour des API spécifiques
-export async function signUp(userData: { name: string; email: string; password: string }) {
+export async function signUp(userData: any) {
   const response = await apiClient.post('/auth/signup', userData);
   return response.data;
 }
@@ -43,7 +44,7 @@ export async function login(userData: { email: string; password: string }) {
 export async function createEvent(eventData: FormData) {
   const response = await apiClient.post('/events', eventData, {
     headers: {
-      'Content-Type': 'multipart/form-data', 
+      'Content-Type': 'multipart/form-data',
     },
   })
   return response.data

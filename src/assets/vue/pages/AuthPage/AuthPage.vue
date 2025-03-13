@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import { createUser, loginUser } from '@/auth/keycloak'
+import { createUser, loginUser } from '@/auth/authservice.ts'
 
 const router = useRouter();
 const notification = ref({
@@ -25,7 +25,6 @@ const credentials = ref({
 
 async function handleKeycloakLoginRegister() {
   if (isSignUp.value) {
-    // todo put signup logic and then test out the redirect and then add also back end and then rework front and back to use refresh token
     const token = await createUser({
       email: formData.value.email,
       username: formData.value.name,

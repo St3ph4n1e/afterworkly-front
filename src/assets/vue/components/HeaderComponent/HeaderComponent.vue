@@ -27,8 +27,6 @@ function toggleMenu() {
   </header>
 </template>
 
-<style scoped>
-/* Aucun style supplémentaire nécessaire */
-</style>
+
 
 <style src="./HeaderComponent.css" lang="css" scoped></style>

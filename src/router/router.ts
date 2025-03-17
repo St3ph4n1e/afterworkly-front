@@ -57,7 +57,7 @@ const router = createRouter({
   routes,
 })
 
-// Navigation Guard pour protéger les routes
+//Navigation Guard pour protéger les routes
 router.beforeEach((to, from, next) => {
   const user = localStorage.getItem('user');
   const token = user ? JSON.parse(user).token : null;

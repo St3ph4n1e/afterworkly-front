@@ -16,6 +16,7 @@ const isEditing = ref(false);
 const isAvatarUploading = ref(false);
 const notification = ref<string | null>(null);
 const activeTab = ref('profile');
+const activeEventTab = ref('created');
 const loading = ref(true);
 
 // Données utilisateur avec valeurs par défaut
@@ -46,6 +47,17 @@ onMounted(async () => {
     eventsCreated.value = response.eventsCreated;
     eventsParticipating.value = response.eventsParticipating;
 
+    eventsCreated.value = response.eventsCreated.map((event: any) => ({
+  ...event,
+  id: event._id, // Transforme `_id` en `id`
+}));
+
+eventsParticipating.value = response.eventsParticipating.map((event: any) => ({
+  ...event,
+  id: event._id, 
+}));
+
+
     // Affiche une notification uniquement si les champs critiques sont vides
     if (!user.value.name || !user.value.bio || user.value.availability.length === 0) {
       notification.value = 'Votre profil est incomplet. Pensez à le compléter !';
@@ -56,6 +68,8 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
+
+
 });
 
 // Mise à jour du profil utilisateur
@@ -172,10 +186,10 @@ const userAvatar = computed(() => getImageUrl(user.value.photo));
             <!-- Crayon pour mode édition -->
             <button
               @click="isEditing = !isEditing"
-              class="absolute top-4 right-4 bg-gray-200 p-2 rounded-full hover:bg-gray-300"
+              class="absolute top-4 right-4 bg-transparent p-2 rounded-full"
               title="Modifier le profil"
             >
-              <i class="fas fa-pencil-alt text-gray-600"></i>
+              <i class="fas fa-pencil-alt text-blue-500 hover:text-green-700"></i>
             </button>
 
             <!-- Affichage des données -->
@@ -239,30 +253,65 @@ const userAvatar = computed(() => getImageUrl(user.value.photo));
         </div>
 
         <!-- Événements -->
+        <!-- Événements -->
         <div v-if="activeTab === 'events'" class="bg-white shadow-lg rounded-lg p-6">
-          <h3 class="text-xl font-bold text-gray-800 mb-4">Mes événements</h3>
-          <Swiper :modules="[Navigation, Pagination]" navigation pagination>
+          <div class="flex justify-center space-x-4 mb-6">
+            <button
+              @click="activeEventTab = 'created'"
+              :class="[
+                'px-6 py-2 font-medium rounded-t-lg transition',
+                activeEventTab === 'created' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300',
+              ]"
+            >
+              Événements créés
+            </button>
+            <button
+              @click="activeEventTab = 'participating'"
+              :class="[
+                'px-6 py-2 font-medium rounded-t-lg transition',
+                activeEventTab === 'participating' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300',
+              ]"
+            >
+              Événements auxquels je participe
+            </button>
+          </div>
+
+          <!-- Liste des événements -->
+          <Swiper
+            v-if="activeEventTab === 'created'"
+            :modules="[Navigation, Pagination]"
+            navigation
+            pagination
+          >
             <SwiperSlide v-for="event in eventsCreated" :key="event.id">
               <EventCardComponent
-            :key="event.id"
-            :id="event.id"
-            :title="event.title"
-            :location="event.location"
-            :date="event.date"
-            :time="event.time"
-            :image="event.image ?? undefined"
-          />
+                :key="event.id"
+                :id="event.id"
+                :title="event.title"
+                :location="event.location"
+                :date="event.date"
+                :time="event.time"
+                :image="event.image ?? undefined"
+              />
             </SwiperSlide>
+          </Swiper>
+
+          <Swiper
+            v-if="activeEventTab === 'participating'"
+            :modules="[Navigation, Pagination]"
+            navigation
+            pagination
+          >
             <SwiperSlide v-for="event in eventsParticipating" :key="event.id">
               <EventCardComponent
-            :key="event.id"
-            :id="event.id"
-            :title="event.title"
-            :location="event.location"
-            :date="event.date"
-            :time="event.time"
-            :image="event.image ?? undefined"
-          />
+                :key="event.id"
+                :id="event.id"
+                :title="event.title"
+                :location="event.location"
+                :date="event.date"
+                :time="event.time"
+                :image="event.image ?? undefined"
+              />
             </SwiperSlide>
           </Swiper>
         </div>

@@ -46,6 +46,7 @@ const myEvents = computed(() =>
   events.value.filter((event) => event.creator === currentUserId.value)
 );
 
+
 // Fonction pour changer l'onglet actif
 function setActiveTab(tab: string) {
   activeTab.value = tab;

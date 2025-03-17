@@ -3,10 +3,10 @@
   max-width: 800px;
 }
 
-.shadow-lg {
+/* .shadow-lg {
   min-height: 400px;
   text-align: center;
-}
+} */
 
 .h-64 {
   height: 16rem;
@@ -40,13 +40,13 @@
 }
 
 
-.notification-component {
-  height: auto;
-  max-height: 100px !important;
-  overflow: hidden !important;
-  padding: 10px 20px;
-  line-height: 1.5;
-  text-align: center;
-}
 
+
+.event-notification {
+  height: auto ;
+  line-height: 50px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 

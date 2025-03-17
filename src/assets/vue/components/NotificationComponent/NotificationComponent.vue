@@ -44,12 +44,11 @@ if (typeof props.duration === 'number' && props.duration > 0) {
       :type === 'warning'
       ? 'bg-yellow-100 text-yellow-800'
           : 'bg-blue-100 text-blue-800',
-    ]"
-    style="z-index: 1000"
+    ]" 
   >
     <span>{{ message }}</span>
     <button @click="closeNotification" class="ml-4 text-xl font-bold">&times;</button>
   </div>
 </template>
 
-<style src="./NotificationComponent.css" scoped></style>
+<style src="./NotificationComponent.css" lang="css" scoped></style>

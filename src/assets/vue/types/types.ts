@@ -6,6 +6,9 @@ export interface EventParticipant {
   avatar?: string | null; // Avatar optionnel
 }
 
+
+
+
 // Interface pour un événement
 export interface Event {
   id: string; // Identifiant unique de l'événement (string pour MongoDB)

@@ -53,14 +53,30 @@ onMounted(async () => {
 
     // Initialisation de l'état de participation
     attendanceConfirmed.value = event.value?.participants.some(
-      (participant) => participant.userId === currentUserId.value && participant.status === 'Confirmé'
-    ) ?? false;
+  (participant) =>
+    participant.userId === currentUserId.value && participant.status === 'Confirmé'
+) ?? false;
+
+
+    
   } catch (error: any) {
     console.error("Erreur lors de la récupération de l'événement :", error);
     errorMessage.value = "Impossible de charger l'événement.";
   } finally {
     isLoading.value = false;
   }
+
+
+  console.log("Participants :", event.value?.participants);
+console.log("Utilisateur connecté :", currentUserId.value);
+console.log(
+  "Participation confirmée :",
+  event.value?.participants.some(
+    (participant) =>
+      participant.userId === currentUserId.value && participant.status === 'Confirmé'
+  )
+);
+
 });
 
 // Computed pour le style du thème
@@ -75,7 +91,7 @@ const themeStyle = computed(() => {
 
 // Computed pour l'image de l'événement
 const eventImage = computed(() => {
-  return getImageUrl(event.value?.image || '/logo.png');
+  return getImageUrl(event.value?.image || 'logo.png');
 });
 
 // Fonction pour afficher la notification
@@ -94,6 +110,8 @@ async function toggleParticipation() {
       userId: currentUserId.value,
       status: newStatus,
     });
+
+    
 
     // Mettre à jour l'état local après succès
     event.value.participants = response.updatedEvent.participants;
@@ -256,7 +274,7 @@ async function sendInviteEmail(email: string) {
       </ModalComponent>
 
       <NotificationComponent
-      class="notification-component" 
+        class="event-notification" 
         v-if="notification.visible"
         :message="notification.message"
         :type="notification.type"

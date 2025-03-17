@@ -1,8 +1,17 @@
 .notification-component {
     height: auto;
-    max-height: 100px; /* Limite la hauteur maximale */
-    overflow: hidden; /* Empêche le contenu de déborder */
-    padding: 10px 20px; /* Ajoute un espace cohérent */
-    line-height: 1.5; /* Améliore la lisibilité */
-    text-align: center; /* Centrage du texte */
+    overflow: hidden;
+    padding: 10px 20px; 
+    line-height: 1.5; 
+    text-align: center; 
+    z-index: 1000;
+  }
+
+
+  p {
+    margin: 0;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }

@@ -6,28 +6,70 @@ const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Ajout du token JWT aux en-têtes si présent dans le localStorage
+// Ajout du token JWT aux en-têtes des requêtes si présent dans localStorage
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  const storedUser = localStorage.getItem('user');
+  if (storedUser) {
+    try {
+      const parsedUser = JSON.parse(storedUser); // Convertit la chaîne JSON en objet
+      if (parsedUser.token) {
+        config.headers.Authorization = `Bearer ${parsedUser.token}`;
+      }
+    } catch (error) {
+      console.error('Erreur de parsing du token depuis localStorage:', error);
+    }
+  } else {
+    console.warn('Aucun utilisateur connecté trouvé dans localStorage.');
   }
   return config;
 });
 
 
+
+// Gestion centralisée des réponses
 apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token'); // Supprime le token si non valide
-      window.location.href = '/auth'; // Redirige l'utilisateur vers le login
+  (response) => response, // Passe la réponse si elle est valide
+  async (error) => {
+    // Vérifier si l'erreur est due à un JWT expiré
+    if (error.response?.status === 401 && error.response.data.details === 'jwt expired') {
+      try {
+        const storedUser = localStorage.getItem('user');
+        if (!storedUser) {
+          throw new Error('Utilisateur non connecté.');
+        }
+
+        const parsedUser = JSON.parse(storedUser);
+
+        // Appeler la route /auth/refresh pour obtenir un nouveau token
+        const refreshResponse = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/refresh`, null, {
+          headers: { Authorization: `Bearer ${parsedUser.token}` },
+        });
+
+        const newToken = refreshResponse.data.token;
+
+        // Mettre à jour le token dans localStorage
+        parsedUser.token = newToken;
+        localStorage.setItem('user', JSON.stringify(parsedUser));
+
+        // Réessayer la requête initiale avec le nouveau token
+        error.config.headers.Authorization = `Bearer ${newToken}`;
+        return apiClient.request(error.config);
+      } catch (refreshError) {
+        console.error('Erreur lors du rafraîchissement du token :', refreshError.message);
+
+        // Si le refresh échoue, déconnecter l'utilisateur
+        localStorage.removeItem('user');
+        window.location.href = '/auth';
+      }
     }
-    return Promise.reject(error.response?.data || error.message);
+
+    // Si ce n'est pas une erreur liée au JWT, rejeter l'erreur
+    return Promise.reject(error);
   }
 );
 
 
+// Debugging en mode développement
 if (import.meta.env.MODE === 'development') {
   apiClient.interceptors.request.use((config) => {
     console.debug('Request:', config);
@@ -39,53 +81,42 @@ if (import.meta.env.MODE === 'development') {
   });
 }
 
-
-// Gestion des erreurs
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    return Promise.reject(error.response?.data || error.message);
-  }
-);
-
 export default apiClient;
 
-// Exemple d'export de fonctions pour des API spécifiques
+// Méthodes spécifiques aux API
+
+// Authentification
 export async function signUp(userData: { name: string; email: string; password: string }) {
-  const response = await apiClient.post('/auth/signup', userData);
+  const response = await apiClient.post('/signup', userData);
   return response.data;
 }
 
 export async function login(userData: { email: string; password: string }) {
-  const response = await apiClient.post('/auth/login', userData);
+  const response = await apiClient.post('/login', userData);
+  console.debug('Réponse après connexion :', response.data);
+  localStorage.setItem('token', response.data.token); // Stocke le token
   return response.data;
 }
-
-
 
 // Événements
 export async function createEvent(eventData: FormData) {
   const response = await apiClient.post('/events', eventData, {
     headers: {
-      'Content-Type': 'multipart/form-data', 
+      'Content-Type': 'multipart/form-data',
     },
-  })
-  return response.data
+  });
+  return response.data;
 }
-
-
 
 export async function getEvents(params?: { page?: number; limit?: number }) {
   const response = await apiClient.get('/events', { params });
   return response.data;
 }
 
-
 export async function getEventById(eventId: string) {
   const response = await apiClient.get(`/events/${eventId}`);
-  return response.data ;
+  return response.data;
 }
-
 
 export async function updateEvent(eventId: string, updatedData: FormData | Record<string, any>) {
   const response = await apiClient.put(`/events/${eventId}`, updatedData, {
@@ -99,35 +130,22 @@ export async function toggleParticipantStatus(eventId: string, participantData: 
   return response.data;
 }
 
-// Suppression d'un événement
 export async function deleteEvent(eventId: string) {
   const response = await apiClient.delete(`/events/${eventId}`);
   return response.data;
 }
 
-
-// Récupération des événements de l'utilisateur
-export async function getUserEvents() {
-  const response = await apiClient.get('/user-events');
-  return response.data;
-}
-
-
-
-
-/// Récupération du profil utilisateur
+// Profil utilisateur
 export async function getUserProfile() {
   const response = await apiClient.get('/profile');
   return response.data;
 }
 
-// Mise à jour du profil utilisateur
 export async function updateUserProfile(updatedData: Record<string, any>) {
   const response = await apiClient.put('/profile', updatedData);
   return response.data;
 }
 
-// Mise à jour de l'avatar utilisateur
 export async function updateUserAvatar(file: File) {
   const formData = new FormData();
   formData.append('avatar', file);

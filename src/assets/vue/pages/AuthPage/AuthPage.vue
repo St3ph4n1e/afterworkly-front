@@ -12,11 +12,21 @@ const formData = ref({
   password: '',
 })
 
-const notification = ref({
+// const notification = ref({
+//   message: '',
+//   type: '', // 'error' ou 'success'
+//   isVisible: false,
+// })
+
+const notification = ref<{
+  message: string;
+  type: 'success' | 'error' | 'info' | 'warning';
+  isVisible: boolean;
+}>({
   message: '',
-  type: '', // 'error' ou 'success'
+  type: 'info',
   isVisible: false,
-})
+});
 
 async function handleSubmit() {
   try {
@@ -24,7 +34,7 @@ async function handleSubmit() {
       // Inscription
       await signUp(formData.value);
       notification.value = {
-        message: 'Inscription réussie ! Vous pouvez maintenant vous connecter.',
+        message: 'Inscription réussie ! Vous pouvez maintenant vous connecter.',
         type: 'success',
         isVisible: true,
       };

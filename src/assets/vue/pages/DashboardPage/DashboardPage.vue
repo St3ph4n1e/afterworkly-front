@@ -57,9 +57,9 @@ function createEvent() {
       </h1>
 
       <!-- Notifications -->
-      <NotificationComponent
+      <!--<NotificationComponent
         message="📢 Annulation d'un événement : Tous les participants ont été notifiés."
-      />
+      />-->
 
       <!-- Liste des événements et carte d'action -->
       <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6 items-start">

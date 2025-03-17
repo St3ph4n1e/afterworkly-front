@@ -52,13 +52,16 @@ async function handleSubmit() {
   });
 
   try {
-    await createEvent(eventData);
-    notification.value = {
-      message: 'Événement créé avec succès !',
-      type: 'success',
-      isVisible: true,
-    };
-    resetForm();
+    await createEvent(eventData).then(
+      _ => {
+        notification.value = {
+          message: 'Événement créé avec succès !',
+          type: 'success',
+          isVisible: true,
+        };
+        resetForm();
+      }
+    );
   } catch (error: any) {
     notification.value = {
       message: error.message || 'Une erreur est survenue.',

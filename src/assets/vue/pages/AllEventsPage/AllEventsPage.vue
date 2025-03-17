@@ -1,7 +1,17 @@
 <script setup lang="ts">
-import { mockEvents } from '../../mocks/events'
+import { getEvents } from '@/axios/api.ts'
+import { onMounted, ref } from 'vue'
 
-const events = mockEvents
+const events = ref([]);
+
+onMounted(async () => {
+  try {
+    events.value = await getEvents();
+  } catch (error) {
+    console.error("Error fetching events:", error);
+  }
+});
+
 </script>
 
 <template>
@@ -17,7 +27,7 @@ const events = mockEvents
           :title="event.title"
           :location="event.location"
           :date="event.date"
-          :image?="event.image"
+          :image="event.image ?? ''"
         />
       </section>
     </div>

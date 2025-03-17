@@ -1,38 +1,91 @@
 import axios from 'axios';
+import { logoutUser } from '@/auth/authservice.ts'
+import type { User } from '@/assets/vue/types/types.ts'
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL, // Base URL pour vos API
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+  headers: { 'Content-Type': 'application/json' },
 });
 
-// Ajout du token JWT aux en-têtes si présent dans le localStorage
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+// Function to refresh the access token
+async function refreshAccessToken() {
+  const refreshToken = localStorage.getItem("refresh_token");
+  if (!refreshToken) {
+    console.error("No refresh token available. Logging out.");
+    logoutUser();
+    return null;
+  }
+
+  try {
+    const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/refresh`, {
+      refresh_token: refreshToken,
+    });
+
+    // Store new tokens
+    sessionStorage.setItem("access_token", response.data.access_token);
+    localStorage.setItem("refresh_token", response.data.refresh_token);
+
+    return response.data.access_token;
+  } catch (error) {
+    console.error("Token refresh failed, logging out user.", error);
+    logoutUser();
+    return null;
+  }
+}
+
+// Axios request interceptor to attach the access token
+apiClient.interceptors.request.use(async (config) => {
+  let token = sessionStorage.getItem("access_token");
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-// Gestion des erreurs
+
+// Axios response interceptor to handle token expiration
 apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
+  (response) => {
+    return response
+  },
+  async (error) => {
+
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      console.log(error.response?.data?.message )
+      const errorMsg = error.response?.data?.message || "" // error.response?.data?.error_description || "";
+
+      // todo axe d'amelioration : peut-être faire le refresh direct depuis le back si token expired
+      //  plutot que de renvoyer une requête refresh depuis fornt
+      if (errorMsg.includes("Invalid or expired token") || errorMsg.includes("expired token")) {
+        console.warn("Access token expired. Refreshing token...");
+        const newAccessToken = await refreshAccessToken();
+        if (newAccessToken) {
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          return apiClient.request(originalRequest); // Retry the failed request
+        }
+      } else {
+        console.warn("Unauthorized: Not an expired token issue.");
+      }
+    }
+
     return Promise.reject(error.response?.data || error.message);
   }
 );
 
 export default apiClient;
 
+
+
 // Exemple d'export de fonctions pour des API spécifiques
-export async function signUp(userData: { name: string; email: string; password: string }) {
+export async function signUp(userData: User) {
   const response = await apiClient.post('/auth/signup', userData);
   return response.data;
 }
 
-export async function login(userData: { email: string; password: string }) {
+export async function login(userData: { mail: string; password: string }) {
   const response = await apiClient.post('/auth/login', userData);
   return response.data;
 }
@@ -43,13 +96,11 @@ export async function login(userData: { email: string; password: string }) {
 export async function createEvent(eventData: FormData) {
   const response = await apiClient.post('/events', eventData, {
     headers: {
-      'Content-Type': 'multipart/form-data', 
+      'Content-Type': 'multipart/form-data',
     },
   })
   return response.data
 }
-
-
 
 export async function getEvents() {
   const response = await apiClient.get('/events')

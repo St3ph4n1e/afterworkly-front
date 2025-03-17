@@ -1,16 +1,13 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { logoutUser } from "@/auth/authservice.ts";
 
 defineProps<{
-  isOpen: boolean
-  toggleMenu: () => void
-}>()
-
-const router = useRouter()
+  isOpen: boolean;
+  toggleMenu: () => void;
+}>();
 
 function logout() {
-  localStorage.removeItem('user') 
-  router.push('/auth') 
+  logoutUser();
 }
 
 const menuItems = [

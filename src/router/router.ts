@@ -55,7 +55,7 @@ const router = createRouter({
 
 // Navigation Guard pour protéger les routes
 router.beforeEach((to, from, next) => {
-  const user = localStorage.getItem('user')
+  const user = sessionStorage.getItem('user')
   if (to.meta.requiresAuth && !user) {
     next('/auth')
   } else {

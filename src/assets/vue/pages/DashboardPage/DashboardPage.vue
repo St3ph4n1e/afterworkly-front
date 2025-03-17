@@ -1,38 +1,43 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { mockEvents } from '../../mocks/events'
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { mockEvents } from '../../mocks/events';
 
-const router = useRouter()
-const userName = ref('')
-const isAnimationActive = ref(true) // Contrôle l'état de l'animation
+const router = useRouter();
+const userName = ref('');
+const isAnimationActive = ref(true); // Contrôle l'état de l'animation
 
 // Filtre pour les 3 derniers événements à venir
-const upcomingEvents = computed(() => mockEvents.slice(0, 3))
+const upcomingEvents = computed(() => mockEvents.slice(0, 3));
 
 // Vérifie si l'utilisateur est connecté
 onMounted(() => {
-  const storedUser = localStorage.getItem('user')
+  const storedUser = localStorage.getItem('user');
   if (storedUser) {
-    const user = JSON.parse(storedUser)
-    userName.value = user.name
+    const user = JSON.parse(storedUser);
+    if (user.name) {
+      userName.value = user.name; // Utilise le nom s'il existe dans le localStorage
+    } else {
+      console.warn("Nom d'utilisateur introuvable dans les données sauvegardées.");
+      userName.value = "Utilisateur";
+    }
   } else {
-    router.push('/auth')
+    router.push('/auth');
   }
 
   // Arrête l'animation après 5 secondes
   setTimeout(() => {
-    isAnimationActive.value = false
-  }, 5000)
-})
+    isAnimationActive.value = false;
+  }, 5000);
+});
 
 // Navigation vers les pages
 function viewAllEvents() {
-  router.push('/all-events')
+  router.push('/all-events');
 }
 
 function createEvent() {
-  router.push('/create-event')
+  router.push('/create-event');
 }
 </script>
 

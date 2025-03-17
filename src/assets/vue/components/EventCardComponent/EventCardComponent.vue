@@ -7,16 +7,17 @@ const props = defineProps<{
   title: string
   location: string
   date: string
-  image?: string // Image de l'événement, facultative
+  image?: string 
 }>()
 
 const router = useRouter()
 
-// Computed pour retourner l'image ou le logo par défaut
+// Computed 
 const eventImage = computed(() => {
   return props.image ? new URL(props.image, import.meta.url).href : './logo.png'
 })
 
+// Methods
 function viewEvent(eventId: number) {
   router.push(`/event-detail/${eventId}`)
 }

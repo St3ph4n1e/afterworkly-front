@@ -17,7 +17,7 @@ const events = mockEvents
           :title="event.title"
           :location="event.location"
           :date="event.date"
-          :image="event.image"
+          :image?="event.image"
         />
       </section>
     </div>

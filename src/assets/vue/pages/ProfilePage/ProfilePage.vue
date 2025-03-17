@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { mockEvents } from '../../mocks/events'
 import Multiselect from 'vue-multiselect'
 import { Swiper, SwiperSlide } from 'swiper/vue'
-import { Navigation, Pagination } from 'swiper/modules' // Import des modules
+import { Navigation, Pagination } from 'swiper/modules'
 import 'vue-multiselect/dist/vue-multiselect.min.css'
 import 'swiper/css'
 import 'swiper/css/navigation'
@@ -169,7 +169,7 @@ const userEvents = computed(() =>
           />
         </div> -->
 
-        <!-- Carrousel des événements si plus de 3 -->
+        <!-- Carrousel des événements -->
         <div v-if="userEvents.length > 3" class="mt-6">
           <h4 class="text-lg font-semibold text-gray-800 mb-4">Parcourir les événements</h4>
           <Swiper

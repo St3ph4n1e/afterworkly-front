@@ -1,13 +1,9 @@
 <script setup lang="ts">
-// Définir une interface pour les participants
-interface Participant {
-  name: string
-  status: 'Confirmé' | 'Indécis'
-}
+import type { EventParticipant } from '@/assets/vue/types/types'
 
 // Définir les props avec l'interface
 defineProps<{
-  participants: Participant[]
+  participants: EventParticipant[]
 }>()
 </script>
 

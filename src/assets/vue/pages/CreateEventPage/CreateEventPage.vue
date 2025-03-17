@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import NotificationComponent from '../../components/NotificationComponent/NotificationComponent.vue'
+import { ref } from 'vue';
+import { createEvent } from '@/axios/api';
 
 const formData = ref({
   eventName: '',
@@ -9,73 +9,76 @@ const formData = ref({
   eventLocation: '',
   eventImage: null as File | null,
   eventColor: '#ffffff', // Couleur par défaut
-})
+});
 
-const previewImage = ref<string | null>(null)
+const previewImage = ref<string | null>(null);
 const notification = ref({
   message: '',
   type: '', // 'success' ou 'error'
   isVisible: false,
-})
+});
 
 function handleFileUpload(event: Event) {
-  const target = event.target as HTMLInputElement
-  const file = target.files?.[0] || null
-  formData.value.eventImage = file
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0] || null;
+  formData.value.eventImage = file;
 
   if (file) {
-    const reader = new FileReader()
+    const reader = new FileReader();
     reader.onload = () => {
-      previewImage.value = reader.result as string
-    }
-    reader.readAsDataURL(file)
+      previewImage.value = reader.result as string;
+    };
+    reader.readAsDataURL(file);
   } else {
-    previewImage.value = null
+    previewImage.value = null;
   }
 }
 
-function handleSubmit() {
-  if (
-    formData.value.eventName &&
-    formData.value.eventDate &&
-    formData.value.eventLocation &&
-    formData.value.eventImage
-  ) {
-    console.log('Événement créé :', formData.value)
+async function handleSubmit() {
+  const eventData = new FormData();
+  eventData.append('title', formData.value.eventName);
+  eventData.append('date', formData.value.eventDate);
+  eventData.append('time', formData.value.eventTime);
+  eventData.append('location', formData.value.eventLocation);
+  eventData.append('color', formData.value.eventColor);
 
+  if (formData.value.eventImage) {
+    eventData.append('image', formData.value.eventImage); // Ajoute uniquement si une image est sélectionnée
+  }
+
+  console.log('FormData Content:');
+  eventData.forEach((value, key) => {
+    console.log(`${key}:`, value);
+  });
+
+  try {
+    await createEvent(eventData);
     notification.value = {
       message: 'Événement créé avec succès !',
       type: 'success',
       isVisible: true,
-    }
-
-    // Réinitialisation des données
-    formData.value = {
-      eventName: '',
-      eventDate: '',
-      eventTime: '',
-      eventLocation: '',
-      eventImage: null,
-      eventColor: '#ffffff',
-    }
-    previewImage.value = null
-
-    // Masquer la notification après 3 secondes
-    setTimeout(() => {
-      notification.value.isVisible = false
-    }, 3000)
-  } else {
+    };
+    resetForm();
+  } catch (error: any) {
     notification.value = {
-      message: 'Veuillez remplir tous les champs obligatoires.',
+      message: error.message || 'Une erreur est survenue.',
       type: 'error',
       isVisible: true,
-    }
-
-    // Masquer la notification après 3 secondes
-    setTimeout(() => {
-      notification.value.isVisible = false
-    }, 3000)
+    };
   }
+}
+
+
+function resetForm() {
+  formData.value = {
+    eventName: '',
+    eventDate: '',
+    eventTime: '',
+    eventLocation: '',
+    eventImage: null,
+    eventColor: '#ffffff',
+  };
+  previewImage.value = null;
 }
 </script>
 

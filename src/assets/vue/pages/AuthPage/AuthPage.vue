@@ -1,48 +1,53 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { mockUsers } from '../../mocks/users'
+import { signUp, login } from '@/axios/api'
 
 const router = useRouter()
 const isSignUp = ref(false)
 
 const formData = ref({
-  name: '', // Nom d'utilisateur pour l'inscription
+  name: '',
   email: '',
   password: '',
 })
 
 const notification = ref({
   message: '',
-  type: '', // 'error' uniquement
+  type: '', // 'error' ou 'success'
   isVisible: false,
 })
 
-function handleSubmit() {
-  if (!isSignUp.value) {
-    const user = mockUsers.find(
-      (u) => u.email === formData.value.email && u.password === formData.value.password,
-    )
-    if (user) {
-      localStorage.setItem('user', JSON.stringify(user))
-      router.push('/') // Redirige immédiatement
-    } else {
+async function handleSubmit() {
+  try {
+    if (isSignUp.value) {
+      // Inscription
+      await signUp(formData.value);
       notification.value = {
-        message: 'Email ou mot de passe incorrect !',
-        type: 'error',
+        message: 'Inscription réussie ! Vous pouvez maintenant vous connecter.',
+        type: 'success',
         isVisible: true,
-      }
+      };
+      isSignUp.value = false; // Passe en mode connexion
+    } else {
+      // Connexion
+      const user = await login(formData.value);
+      localStorage.setItem('token', user.token); // Stocke le token JWT
+      localStorage.setItem('user', JSON.stringify(user)); // Stocke les informations utilisateur
+      router.push('/'); // Redirection après connexion
     }
-  } else {
+  } catch (error: any) {
     notification.value = {
-      message: 'Inscription réussie ! Vous pouvez maintenant vous connecter.',
-      type: 'success',
+      message: error.message || 'Une erreur est survenue.',
+      type: 'error',
       isVisible: true,
-    }
-    isSignUp.value = false // Passe en mode connexion après une inscription
+    };
+  } finally {
+    formData.value = { name: '', email: '', password: '' };
+    setTimeout(() => (notification.value.isVisible = false), 3000);
   }
-  formData.value = { name: '', email: '', password: '' } // Réinitialise le formulaire
 }
+
 
 onMounted(() => {
   const storedUser = localStorage.getItem('user')
@@ -51,6 +56,8 @@ onMounted(() => {
   }
 })
 </script>
+
+
 
 <template>
   <div
@@ -128,7 +135,7 @@ onMounted(() => {
 
       <!-- Toggle entre Inscription et Connexion -->
       <p class="text-center mt-6 text-gray-700">
-        {{ isSignUp ? 'Déjà un compte ?' : 'Pas encore de compte ?' }}
+        {{ isSignUp ? 'Déjà un compte ?' : 'Pas encore de compte ?' }}
         <button @click="isSignUp = !isSignUp" class="text-purple-600 font-semibold hover:underline">
           {{ isSignUp ? 'Se connecter' : 'Créer un compte' }}
         </button>

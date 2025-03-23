@@ -161,7 +161,7 @@ export async function updateUserAvatar(file: File) {
   const formData = new FormData();
   formData.append('avatar', file);
 
-  const response = await apiClient.post('/profile/avatar', formData, {
+  const response = await apiClient.post('/auth/profile/avatar', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return response.data;

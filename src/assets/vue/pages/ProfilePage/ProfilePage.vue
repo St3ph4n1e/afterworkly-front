@@ -99,9 +99,12 @@ async function handleAvatarUpload(event: Event & { target: HTMLInputElement }) {
   if (file) {
     isAvatarUploading.value = true;
     try {
-      const response = await updateUserAvatar(file);
-      user.value.photo = response.photo;
-      notification.value = 'Avatar mis à jour avec succès !';
+      await updateUserAvatar(file).then(
+        response => {
+          user.value.photo = response.photo;
+          notification.value = 'Avatar mis à jour avec succès !';
+        }
+      )
     } catch (error) {
       console.error('Erreur lors de l\'upload de l\'avatar :', error);
       notification.value = 'Erreur lors de l\'upload. Veuillez réessayer.';

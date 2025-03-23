@@ -17,17 +17,16 @@ function toggleMenu() {
     </router-link>
 
     <!-- Bouton pour mobile uniquement -->
-    <button @click="toggleMenu" class="text-lg">
-      <i class="fas fa-bars"></i>
-    </button>
+    <button @click="toggleMenu" class="text-lg" :aria-expanded="isMenuOpen" aria-label="Menu">
+  <i class="fas fa-bars"></i>
+</button>
+
 
     <!-- Menu -->
     <MenuComponent :isOpen="isMenuOpen" :toggleMenu="toggleMenu" />
   </header>
 </template>
 
-<style scoped>
-/* Aucun style supplémentaire nécessaire */
-</style>
+
 
 <style src="./HeaderComponent.css" lang="css" scoped></style>

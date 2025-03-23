@@ -1,0 +1,17 @@
+.notification-component {
+    height: auto;
+    overflow: hidden;
+    padding: 10px 20px; 
+    line-height: 1.5; 
+    text-align: center; 
+    z-index: 1000;
+  }
+
+
+  p {
+    margin: 0;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }

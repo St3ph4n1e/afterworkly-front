@@ -3,10 +3,10 @@
   max-width: 800px;
 }
 
-.shadow-lg {
+/* .shadow-lg {
   min-height: 400px;
   text-align: center;
-}
+} */
 
 .h-64 {
   height: 16rem;
@@ -38,3 +38,15 @@
   font-weight: bold;
   transform: scale(1.05);
 }
+
+
+
+
+.event-notification {
+  height: auto ;
+  line-height: 50px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+

@@ -1,10 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import DashboardPage from '@/assets/vue/pages/DashboardPage/DashboardPage.vue'
-import CreateEventPage from '@/assets/vue/pages/CreateEventPage/CreateEventPage.vue'
-import ProfilePage from '@/assets/vue/pages/ProfilePage/ProfilePage.vue'
-import AuthPage from '@/assets/vue/pages/AuthPage/AuthPage.vue'
-import EventDetailPage from '@/assets/vue/pages/EventDetailPage/EventDetailPage.vue'
-import AllEventsPage from '@/assets/vue/pages/AllEventsPage/AllEventsPage.vue'
+
+
+const DashboardPage = () => import('@/assets/vue/pages/DashboardPage/DashboardPage.vue');
+const CreateEventPage = () => import('@/assets/vue/pages/CreateEventPage/CreateEventPage.vue');
+const ProfilePage = () => import('@/assets/vue/pages/ProfilePage/ProfilePage.vue');
+const AuthPage = () => import('@/assets/vue/pages/AuthPage/AuthPage.vue');
+const EventDetailPage = () => import('@/assets/vue/pages/EventDetailPage/EventDetailPage.vue');
+const AllEventsPage = () => import('@/assets/vue/pages/AllEventsPage/AllEventsPage.vue');
+
 
 const routes = [
   {
@@ -45,6 +48,7 @@ const routes = [
   {
     path: '/:pathMatch(.*)*',
     component: () => import('@/assets/vue/pages/NotFoundPage/NotFoundPage.vue'),
+    meta: { requiresAuth: true },
   },
 ]
 
@@ -53,14 +57,15 @@ const router = createRouter({
   routes,
 })
 
-// Navigation Guard pour protéger les routes
+//Navigation Guard pour protéger les routes
 router.beforeEach((to, from, next) => {
   const user = sessionStorage.getItem('user')
   if (to.meta.requiresAuth && !user) {
     next('/auth')
   } else {
-    next()
+    next();
   }
-})
+});
+
 
 export default router

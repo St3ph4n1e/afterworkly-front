@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { createEvent } from '@/axios/api';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
 
 const formData = ref({
   eventName: '',
@@ -8,15 +11,24 @@ const formData = ref({
   eventTime: '',
   eventLocation: '',
   eventImage: null as File | null,
-  eventColor: '#ffffff', // Couleur par défaut
+  eventColor: '#ffffff',
+  isPublic: true, // Nouveau champ pour définir si l'événement est public ou privé
 });
 
 const previewImage = ref<string | null>(null);
-const notification = ref({
+
+const notification = ref<{
+  message: string;
+  type: 'success' | 'error' | 'info';
+  isVisible: boolean;
+}>({
   message: '',
-  type: '', // 'success' ou 'error'
+  type: 'info',
   isVisible: false,
 });
+
+const showModal = ref(false);
+const createdEventId = ref<string | null>(null);
 
 function handleFileUpload(event: Event) {
   const target = event.target as HTMLInputElement;
@@ -41,27 +53,22 @@ async function handleSubmit() {
   eventData.append('time', formData.value.eventTime);
   eventData.append('location', formData.value.eventLocation);
   eventData.append('color', formData.value.eventColor);
+  eventData.append('isPublic', formData.value.isPublic.toString());
 
   if (formData.value.eventImage) {
-    eventData.append('image', formData.value.eventImage); // Ajoute uniquement si une image est sélectionnée
+    eventData.append('image', formData.value.eventImage);
   }
 
-  console.log('FormData Content:');
-  eventData.forEach((value, key) => {
-    console.log(`${key}:`, value);
-  });
-
   try {
-    await createEvent(eventData).then(
-      _ => {
-        notification.value = {
-          message: 'Événement créé avec succès !',
-          type: 'success',
-          isVisible: true,
-        };
-        resetForm();
-      }
-    );
+    const response = await createEvent(eventData);
+    createdEventId.value = response.event._id;
+    notification.value = {
+      message: 'Événement créé avec succès !',
+      type: 'success',
+      isVisible: true,
+    };
+    resetForm();
+    showModal.value = true;
   } catch (error: any) {
     notification.value = {
       message: error.message || 'Une erreur est survenue.',
@@ -71,7 +78,6 @@ async function handleSubmit() {
   }
 }
 
-
 function resetForm() {
   formData.value = {
     eventName: '',
@@ -80,8 +86,20 @@ function resetForm() {
     eventLocation: '',
     eventImage: null,
     eventColor: '#ffffff',
+    isPublic: true,
   };
   previewImage.value = null;
+}
+
+function viewEventDetails() {
+  if (createdEventId.value) {
+    router.push(`/event-detail/${createdEventId.value}`);
+  }
+  showModal.value = false;
+}
+
+function createAnotherEvent() {
+  showModal.value = false;
 }
 </script>
 
@@ -96,49 +114,55 @@ function resetForm() {
         :type="notification.type"
       />
 
-      <form @submit.prevent="handleSubmit" class="space-y-6 bg-white p-6 shadow-lg rounded-lg">
+      <!-- Formulaire -->
+      <form @submit.prevent="handleSubmit" class="space-y-6 bg-white p-8 shadow-lg rounded-lg">
+        <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">Créer un nouvel événement</h2>
         <div>
-          <label for="eventName" class="block font-medium">Nom de l'événement</label>
+          <label for="eventName" class="block font-medium text-gray-700">Nom de l'événement</label>
           <input
             v-model="formData.eventName"
             id="eventName"
             type="text"
-            class="w-full border rounded p-2"
+            placeholder="Entrez le nom de l'événement"
+            class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
           />
         </div>
-        <div>
-          <label for="eventDate" class="block font-medium">Date</label>
-          <input
-            v-model="formData.eventDate"
-            id="eventDate"
-            type="date"
-            class="w-full border rounded p-2"
-          />
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="eventDate" class="block font-medium text-gray-700">Date</label>
+            <input
+              v-model="formData.eventDate"
+              id="eventDate"
+              type="date"
+              class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label for="eventTime" class="block font-medium text-gray-700">Heure</label>
+            <input
+              v-model="formData.eventTime"
+              id="eventTime"
+              type="time"
+              class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            />
+          </div>
         </div>
         <div>
-          <label for="eventTime" class="block font-medium">Heure</label>
-          <input
-            v-model="formData.eventTime"
-            id="eventTime"
-            type="time"
-            class="w-full border rounded p-2"
-          />
-        </div>
-        <div>
-          <label for="eventLocation" class="block font-medium">Lieu</label>
+          <label for="eventLocation" class="block font-medium text-gray-700">Lieu</label>
           <input
             v-model="formData.eventLocation"
             id="eventLocation"
             type="text"
-            class="w-full border rounded p-2"
+            placeholder="Entrez le lieu de l'événement"
+            class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
           />
         </div>
         <div>
-          <label for="eventImage" class="block font-medium">Photo de l'événement</label>
+          <label for="eventImage" class="block font-medium text-gray-700">Photo de l'événement</label>
           <input
             id="eventImage"
             type="file"
-            class="block w-full text-gray-700 border rounded p-2"
+            class="block w-full text-gray-700 border rounded-lg p-3 mt-1"
             accept="image/*"
             @change="handleFileUpload"
           />
@@ -148,28 +172,62 @@ function resetForm() {
             <img
               :src="previewImage"
               alt="Aperçu de l'image"
-              class="w-full max-w-sm rounded shadow-md"
+              class="w-full max-w-sm rounded-lg shadow-md"
             />
           </div>
         </div>
         <div>
-          <label for="eventColor" class="block font-medium">Thème couleur</label>
+          <label for="eventColor" class="block font-medium text-gray-700">Thème couleur</label>
           <input
             v-model="formData.eventColor"
             id="eventColor"
             type="color"
-            class="w-16 h-10 border rounded"
+            class="w-16 h-10 border rounded-lg mt-1"
           />
         </div>
+
+        <!-- Toggle public/privé -->
+        <div class="flex items-center justify-between mt-4">
+          <label class="text-gray-700 font-medium">Événement public</label>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              v-model="formData.isPublic"
+              class="sr-only peer"
+            />
+            <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-500 peer-focus:ring-2 peer-focus:ring-blue-300 transition"></div>
+            <div
+              class="absolute w-4 h-4 bg-white rounded-full top-1 left-1 peer-checked:left-6 transition"
+            ></div>
+          </label>
+        </div>
+
         <button
           type="submit"
-          class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+          class="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-3 rounded-lg font-medium hover:from-purple-500 hover:to-blue-500 transition"
         >
           Créer l'événement
         </button>
       </form>
     </div>
-    <FooterComponent />
+
+    <!-- Modale après création -->
+    <ModalComponent
+      v-if="showModal"
+      title="Événement créé avec succès !"
+      :isVisible="showModal"
+      :buttons="[
+         { text: 'Créer un autre événement', action: createAnotherEvent, class: 'bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition' },
+        { text: 'Voir les détails', action: viewEventDetails, class: 'bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition' },
+       
+      ]"
+      @close="createAnotherEvent"
+    >
+      <p class="text-gray-600">
+        Souhaitez-vous voir les détails de l'événement ou en créer un nouveau ?
+      </p>
+      
+    </ModalComponent>
   </div>
 </template>
 

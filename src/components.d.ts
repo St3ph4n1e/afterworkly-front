@@ -7,10 +7,12 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AfteworklyModal: typeof import('./assets/vue/components/ModalComponent/ModalComponent.vue')['default']
     EventCardComponent: typeof import('./assets/vue/components/EventCardComponent/EventCardComponent.vue')['default']
     FooterComponent: typeof import('./assets/vue/components/FooterComponent/FooterComponent.vue')['default']
     HeaderComponent: typeof import('./assets/vue/components/HeaderComponent/HeaderComponent.vue')['default']
     MenuComponent: typeof import('./assets/vue/components/MenuComponent/MenuComponent.vue')['default']
+    ModalComponent: typeof import('./assets/vue/components/ModalComponent/ModalComponent.vue')['default']
     NotificationComponent: typeof import('./assets/vue/components/NotificationComponent/NotificationComponent.vue')['default']
     ParticipantListComponent: typeof import('./assets/vue/components/ParticipantListComponent/ParticipantListComponent.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']

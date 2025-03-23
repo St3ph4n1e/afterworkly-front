@@ -13,10 +13,10 @@ const currentUserId = ref<string | null>(null); // ID de l'utilisateur connecté
 
 // Récupérer l'ID de l'utilisateur connecté depuis le localStorage
 onMounted(() => {
-  const storedUser = localStorage.getItem('user');
+  const storedUser = sessionStorage.getItem('user');
   if (storedUser) {
     const user = JSON.parse(storedUser);
-    currentUserId.value = user.userId;
+    currentUserId.value = user._id;
   }
 });
 
@@ -32,6 +32,8 @@ onMounted(async () => {
     isLoading.value = false;
   }
 });
+
+// todo set filter logic in back
 
 // Calcul des événements à venir, passés et créés par l'utilisateur
 const upcomingEvents = computed(() =>

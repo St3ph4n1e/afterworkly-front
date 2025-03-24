@@ -1,0 +1,16 @@
+ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  li {
+    font-size: 1rem;
+  }
+  
+  div[role="button"] {
+    transition: color 0.3s ease;
+  }
+  
+  div[role="button"]:hover {
+    color: #1d4ed8; /* Bleu plus foncé */
+  }

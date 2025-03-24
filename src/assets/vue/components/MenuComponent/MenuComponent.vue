@@ -23,7 +23,7 @@ const menuItems = [
   <nav
     :class="[
       'fixed inset-y-0 left-0 w-64 bg-gradient-to-b from-gray-800 to-gray-900 text-white shadow-xl transform transition-transform duration-300 ease-in-out',
-      isOpen ? 'translate-x-0' : '-translate-x-full',
+      isOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0',
     ]"
   >
     <!-- Logo -->
@@ -38,9 +38,11 @@ const menuItems = [
         <router-link
           :to="item.link"
           class="flex items-center space-x-3 p-3 rounded-md hover:bg-gray-700 hover:shadow-lg transition"
+             @click="toggleMenu"
         >
           <i :class="[item.icon, item.color]" ></i>
           <span class="text-lg font-medium">{{item.text}}</span>
+       
         </router-link>
       </li>
       <li>
@@ -58,9 +60,11 @@ const menuItems = [
     <button
       @click="toggleMenu"
       class="absolute top-4 right-4 text-white hover:text-blue-300 transition text-2xl"
+      aria-label="Fermer le menu"
     >
-      <i class="fa-solid fa-times"></i>
-    </button>
+    <i class="fa-solid fa-times"></i>
+  </button>
+
   </nav>
 </template>
 

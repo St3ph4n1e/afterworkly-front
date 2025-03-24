@@ -2,6 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+
+
+* {
+  transition: all 0.3s ease-in-out;
+}
+
+
+body {
+  font-family: 'Inter', sans-serif; 
+}
+
+
+/* html {
+  color-scheme: light dark;
+} */
+
+
+
 html,
 body,
 #app {

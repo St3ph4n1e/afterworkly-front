@@ -4,6 +4,7 @@ import type { User } from '@/assets/vue/types/types.ts'
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
+  timeout: 10000,
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -75,6 +76,19 @@ apiClient.interceptors.response.use(
   }
 );
 
+
+// Debugging en mode développement
+if (import.meta.env.MODE === 'development') {
+  apiClient.interceptors.request.use((config) => {
+    console.debug('Request:', config);
+    return config;
+  });
+  apiClient.interceptors.response.use((response) => {
+    console.debug('Response:', response);
+    return response;
+  });
+}
+
 export default apiClient;
 
 
@@ -90,24 +104,65 @@ export async function login(userData: { mail: string; password: string }) {
   return response.data;
 }
 
-
-
 // Événements
 export async function createEvent(eventData: FormData) {
   const response = await apiClient.post('/events', eventData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
-  })
-  return response.data
+  });
+  return response.data;
 }
 
-export async function getEvents() {
+/*export async function getEvents() {
   const response = await apiClient.get('/events')
   return response.data
+}*/
+export async function getEvents(params?: { page?: number; limit?: number }) {
+  const response = await apiClient.get('/events', { params });
+  return response.data;
 }
 
 export async function getEventById(eventId: string) {
-  const response = await apiClient.get(`/events/${eventId}`)
-  return response.data
+  const response = await apiClient.get(`/events/${eventId}`);
+  return response.data;
+}
+
+export async function updateEvent(eventId: string, updatedData: FormData | Record<string, any>) {
+  const response = await apiClient.put(`/events/${eventId}`, updatedData, {
+    headers: updatedData instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : {},
+  });
+  return response.data;
+}
+
+export async function toggleParticipantStatus(eventId: string, participantData: { userId: string; status: string }) {
+  const response = await apiClient.post(`/events/${eventId}/participants`, participantData);
+  return response.data;
+}
+
+export async function deleteEvent(eventId: string) {
+  const response = await apiClient.delete(`/events/${eventId}`);
+  return response.data;
+}
+
+// Profil utilisateur
+export async function getUserProfile() {
+  const response = await apiClient.get('/auth/profile');
+  console.log(response.data)
+  return response.data;
+}
+
+export async function updateUserProfile(updatedData: Record<string, any>) {
+  const response = await apiClient.put('/auth/profile', updatedData);
+  return response.data;
+}
+
+export async function updateUserAvatar(file: File) {
+  const formData = new FormData();
+  formData.append('avatar', file);
+
+  const response = await apiClient.post('/auth/profile/avatar', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
 }

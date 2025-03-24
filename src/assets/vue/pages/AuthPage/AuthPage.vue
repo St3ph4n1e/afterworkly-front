@@ -4,20 +4,35 @@ import { useRouter } from "vue-router";
 import { createUser, loginUser } from '@/auth/authservice.ts'
 
 const router = useRouter();
-const notification = ref({
+/*const notification = ref({
   message: "",
   type: "",
   isVisible: false,
-});
+});*/
 
 const isSignUp = ref(false);
 
 const formData = ref({
-  name: "",
+  username: "",
   email: "",
   password: "",
 });
 
+// const notification = ref({
+//   message: '',
+//   type: '', // 'error' ou 'success'
+//   isVisible: false,
+// })
+
+const notification = ref<{
+  message: string;
+  type: 'success' | 'error' | 'info' | 'warning';
+  isVisible: boolean;
+}>({
+  message: '',
+  type: 'info',
+  isVisible: false,
+});
 const credentials = ref({
   email: "",
   password: "",
@@ -27,7 +42,7 @@ async function handleKeycloakLoginRegister() {
   if (isSignUp.value) {
     const token = await createUser({
       email: formData.value.email,
-      username: formData.value.name,
+      username: formData.value.username,
       password: formData.value.password,
     });
 
@@ -74,7 +89,7 @@ async function handleKeycloakLoginRegister() {
       <form @submit.prevent="handleKeycloakLoginRegister" class="space-y-6">
         <div v-if="isSignUp">
           <label for="name" class="block text-gray-700 font-medium">Nom</label>
-          <input v-model="formData.name" id="name" type="text" placeholder="Votre nom"
+          <input v-model="formData.username" id="name" type="text" placeholder="Votre nom"
                  class="w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-300" />
         </div>
 

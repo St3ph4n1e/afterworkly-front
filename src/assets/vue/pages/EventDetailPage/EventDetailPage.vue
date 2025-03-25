@@ -30,6 +30,8 @@ const notification = ref<{ message: string; type: 'success' | 'error'; visible: 
 });
 // Variables pour la pop-up de suppréssion
 const showDeleteModal = ref(false);
+// Variables pour l'édition d'un event
+const editEventMode = ref(false);
 
 // Récupération de l'événement et initialisation
 onMounted(async () => {
@@ -126,6 +128,11 @@ async function toggleParticipation() {
   }
 }
 
+function triggerEditEventMode() {
+  showDeleteButton.value = true
+  editEventMode.value = true;
+}
+
 function triggerSaveEvent() {
   try{
     //Appel de l'api de sauvegarde de l'event
@@ -140,6 +147,7 @@ function triggerSaveEvent() {
     //     router.push("/");
     //    }
     // )
+    editEventMode.value = false;
     showDeleteButton.value = false;
     notification.value = {
           message: 'Événement sauvegardé avec succès !',
@@ -232,21 +240,21 @@ async function sendInviteEmail(email: string) {
             <button
               v-if="showDeleteButton"
               @click="showDeleteModal = true"
-              class="absolute top-4 right-4 text-gray-700 hover:text-gray-900 transition"
+              class="absolute top-4 right-16 text-gray-700 hover:text-gray-900 transition"
               title="Supprimer l'événement"
             >
               <i class="fas fa-trash text-2xl text-red-500"></i>
             </button>
             <button
-              v-if="event.creator === currentUserId"
-              @click="showDeleteButton = true"
+              v-if="event.creator === currentUserId && showDeleteButton == false"
+              @click="triggerEditEventMode"
               class="absolute top-4 right-16 text-gray-700 hover:text-gray-900 transition"
               title="Modifier l'événement"
             >
               <i class="fas fa-pencil-alt text-2xl"></i>
             </button>
             <button
-              v-if="event.creator === currentUserId && showDeleteButton == false"
+              v-if="event.creator === currentUserId"
               @click="showInviteModal = true"
               class="absolute top-4 right-4 text-gray-700 hover:text-gray-900 transition"
               title="Envoyer une invitation"
@@ -264,7 +272,10 @@ async function sendInviteEmail(email: string) {
           </div>
         </div>
 
-        <div class="p-6 space-y-6">
+        <div
+          v-if="!editEventMode"
+          class="p-6 space-y-6"
+        >
           <div class="text-center">
             <h2 class="text-2xl font-bold text-gray-800">{{ event.title }}</h2>
             <div class="flex justify-center items-center space-x-4 text-gray-600 mt-2">
@@ -319,6 +330,13 @@ async function sendInviteEmail(email: string) {
             </ul>
           </div>
         </div>
+
+        <div
+          v-if="editEventMode"
+        >
+          <h3>Mode Edition</h3>
+        </div>
+
       </div>
 
 

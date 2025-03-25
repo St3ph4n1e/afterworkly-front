@@ -2,9 +2,10 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { formattedDate } from '@/utils/date';
-import { getEventById, toggleParticipantStatus } from '@/axios/api';
-import { getImageUrl } from '@/utils/url';
-import type { Event, EventParticipant } from '@/assets/vue/types/types';
+import { getEventById, toggleParticipantStatus, deleteEvent } from '@/axios/api';
+// import { getImageUrl } from '@/utils/url';
+// import type { Event, EventParticipant } from '@/assets/vue/types/types';
+import type { Event } from '@/assets/vue/types/types';
 import dayjs from 'dayjs';
 import 'dayjs/locale/fr';
 
@@ -17,7 +18,7 @@ const isLoading = ref(true);
 const errorMessage = ref<string | null>(null);
 const currentUserId = ref<string | null>(null); // ID de l'utilisateur connecté
 const attendanceConfirmed = ref(false);
-
+const showDeleteButton = ref(false);
 // Variables pour la pop-up d'invitation
 const showInviteModal = ref(false);
 const inviteLink = ref<string | null>(null);
@@ -27,6 +28,8 @@ const notification = ref<{ message: string; type: 'success' | 'error'; visible: 
   type: 'success',
   visible: false,
 });
+// Variables pour la pop-up de suppréssion
+const showDeleteModal = ref(false);
 
 // Récupération de l'événement et initialisation
 onMounted(async () => {
@@ -68,9 +71,9 @@ onMounted(async () => {
 
 
   console.log("Participants :", event.value?.participants);
-console.log("Utilisateur connecté :", currentUserId.value);
-console.log(
-  "Participation confirmée :",
+  console.log("Utilisateur connecté :", currentUserId.value);
+  console.log(
+    "Participation confirmée :",
   event.value?.participants.some(
     (participant) =>
       participant.userId === currentUserId.value && participant.status === 'Confirmé'
@@ -123,12 +126,70 @@ async function toggleParticipation() {
   }
 }
 
-// Fonction pour aller à la page de modification
-function goToEditPage() {
-  if (event.value) {
-    router.push(`/edit-event/${event.value.id}`);
+function triggerSaveEvent() {
+  try{
+    //Appel de l'api de sauvegarde de l'event
+    // await deleteEvent(route.params.id).then(
+    //  resp  => {
+    //     console.log('event deleted');
+    //     notification.value = {
+    //       message: 'Événement supprimé avec succès !',
+    //       type: 'success',
+    //       isVisible: true,
+    //     };
+    //     router.push("/");
+    //    }
+    // )
+    showDeleteButton.value = false;
+    notification.value = {
+          message: 'Événement sauvegardé avec succès !',
+          type: 'success',
+          isVisible: true,
+    };
+    console.log('event saved');
+
+  }
+  //Echec de sauvegarde d'event
+  catch (error) {
+    console.log(error);
+    notification.value = {
+      message: error.message || 'Une erreur est survenue.',
+      type: 'error',
+      isVisible: true,
+    };
   }
 }
+
+async function triggerDeleteEvent() {
+  //Essaie de suppression d'event
+  try{
+    //Appel de l'api de suppression de l'event
+    await deleteEvent(route.params.id).then(
+     // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     resp  => {
+        // console.log('event deleted');
+        notification.value = {
+          message: 'Événement supprimé avec succès !',
+          type: 'success',
+          isVisible: true,
+        };
+        router.push("/");
+       }
+    )
+
+  }
+  //Echec de suppression d'event
+  catch (error) {
+    console.log(error);
+    notification.value = {
+      message: error.message || 'Une erreur est survenue.',
+      type: 'error',
+      isVisible: true,
+    };
+  }
+}
+
+
 
 // Fonction pour copier le lien d'invitation dans le presse-papiers
 function copyInviteLink() {
@@ -167,22 +228,40 @@ async function sendInviteEmail(email: string) {
             alt="Image de l'événement"
             class="absolute w-4/6 h-auto object-contain rounded-lg"
           />
-          <button
-            v-if="event.creator === currentUserId"
-            @click="goToEditPage"
-            class="absolute top-4 right-16 text-gray-700 hover:text-gray-900 transition"
-            title="Modifier l'événement"
-          >
-            <i class="fas fa-pencil-alt text-2xl"></i>
-          </button>
-          <button
-            v-if="event.creator === currentUserId"
-            @click="showInviteModal = true"
-            class="absolute top-4 right-4 text-gray-700 hover:text-gray-900 transition"
-            title="Envoyer une invitation"
-          >
-            <i class="fas fa-envelope text-2xl"></i>
-          </button>
+          <div>
+            <button
+              v-if="showDeleteButton"
+              @click="showDeleteModal = true"
+              class="absolute top-4 right-4 text-gray-700 hover:text-gray-900 transition"
+              title="Supprimer l'événement"
+            >
+              <i class="fas fa-trash text-2xl text-red-500"></i>
+            </button>
+            <button
+              v-if="event.creator === currentUserId"
+              @click="showDeleteButton = true"
+              class="absolute top-4 right-16 text-gray-700 hover:text-gray-900 transition"
+              title="Modifier l'événement"
+            >
+              <i class="fas fa-pencil-alt text-2xl"></i>
+            </button>
+            <button
+              v-if="event.creator === currentUserId && showDeleteButton == false"
+              @click="showInviteModal = true"
+              class="absolute top-4 right-4 text-gray-700 hover:text-gray-900 transition"
+              title="Envoyer une invitation"
+            >
+              <i class="fas fa-envelope text-2xl"></i>
+            </button>
+            <button
+              v-if="showDeleteButton"
+              @click="triggerSaveEvent"
+              class="absolute bottom-4 right-4 text-gray-700 hover:text-gray-900 transition"
+              title="Modifier l'événement"
+            >
+              <i class="fas fa-save text-2xl"></i>
+            </button>
+          </div>
         </div>
 
         <div class="p-6 space-y-6">
@@ -215,8 +294,8 @@ async function sendInviteEmail(email: string) {
               {{ attendanceConfirmed ? 'Quitter' : 'Rejoindre' }} l'événement
             </button>
           </div>
-
           <div>
+
             <h3 class="font-semibold text-gray-800">Participants</h3>
             <ul class="space-y-2">
               <li
@@ -242,6 +321,8 @@ async function sendInviteEmail(email: string) {
         </div>
       </div>
 
+
+      <!-- Modal d'invitation aux événements  -->
       <ModalComponent
         v-if="showInviteModal"
         :isVisible="showInviteModal"
@@ -271,6 +352,17 @@ async function sendInviteEmail(email: string) {
             </button>
           </div>
         </div>
+      </ModalComponent>
+
+      <ModalComponent
+        v-if="showDeleteModal"
+        :isVisible="showDeleteModal"
+        title="Voulez-vous vraiment supprimer cet événement ?"
+        :buttons="[
+          { text: 'Oui', action: triggerDeleteEvent, class: 'bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mt-2' },
+          { text: 'Non', action: () => (showDeleteModal = false), class: 'bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 mt-2' }
+        ]"
+      >
       </ModalComponent>
 
       <NotificationComponent

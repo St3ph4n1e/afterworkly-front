@@ -1,5 +1,6 @@
-import axios from "axios";
+import axios   from "axios";
 import { login, signUp } from '@/axios/api.ts'
+import type { User } from '../assets/vue/types/types.ts';
 
 
 export async function loginUser(mail: string, password: string) {
@@ -16,20 +17,28 @@ export async function loginUser(mail: string, password: string) {
     sessionStorage.setItem("user", JSON.stringify(response.user));
 
     return response;
-  } catch (error: any) {
+  } catch (error: unknown ) {
+    if (axios.isAxiosError(error)) {
     if (error.response?.status === 404) {
       throw new Error("User not registered. Please sign up first.");
     }
     console.error("Login failed:", error);
     throw new Error("Échec de la connexion");
   }
+
+  console.error("unexpected error:", error);
+  throw new Error("Erreur inattendue");
 }
 
-export async function createUser(userData) {
+}
+
+
+
+export async function createUser(userData: User) {
   try {
     const response = await signUp(userData)
     console.log("User created:", response.data);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error signing up:", error);
   }
 }

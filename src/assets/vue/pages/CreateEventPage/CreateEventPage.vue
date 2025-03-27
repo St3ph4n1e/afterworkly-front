@@ -2,6 +2,8 @@
 import { ref } from 'vue';
 import { createEvent } from '@/axios/api';
 import { useRouter } from 'vue-router';
+import { showError } from '@/utils/errors';
+import axios from 'axios';
 
 const router = useRouter();
 
@@ -69,13 +71,13 @@ async function handleSubmit() {
     };
     resetForm();
     showModal.value = true;
-  } catch (error: any) {
-    notification.value = {
-      message: error.message || 'Une erreur est survenue.',
-      type: 'error',
-      isVisible: true,
-    };
+  } catch (error) {
+    if(axios.isAxiosError(error)) {
+      showError(error.response?.data.message || 'Une erreur est survenue.',true);
+    } else {
+    showError( 'Une erreur inattendue est survenue.');
   }
+}
 }
 
 function resetForm() {

@@ -21,7 +21,7 @@ export interface Event {
   isPublic: boolean; // Visibilité de l'événement
 }
 
-export class User {
+export interface User {
   _id: string;
   username: string;
   first_name: string;

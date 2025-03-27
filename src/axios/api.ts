@@ -36,7 +36,7 @@ async function refreshAccessToken() {
 
 // Axios request interceptor to attach the access token
 apiClient.interceptors.request.use(async (config) => {
-  let token = sessionStorage.getItem("access_token");
+  const token = sessionStorage.getItem("access_token");
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -56,7 +56,7 @@ apiClient.interceptors.response.use(
 
     if (error.response?.status === 401 || error.response?.status === 403) {
       console.log(error.response?.data?.message )
-      const errorMsg = error.response?.data?.message || "" // error.response?.data?.error_description || "";
+      const errorMsg = error.response?.data?.message ||  error.response?.data?.error_description || "";
 
       // todo axe d'amelioration : peut-être faire le refresh direct depuis le back si token expired
       //  plutot que de renvoyer une requête refresh depuis fornt
@@ -70,6 +70,12 @@ apiClient.interceptors.response.use(
       } else {
         console.warn("Unauthorized: Not an expired token issue.");
       }
+    }
+
+    if (!error.response) {
+      console.error("Erreur de connexion réseau.", error);
+      // Afficher la notification pour avertir l'utilisateur
+      return Promise.reject(new Error("Vous n'êtes pas connecté à Internet"));
     }
 
     return Promise.reject(error.response?.data || error.message);
@@ -128,7 +134,7 @@ export async function getEventById(eventId: string) {
   return response.data;
 }
 
-export async function updateEvent(eventId: string, updatedData: FormData | Record<string, any>) {
+export async function updateEvent(eventId: string, updatedData: FormData | Record<string, unknown>) {
   const response = await apiClient.put(`/events/${eventId}`, updatedData, {
     headers: updatedData instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : {},
   });
@@ -152,7 +158,7 @@ export async function getUserProfile() {
   return response.data;
 }
 
-export async function updateUserProfile(updatedData: Record<string, any>) {
+export async function updateUserProfile(updatedData: Record<string, unknown>) {
   const response = await apiClient.put('/auth/profile', updatedData);
   return response.data;
 }

@@ -270,7 +270,7 @@ async function sendInviteEmail(email: string) {
                   v-for="participant in event.participants"
                   :key="participant.userId"
                   class="flex items-center">
-                  <ParticipantComponent
+                  <ParticipantListComponent
                     style="flex-shrink: 0; width: 80px; margin: 0;"
                     :participantInfos="participant"
                     confirmed-class="text-green-600 font-bold"

@@ -205,7 +205,7 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
       <div v-else-if="event" class="w-full max-w-4xl bg-white shadow-lg rounded-lg overflow-hidden">
         <div class="relative flex items-center justify-center h-72 sm:h-96" :style="themeStyle">
           <img
-            :src="event.image ?? ''"
+            :src="event.image ?? 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/logo-afterworkly.png'"
             alt="Image de l'événement"
             class="absolute w-4/6 h-auto object-contain rounded-lg"
           />

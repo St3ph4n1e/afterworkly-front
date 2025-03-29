@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { formattedDate } from '@/utils/date';
-import { getEventById, toggleParticipantStatus } from '@/axios/api';
-import { getImageUrl } from '@/utils/url';
-import type { Event, EventParticipant } from '@/assets/vue/types/types';
+import { formatDate } from '@/utils/date'
+import { getEventById, toggleParticipantStatus } from'@/axios/api';
+import type { Event } from '@/assets/vue/types/types';
 import dayjs from 'dayjs';
 import 'dayjs/locale/fr';
 
@@ -27,6 +26,46 @@ const notification = ref<{ message: string; type: 'success' | 'error'; visible: 
   type: 'success',
   visible: false,
 });
+
+
+const scrollContainer = ref<HTMLDivElement | null>(null);
+
+// Function to scroll left
+function scrollLeft() {
+  if (scrollContainer.value) {
+    scrollContainer.value.scrollLeft -= 200; // Scroll by 200px to the left
+  }
+}
+
+// Function to scroll right
+function scrollRight() {
+  if (scrollContainer.value) {
+    scrollContainer.value.scrollLeft += 200; // Scroll by 200px to the right
+  }
+}
+
+const mockParticipants = [
+  { userId: 1, username: 'User 1', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 2, username: 'User 2', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 4', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+];
 
 // Récupération de l'événement et initialisation
 onMounted(async () => {
@@ -149,6 +188,9 @@ async function sendInviteEmail(email: string) {
     showNotification('Échec de l’envoi de l’invitation.', 'error');
   }
 }
+
+const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY'));
+
 </script>
 
 <template>
@@ -163,7 +205,7 @@ async function sendInviteEmail(email: string) {
       <div v-else-if="event" class="w-full max-w-4xl bg-white shadow-lg rounded-lg overflow-hidden">
         <div class="relative flex items-center justify-center h-72 sm:h-96" :style="themeStyle">
           <img
-            :src="event.image ?? ''"
+            :src="event.image ?? 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/logo-afterworkly.png'"
             alt="Image de l'événement"
             class="absolute w-4/6 h-auto object-contain rounded-lg"
           />
@@ -218,26 +260,42 @@ async function sendInviteEmail(email: string) {
 
           <div>
             <h3 class="font-semibold text-gray-800">Participants</h3>
-            <ul class="space-y-2">
-              <li
-                v-for="participant in event.participants"
-                :key="participant.userId"
-                class="flex items-center space-x-4"
-              >
-              <ParticipantListComponent
-                  :participants="event.participants.map(participant => ({
-                    userId: participant.userId._id, // Assurez-vous que l'ID est accessible
-                    name: participant.userId.name, // Extraire le nom du participant
-                    avatar: participant.userId.avatar || '/src/assets/images/default-avatar.png', // Utiliser l'avatar ou une image par défaut
-                    status: participant.status, // Inclure le statut du participant
-                    }))"
-                  :limit="5"
-                  confirmedClass="text-green-600 font-bold"
-                  undecidedClass="text-yellow-500 italic"
-                  />
+            <div style="width: 100%; overflow: hidden; position: relative;">
+              <!-- Sliding Container -->
+              <div
+                ref="scrollContainer"
+                class="space-y-2 scroll-div"
+                style="display: flex; justify-content: flex-start; align-items: center; gap: 10px; flex-wrap: nowrap; overflow-x: auto; scroll-behavior: smooth;">
 
-              </li>
-            </ul>
+
+                <div
+                  v-for="participant in event.participants"
+                  :key="participant.userId"
+                  class="flex items-center">
+                  <ParticipantListComponent
+                    style="flex-shrink: 0; width: 80px; margin: 0;"
+                    :participantInfos="participant"
+                    confirmed-class="text-green-600 font-bold"
+                    undecided-class="text-yellow-500 italic"
+                  />
+                </div>
+              </div>
+
+              <!-- Left Button -->
+              <button
+                @click="scrollLeft"
+                style="position: absolute; left: -10px; top: 50%; transform: translateY(-50%); background-color: rgba(195,192,192,0.5); border: none; padding: 10px; border-radius: 50%; cursor: pointer; z-index: 2;">
+                ⟨
+              </button>
+
+              <!-- Right Button -->
+              <button
+                @click="scrollRight"
+                style="position: absolute; right: -10px; top: 50%; transform: translateY(-50%); background-color: rgba(195,192,192,0.5); border: none; padding: 10px; border-radius: 50%; cursor: pointer; z-index: 2;">
+                〉
+              </button>
+            </div>
+
           </div>
         </div>
       </div>

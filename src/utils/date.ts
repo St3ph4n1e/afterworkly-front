@@ -1,8 +1,9 @@
 import dayjs from 'dayjs';
 import 'dayjs/locale/fr';
-import { computed } from 'vue';
 
+dayjs.locale('fr');
 
-export const formattedDate = computed((date: string | number | Date | dayjs.Dayjs | null | undefined) => {
-    return dayjs(date).format('D MMMM YYYY');
-  });
+export const formatDate = (date: string | number | Date | dayjs.Dayjs | null | undefined, format = 'DD MM YYYY') => {
+  if (!date) return 'Date non spécifiée';
+  return dayjs(date).format(format);
+};

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { formattedDate } from '@/utils/date';
+import { formatDate } from '@/utils/date'
 import { getEventById, toggleParticipantStatus } from'@/axios/api';
 import type { Event } from '@/assets/vue/types/types';
 import dayjs from 'dayjs';
@@ -188,6 +188,9 @@ async function sendInviteEmail(email: string) {
     showNotification('Échec de l’envoi de l’invitation.', 'error');
   }
 }
+
+const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY'));
+
 </script>
 
 <template>
@@ -256,7 +259,6 @@ async function sendInviteEmail(email: string) {
           </div>
 
           <div>
-<!--            {{ event}}-->
             <h3 class="font-semibold text-gray-800">Participants</h3>
             <div style="width: 100%; overflow: hidden; position: relative;">
               <!-- Sliding Container -->

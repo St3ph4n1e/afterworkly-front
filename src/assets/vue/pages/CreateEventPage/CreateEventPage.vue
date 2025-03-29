@@ -2,8 +2,9 @@
 import { ref } from 'vue';
 import { createEvent } from '@/axios/api';
 import { useRouter } from 'vue-router';
-import { showError } from '@/utils/errors';
 import axios from 'axios';
+import {  showError, showSuccess, currentNotification } from '../../../../utils/errors.ts';
+
 
 const router = useRouter();
 
@@ -64,16 +65,12 @@ async function handleSubmit() {
   try {
     const response = await createEvent(eventData);
     createdEventId.value = response.event._id;
-    notification.value = {
-      message: 'Événement créé avec succès !',
-      type: 'success',
-      isVisible: true,
-    };
+    showSuccess("Événement créé avec succès !");
     resetForm();
     showModal.value = true;
   } catch (error) {
     if(axios.isAxiosError(error)) {
-      showError(error.response?.data.message || 'Une erreur est survenue.',true);
+      showError(error.response?.data.message || 'Une erreur est survenue.');
     } else {
     showError( 'Une erreur inattendue est survenue.');
   }
@@ -115,6 +112,12 @@ function createAnotherEvent() {
         :message="notification.message"
         :type="notification.type"
       />
+      <NotificationComponent
+      v-if="currentNotification.isVisible"
+      :message="currentNotification.message"
+      :type="currentNotification.type"
+      :isVisible="currentNotification.isVisible"
+    />
 
       <!-- Formulaire -->
       <form @submit.prevent="handleSubmit" class="space-y-6 bg-white p-8 shadow-lg rounded-lg">

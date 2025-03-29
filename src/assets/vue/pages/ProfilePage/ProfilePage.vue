@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref,  onMounted } from 'vue';
 import Multiselect from 'vue-multiselect';
 import { Swiper, SwiperSlide } from 'swiper/vue';
 import { Navigation, Pagination } from 'swiper/modules';
 import { getUserProfile, updateUserProfile, updateUserAvatar } from '@/axios/api';
+import { showError, showSuccess , currentNotification } from '../../../../utils/errors';
 import type { Event } from '@/assets/vue/types/types';
-import { getImageUrl } from '@/utils/url';
+// import { getImageUrl } from '@/utils/url';
 import 'vue-multiselect/dist/vue-multiselect.min.css';
 import 'swiper/css';
 import 'swiper/css/navigation';
@@ -14,7 +15,6 @@ import 'swiper/css/pagination';
 // État global
 const isEditing = ref(false);
 const isAvatarUploading = ref(false);
-const notification = ref<string | null>(null);
 const activeTab = ref('profile');
 const activeEventTab = ref('created');
 const loading = ref(true);
@@ -51,23 +51,23 @@ onMounted(async () => {
     eventsCreated.value = response.eventsCreated;
     eventsParticipating.value = response.eventsParticipating;
 
-    eventsCreated.value = response.eventsCreated.map((event: any) => ({
+    eventsCreated.value = response.eventsCreated.map((event: Event) => ({
       ...event,
-      id: event._id, // Transforme `_id` en `id`
+      id: event.id, // Transforme `_id` en `id`
     }));
 
-    eventsParticipating.value = response.eventsParticipating.map((event: any) => ({
+    eventsParticipating.value = response.eventsParticipating.map((event: Event) => ({
       ...event,
-      id: event._id,
+      id: event.id,
     }));
 
     // Affiche une notification uniquement si les champs critiques sont vides
     if (!user.value.username || !user.value.bio || user.value.availability.length === 0) {
-      notification.value = 'Votre profil est incomplet. Pensez à le compléter !';
+      showError('Votre profil est incomplet. Pensez à le compléter !');
     }
   } catch (error) {
     console.error('Erreur lors du chargement des données utilisateur :', error);
-    notification.value = 'Impossible de charger vos données.';
+    showError('Impossible de charger vos données.');
   } finally {
     loading.value = false;
   }
@@ -85,34 +85,38 @@ async function updateProfile() {
     });
 
     Object.assign(user.value, updatedUser);
-    notification.value = 'Votre profil a été mis à jour avec succès !';
+    showSuccess('Votre profil a été mis à jour avec succès !');
     isEditing.value = false; // Fermer le formulaire
   } catch (error) {
     console.error('Erreur lors de la mise à jour du profil :', error);
-    notification.value = 'Une erreur s’est produite. Veuillez réessayer.';
+    showError('Une erreur s’est produite. Veuillez réessayer.');
   }
 }
 
 // Upload d'avatar
-async function handleAvatarUpload(event: Event & { target: HTMLInputElement }) {
-  const file = event.target.files?.[0];
+async function handleAvatarUpload(event: globalThis.Event) {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+
   if (file) {
     isAvatarUploading.value = true;
     try {
-      await updateUserAvatar(file).then(
-        response => {
-          user.value.photo = response.photo;
-          notification.value = 'Avatar mis à jour avec succès !';
-        }
-      )
+      const response = await updateUserAvatar(file);
+      user.value.photo = response.photo;
+      showSuccess('Avatar mis à jour avec succès !');
     } catch (error) {
-      console.error('Erreur lors de l\'upload de l\'avatar :', error);
-      notification.value = 'Erreur lors de l\'upload. Veuillez réessayer.';
+      console.error("Erreur lors de l'upload de l'avatar :", error);
+      showError("Erreur lors de l'upload. Veuillez réessayer.");
     } finally {
       isAvatarUploading.value = false;
     }
   }
 }
+
+
+
+
+
 
 // Gestion des jours de disponibilité
 function toggleDay(day: string) {
@@ -130,7 +134,12 @@ function toggleDay(day: string) {
 
     <main class="container mx-auto p-6 flex-grow space-y-6">
       <!-- Notification -->
-      <NotificationComponent v-if="notification" :message="notification" type="warning" />
+      <NotificationComponent
+      v-if="currentNotification.isVisible"
+      :message="currentNotification.message"
+      :type="currentNotification.type"
+      :isVisible="currentNotification.isVisible"
+    />
 
       <!-- Chargement -->
       <div v-if="loading" class="text-center py-20">

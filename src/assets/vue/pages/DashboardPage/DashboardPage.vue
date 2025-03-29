@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { getEvents } from '@/axios/api';
 import type { Event } from '@/assets/vue/types/types';
@@ -29,7 +29,7 @@ onMounted(async () => {
     events.value = response;
     console.log('Événements chargés :', events.value);
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Erreur lors du chargement des événements :', error);
     errorMessage.value = 'Impossible de charger les événements. Veuillez réessayer plus tard.';
   } finally {

@@ -7,7 +7,6 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
-    AfteworklyModal: typeof import('./assets/vue/components/ModalComponent/ModalComponent.vue')['default']
     EventCardComponent: typeof import('./assets/vue/components/EventCardComponent/EventCardComponent.vue')['default']
     FooterComponent: typeof import('./assets/vue/components/FooterComponent/FooterComponent.vue')['default']
     HeaderComponent: typeof import('./assets/vue/components/HeaderComponent/HeaderComponent.vue')['default']

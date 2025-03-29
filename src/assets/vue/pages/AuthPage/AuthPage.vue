@@ -1,28 +1,19 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import { createUser, loginUser } from '@/auth/authservice.ts'
+import { createUser, loginUser } from '@/auth/authservice.ts';
+import { showError, showSuccess, currentNotification } from '../../../../utils/errors.ts';
+
 
 const router = useRouter();
-/*const notification = ref({
-  message: "",
-  type: "",
-  isVisible: false,
-});*/
 
-const isSignUp = ref(false);
+const isSignUp = ref(true); // Initialement sur la page d'inscription
 
 const formData = ref({
   username: "",
   email: "",
   password: "",
 });
-
-// const notification = ref({
-//   message: '',
-//   type: '', // 'error' ou 'success'
-//   isVisible: false,
-// })
 
 const notification = ref<{
   message: string;
@@ -33,48 +24,52 @@ const notification = ref<{
   type: 'info',
   isVisible: false,
 });
-const credentials = ref({
-  email: "",
-  password: "",
-});
 
 async function handleKeycloakLoginRegister() {
   if (isSignUp.value) {
-    const token = await createUser({
-      email: formData.value.email,
-      username: formData.value.username,
-      password: formData.value.password,
-    });
+    try {
+      // Créer un nouvel utilisateur
+      const token = await createUser({
+        email: formData.value.email,
+        username: formData.value.username,
+        password: formData.value.password,
+      });
 
-    if (token) {
-      console.log("redirect")
-      await router.push("/");
+      if (token) {
+        // Après la création, passer en mode connexion
+
+        showSuccess("Inscription réussie, vous pouvez maintenant vous connecter.");
+
+        // Bascule sur la connexion
+        isSignUp.value = false;  // Passe en mode connexion
+      }
+
+    } catch (error) {
+      showError(error.message || "Erreur lors de l'inscription. Veuillez réessayer.");
     }
 
   } else {
+    // Connexion de l'utilisateur
     try {
-      await loginUser(formData.value.email, formData.value.password).then(
-        _ => {
-          router.push("/");
-        }
-      )
+      await loginUser(formData.value.email, formData.value.password);
+      router.push("/"); // Redirige vers la page d'accueil ou tableau de bord
     } catch (error) {
-      notification.value = {
-        message: "Échec de la connexion avec Keycloak.",
-        type: "error",
-        isVisible: true,
-      };
+      showError(error.message || "Erreur lors de la connexion. Veuillez vérifier vos identifiants.");
     }
   }
 }
-
-
 </script>
 
 <template>
   <div class="flex items-center justify-center min-h-screen bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">
     <!-- Notification -->
     <NotificationComponent v-if="notification.isVisible" :message="notification.message" :type="notification.type" />
+    <NotificationComponent
+      v-if="currentNotification.isVisible"
+      :message="currentNotification.message"
+      :type="currentNotification.type"
+      :isVisible="currentNotification.isVisible"
+    />
 
     <div class="bg-white shadow-lg rounded-lg p-8 w-full max-w-md">
       <div class="text-center mb-6">

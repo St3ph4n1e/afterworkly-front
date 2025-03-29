@@ -102,7 +102,7 @@ export default apiClient;
 // Exemple d'export de fonctions pour des API spécifiques
 export async function signUp(userData: User) {
   const response = await apiClient.post('/auth/signup', userData);
-  return response.data;
+  return response;
 }
 
 export async function login(userData: { mail: string; password: string }) {
@@ -150,6 +150,7 @@ export async function deleteEvent(eventId: string) {
   const response = await apiClient.delete(`/events/${eventId}`);
   return response.data;
 }
+
 
 // Profil utilisateur
 export async function getUserProfile() {

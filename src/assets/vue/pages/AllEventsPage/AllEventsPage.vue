@@ -25,7 +25,7 @@ onMounted(async () => {
   try {
     isLoading.value = true;
     events.value = await getEvents(); // Récupère tous les événements depuis l'API
-  } catch (error: any) {
+  } catch (error) {
     console.error('Erreur lors de la récupération des événements:', error);
     errorMessage.value = 'Impossible de charger les événements. Veuillez réessayer plus tard.';
   } finally {
@@ -158,8 +158,8 @@ const pageTitle = computed(() => {
         <template v-if="activeTab === 'all'">
           <EventCardComponent
             v-for="event in events"
-            :key="event.id"
-            :id="event.id"
+            :key="event._id"
+            :id="event._id"
             :title="event.title"
             :location="event.location"
             :date="event.date"
@@ -172,8 +172,8 @@ const pageTitle = computed(() => {
         <template v-else-if="activeTab === 'upcoming'">
           <EventCardComponent
             v-for="event in upcomingEvents"
-            :key="event.id"
-            :id="event.id"
+            :key="event._id"
+            :id="event._id"
             :title="event.title"
             :location="event.location"
             :date="event.date"
@@ -189,8 +189,8 @@ const pageTitle = computed(() => {
         <template v-else-if="activeTab === 'past'">
           <EventCardComponent
             v-for="event in pastEvents"
-            :key="event.id"
-            :id="event.id"
+            :key="event._id"
+            :id="event._id"
             :title="event.title"
             :location="event.location"
             :date="event.date"
@@ -206,8 +206,8 @@ const pageTitle = computed(() => {
         <template v-else-if="activeTab === 'my-events'">
           <EventCardComponent
             v-for="event in myEvents"
-            :key="event.id"
-            :id="event.id"
+            :key="event._id"
+            :id="event._id"
             :title="event.title"
             :location="event.location"
             :date="event.date"

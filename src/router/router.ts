@@ -7,6 +7,7 @@ const ProfilePage = () => import('@/assets/vue/pages/ProfilePage/ProfilePage.vue
 const AuthPage = () => import('@/assets/vue/pages/AuthPage/AuthPage.vue');
 const EventDetailPage = () => import('@/assets/vue/pages/EventDetailPage/EventDetailPage.vue');
 const AllEventsPage = () => import('@/assets/vue/pages/AllEventsPage/AllEventsPage.vue');
+const OfflinePage = () => import('../assets/vue/pages/OfflinePage/OfflinePage.vue');
 
 
 const routes = [
@@ -50,6 +51,12 @@ const routes = [
     component: () => import('@/assets/vue/pages/NotFoundPage/NotFoundPage.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/offline',
+    name: 'offline',
+    component: OfflinePage,
+  }
+  
 ]
 
 const router = createRouter({
@@ -60,8 +67,10 @@ const router = createRouter({
 //Navigation Guard pour protéger les routes
 router.beforeEach((to, from, next) => {
   const user = sessionStorage.getItem('user')
-  if (to.meta.requiresAuth && !user) {
-    next('/auth')
+  if (!navigator.onLine && to.name !== 'Offline') {
+    next('/offline');
+  } else if (to.meta.requiresAuth && !user) {
+    next('/auth');
   } else {
     next();
   }

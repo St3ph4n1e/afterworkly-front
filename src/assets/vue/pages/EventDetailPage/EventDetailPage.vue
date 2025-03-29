@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router';
 import { formatDate } from '@/utils/date'
 import { getEventById, toggleParticipantStatus } from'@/axios/api';
 import type { Event } from '@/assets/vue/types/types';
+import {  showError, currentNotification } from '../../../../utils/errors.ts';
+import axios from 'axios';
 import dayjs from 'dayjs';
 import 'dayjs/locale/fr';
 
@@ -13,7 +15,7 @@ const route = useRoute();
 const router = useRouter();
 const event = ref<Event | null>(null);
 const isLoading = ref(true);
-const errorMessage = ref<string | null>(null);
+// const errorMessage = ref<string | null>(null);
 const currentUserId = ref<string | null>(null); // ID de l'utilisateur connecté
 const attendanceConfirmed = ref(false);
 
@@ -44,32 +46,12 @@ function scrollRight() {
   }
 }
 
-const mockParticipants = [
-  { userId: 1, username: 'User 1', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 2, username: 'User 2', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 4', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-];
+
 
 // Récupération de l'événement et initialisation
 onMounted(async () => {
   const eventId = route.params.id as string;
+
 
   // Récupérer l'utilisateur connecté depuis le localStorage
   const storedUser = sessionStorage.getItem('user');
@@ -81,6 +63,14 @@ onMounted(async () => {
   try {
     isLoading.value = true;
     const fetchedEvent = await getEventById(eventId);
+
+    if (!fetchedEvent) {
+      showError('Événement introuvable.'); 
+
+      router.push('/404');
+      return;
+    }
+
 
     event.value = {
       ...fetchedEvent,
@@ -98,9 +88,28 @@ onMounted(async () => {
 
 
 
-  } catch (error: any) {
+  } catch (error) {
     console.error("Erreur lors de la récupération de l'événement :", error);
-    errorMessage.value = "Impossible de charger l'événement.";
+    if (axios.isAxiosError(error)) {
+      if (error.response && error.response.status === 404) {
+        showError("L'événement demandé n'a pas été trouvé.");
+        setTimeout(() => {
+        router.push('/404'); 
+      }, 3000);
+      } else {
+        showError(error.response?.data.message || "L'événement demandé n'a pas été trouvé.");
+        setTimeout(() => {
+        router.push('/404'); 
+      }, 3000);
+      }
+    } else {
+      // Autres erreurs
+      showError("L'événement demandé n'a pas été trouvé.");
+      setTimeout(() => {
+        router.push('/404'); 
+      }, 3000);
+     
+    }
   } finally {
     isLoading.value = false;
   }
@@ -195,6 +204,12 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
 
 <template>
   <div class="event-detail min-h-screen flex flex-col bg-gray-100">
+    <NotificationComponent
+      v-if="currentNotification.isVisible"
+      :message="currentNotification.message"
+      :type="currentNotification.type"
+      :isVisible="currentNotification.isVisible"
+    />
     <HeaderComponent />
 
     <main class="container mx-auto p-4 flex-grow flex justify-center items-center">

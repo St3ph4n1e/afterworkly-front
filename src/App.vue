@@ -1,26 +1,30 @@
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref } from 'vue';
-import { showError, showSuccess } from './utils/errors';
+import { onMounted, onBeforeUnmount, ref, computed } from 'vue';
+import { notification, showError, showSuccess } from './utils/errors';
 
 
 const isOffline = ref(false);
+const wasOffline = ref(false);
 
 
 function handleConnectionStatus() {
   if (navigator.onLine) {
     isOffline.value = false; 
-    showSuccess("Vous êtes maintenant connecté à Internet.");
+    if (wasOffline.value) {
+      showSuccess("Vous êtes maintenant connecté à Internet.");
+    }
+    wasOffline.value = false; 
   } else {
     isOffline.value = true; 
-    showError("Vous avez perdu la connexion Internet. Certaines fonctionnalités peuvent être limitées.", true); 
+    showError("Vous avez perdu la connexion Internet. Certaines fonctionnalités peuvent être limitées.");
+    wasOffline.value = true; 
   }
 }
 
 onMounted(() => {
   handleConnectionStatus();
-
-  window.addEventListener('online', handleConnectionStatus);
   window.addEventListener('offline', handleConnectionStatus);
+  window.addEventListener('online', handleConnectionStatus);
 });
 
 onBeforeUnmount(() => {
@@ -28,15 +32,18 @@ onBeforeUnmount(() => {
   window.removeEventListener('offline', handleConnectionStatus);
 });
 
+const currentNotification = computed(() => notification.value);
+
 </script>
 
 <template>
   <div id="app">
     <div class="h-full w-full flex flex-col">
       <NotificationComponent
-      v-if="isOffline"
-      :message="'Vous êtes hors ligne. Vérifiez votre connexion internet.'"
-      :type="'error'"
+      v-if="currentNotification.isVisible"
+      :message="currentNotification.message"
+      :type="currentNotification.type"
+      :isVisible="currentNotification.isVisible"
     />
       <router-view class="flex-grow"></router-view>
     </div>

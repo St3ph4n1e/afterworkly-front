@@ -36,6 +36,7 @@ const editedDate = ref('');
 const editedTime = ref('');
 const editedLocation = ref('');
 const editedImage = ref(null);
+const editedColor = ref(event.value?.color || '#f9f9f9');
 
 onMounted(async () => {
   const eventId = route.params.id as string;
@@ -48,6 +49,7 @@ onMounted(async () => {
     editedLocation.value = fetchedEvent.location;
     editedDescription.value = fetchedEvent.description;
     editedImage.value = fetchedEvent.image;
+    editedColor.value = fetchedEvent.color || '#f9f9f9';
   } catch (error) {
     console.error("Erreur lors de la récupération de l'événement :", error);
   } finally {
@@ -154,7 +156,7 @@ onMounted(async () => {
 const themeStyle = computed(() => {
   if (event.value) {
     return {
-      backgroundColor: event.value.color || '#f9f9f9',
+      backgroundColor: editedColor.value || '#f9f9f9',
     };
   }
   return {};
@@ -199,6 +201,11 @@ function triggerEditEventMode() {
   showEditButtons.value = true;
 }
 
+function quitEditEventMode() {
+  editEventMode.value = false;
+  showEditButtons.value = false;
+}
+
 async function triggerSaveEvent() {
   if (!event.value) return;
   try {
@@ -209,6 +216,7 @@ async function triggerSaveEvent() {
       description: editedDescription.value,
       location: editedLocation.value,
       image: editedImage.value,
+      color: editedColor.value,
     });
     event.value.title = editedTitle.value;
     event.value.date = editedDate.value;
@@ -216,6 +224,9 @@ async function triggerSaveEvent() {
     event.value.description = editedDescription.value;
     event.value.location = editedLocation.value;
     event.value.image = editedImage.value;
+    event.value.color = editedColor.value;
+
+    // eventColor.value = editedColor.value;
     editEventMode.value = false;
     showEditButtons.value = false;
     notification.value = {
@@ -227,63 +238,6 @@ async function triggerSaveEvent() {
     console.error("Erreur lors de la mise à jour de l'événement :", error);
   }
 }
-
-// function triggerSaveEvent() {
-//   if (!event.value) return;
-
-//   event.value.title = editedTitle.value;
-//   event.value.description = editedDescription.value;
-//   event.value.date = editedDate.value;
-//   event.value.time = editedTime.value;
-
-//   editEventMode.value = false;
-//   showEditButtons.value = false;
-
-//   notification.value = {
-//     message: 'Événement sauvegardé avec succès !',
-//     type: 'success',
-//     visible: true,
-//   };
-
-//   console.log('Événement mis à jour:', event.value);
-// }
-
-
-
-// function triggerSaveEvent() {
-//   try{
-//     //Appel de l'api de sauvegarde de l'event
-//     // await deleteEvent(route.params.id).then(
-//     //  resp  => {
-//     //     console.log('event deleted');
-//     //     notification.value = {
-//     //       message: 'Événement supprimé avec succès !',
-//     //       type: 'success',
-//     //       isVisible: true,
-//     //     };
-//     //     router.push("/");
-//     //    }
-//     // )
-//     editEventMode.value = false;
-//     showEditButtons.value = false;
-//     notification.value = {
-//           message: 'Événement sauvegardé avec succès !',
-//           type: 'success',
-//           isVisible: true,
-//     };
-//     console.log('event saved');
-
-//   }
-//   //Echec de sauvegarde d'event
-//   catch (error) {
-//     console.log(error);
-//     notification.value = {
-//       message: error.message || 'Une erreur est survenue.',
-//       type: 'error',
-//       isVisible: true,
-//     };
-//   }
-// }
 
 async function triggerDeleteEvent() {
   //Essaie de suppression d'event
@@ -336,13 +290,6 @@ async function sendInviteEmail(email: string) {
   }
 }
 
-// function updateEventImage(newImageUrl: string) {
-//   if (event.value) {
-//     event.value.image = newImageUrl;
-//   }
-//   showImageModal.value = false;
-// }
-
 function handleImageUpload(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0];
   if (file) {
@@ -362,7 +309,7 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
   <div class="event-detail min-h-screen flex flex-col bg-gray-100">
     <HeaderComponent />
 
-    <main class="container mx-auto p-4 flex-grow flex justify-center items-center">
+    <main class="container-card h-screen overflow-auto mx-auto max-w-4xl p-4">
       <div v-if="isLoading" class="text-center">
         <p class="text-gray-500">Chargement...</p>
       </div>
@@ -380,6 +327,12 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
             class="absolute bottom-4 right-4 text-gray-700 hover:text-gray-900 transition"
             title="Changer l'image">
             <i class="fas fa-camera text-2xl"></i>
+          </button>
+          <button
+            v-if="showEditButtons"
+            class="absolute bottom-4 right-12 text-gray-700 hover:text-gray-900 transition"
+            title="Changer la couleur du thème">
+            <input type="color" v-model="editedColor" class="w-8 h-8 border rounded-lg cursor-pointer" />
           </button>
           <div>
             <button
@@ -406,14 +359,6 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
             >
               <i class="fas fa-envelope text-2xl"></i>
             </button>
-            <!-- <button
-              v-if="showEditButtons"
-              @click="triggerSaveEvent"
-              class="absolute bottom-4 right-4 text-gray-700 hover:text-gray-900 transition"
-              title="Modifier l'événement"
-            >
-              <i class="fas fa-save text-2xl"></i>
-            </button> -->
           </div>
         </div>
 
@@ -534,7 +479,7 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
           </div>
 
           <div class="flex justify-end space-x-4">
-            <button @click="editEventMode = false" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 mt-2">
+            <button @click="quitEditEventMode" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 mt-2">
               Annuler
             </button>
             <button @click="triggerSaveEvent" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mt-2">
@@ -552,7 +497,7 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
         :isVisible="showInviteModal"
         title="Inviter des participants"
         :buttons="[
-          { text: 'Fermer', action: () => (showInviteModal = false), class: 'bg-gray-500 text-white' }
+          { text: 'Fermer', action: () => (showInviteModal = false), class: 'bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 mt-2' }
         ]"
       >
         <div>

@@ -1,6 +1,7 @@
-.container {
+.container-card {
   margin-top: 1rem;
   max-width: 800px;
+  width: 800px
 }
 
 /* .shadow-lg {
@@ -38,9 +39,6 @@
   font-weight: bold;
   transform: scale(1.05);
 }
-
-
-
 
 .event-notification {
   height: auto ;

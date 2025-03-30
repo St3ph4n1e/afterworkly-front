@@ -55,7 +55,7 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
 
     if (error.response?.status === 401 || error.response?.status === 403) {
-      console.log(error.response?.data?.message )
+      console.error(error.response?.data?.message )
       const errorMsg = error.response?.data?.message ||  error.response?.data?.error_description || "";
 
       // todo axe d'amelioration : peut-être faire le refresh direct depuis le back si token expired

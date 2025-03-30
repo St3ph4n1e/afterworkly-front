@@ -15,7 +15,6 @@ const errorMessage = ref<string | null>(null);
 onMounted(async () => {
   const storedUser = sessionStorage.getItem('user');
   if (storedUser) {
-    console.log(storedUser)
     const user = JSON.parse(storedUser);
     userName.value = user.username || 'Utilisateur';
   } else {
@@ -27,7 +26,6 @@ onMounted(async () => {
   try {
     const response = await getEvents({ page: 1, limit: 3 }); // Appel API avec pagination
     events.value = response;
-    console.log('Événements chargés :', events.value);
 
   } catch (error) {
     console.error('Erreur lors du chargement des événements :', error);

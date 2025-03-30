@@ -41,7 +41,6 @@ export async function loginUser(mail: string, password: string) {
 export async function createUser(userData: User) {
   try {
     const response = await signUp(userData);
-    console.log("User created:", response); 
     return response.data; 
   } catch (error: unknown) {
     console.error("Error signing up:", error);

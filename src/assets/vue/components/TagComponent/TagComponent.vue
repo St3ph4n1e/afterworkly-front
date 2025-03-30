@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {  watch, computed, type PropType, defineEmits } from 'vue'
+import {  watch, computed, type PropType } from 'vue'
 
 // Définir les props
 const props = defineProps({

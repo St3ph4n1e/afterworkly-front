@@ -53,12 +53,12 @@ onMounted(async () => {
 
     eventsCreated.value = response.eventsCreated.map((event: Event) => ({
       ...event,
-      id: event.id, // Transforme `_id` en `id`
+      id: event._id, 
     }));
 
     eventsParticipating.value = response.eventsParticipating.map((event: Event) => ({
       ...event,
-      id: event.id,
+      id: event._id,
     }));
 
     // Affiche une notification uniquement si les champs critiques sont vides

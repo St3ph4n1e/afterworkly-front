@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, computed } from 'vue';
 import { notification, showError, showSuccess } from './utils/errors';
+import router from './router/router';
 
 
 const isOffline = ref(false);
@@ -12,6 +13,7 @@ function handleConnectionStatus() {
     isOffline.value = false; 
     if (wasOffline.value) {
       showSuccess("Vous êtes maintenant connecté à Internet.");
+     
     }
     wasOffline.value = false; 
   } else {

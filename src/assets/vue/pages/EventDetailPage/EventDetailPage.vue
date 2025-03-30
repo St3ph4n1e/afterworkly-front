@@ -115,15 +115,13 @@ onMounted(async () => {
   }
 
 
-  console.log("Participants :", event.value?.participants);
-console.log("Utilisateur connecté :", currentUserId.value);
-console.log(
-  "Participation confirmée :",
-  event.value?.participants.some(
-    (participant) =>
-      participant.userId === currentUserId.value && participant.status === 'Confirmé'
-  )
-);
+// console.log(
+//   "Participation confirmée :",
+//   event.value?.participants.some(
+//     (participant) =>
+//       participant.userId === currentUserId.value && participant.status === 'Confirmé'
+//   )
+// );
 
 });
 

@@ -166,3 +166,8 @@ export async function updateUserAvatar(file: File) {
   });
   return response.data;
 }
+
+export async function getUserInfo(id: string) {
+  const response = await apiClient.get('/auth/' + id)
+  return response.data
+}

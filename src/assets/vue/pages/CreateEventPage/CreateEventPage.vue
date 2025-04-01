@@ -15,7 +15,7 @@ const formData = ref({
   eventLocation: '',
   eventImage: null as File | null,
   eventColor: '#ffffff',
-  isPublic: true, // Nouveau champ pour définir si l'événement est public ou privé
+  isPublic: true, // Champ pour définir si l'événement est public ou privé
 });
 
 const previewImage = ref<string | null>(null);
@@ -59,6 +59,15 @@ function handleFileUpload(event: Event) {
 }
 
 async function handleSubmit() {
+
+
+  const date = new Date()
+
+  if(formData.value.eventDate < date.toISOString().split('T')[0]) {
+    showError("La date de l'événement ne peut pas être dans le passé.");
+    return;
+  }
+
   const eventData = new FormData();
   eventData.append('title', formData.value.eventName);
   eventData.append('date', formData.value.eventDate);
@@ -66,6 +75,8 @@ async function handleSubmit() {
   eventData.append('location', formData.value.eventLocation);
   eventData.append('color', formData.value.eventColor);
   eventData.append('isPublic', formData.value.isPublic.toString());
+
+
 
   if (formData.value.eventImage) {
     eventData.append('image', formData.value.eventImage);

@@ -50,3 +50,10 @@
   white-space: nowrap;
 }
 
+/*
+todo not apply it to all div
+ */
+
+div::-webkit-scrollbar {
+  display: none;
+}

@@ -72,7 +72,7 @@ async function handleSubmit() {
     if(axios.isAxiosError(error)) {
       showError(error.response?.data.message || 'Une erreur est survenue.');
     } else {
-    showError( 'Une erreur inattendue est survenue.');
+      showError(error?.message || 'Une erreur est survenue.');
   }
 }
 }
@@ -224,14 +224,14 @@ function createAnotherEvent() {
       :buttons="[
          { text: 'Créer un autre événement', action: createAnotherEvent, class: 'bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition' },
         { text: 'Voir les détails', action: viewEventDetails, class: 'bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition' },
-       
+
       ]"
       @close="createAnotherEvent"
     >
       <p class="text-gray-600">
         Souhaitez-vous voir les détails de l'événement ou en créer un nouveau ?
       </p>
-      
+
     </ModalComponent>
   </div>
 </template>

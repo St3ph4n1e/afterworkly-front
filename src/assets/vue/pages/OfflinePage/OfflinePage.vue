@@ -17,7 +17,7 @@ function tryReconnect() {
 
 <template>
     <div class="min-h-screen flex flex-col items-center justify-center bg-gray-100 text-center p-6">
-      <img src="/logo.png" alt="Logo" class="w-20 h-20 mb-4" />
+      <p style="font-size: 60px">😬</p>
       <h1 class="text-2xl font-bold text-red-600 mb-2">Vous êtes hors ligne</h1>
       <p class="text-gray-700 mb-4">Veuillez vérifier votre connexion Internet pour continuer.</p>
       <button @click="tryReconnect" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
@@ -25,6 +25,5 @@ function tryReconnect() {
       </button>
     </div>
   </template>
-  
 
-  
+

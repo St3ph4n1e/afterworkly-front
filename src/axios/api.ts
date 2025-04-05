@@ -75,7 +75,7 @@ apiClient.interceptors.response.use(
     if (!error.response) {
       console.error("Erreur de connexion réseau.", error);
       // Afficher la notification pour avertir l'utilisateur
-      return Promise.reject(new Error("Vous n'êtes pas connecté à Internet"));
+      return Promise.reject(new Error("Erreur de connexion au serveur distant"));
     }
 
     return Promise.reject(error.response?.data || error.message);

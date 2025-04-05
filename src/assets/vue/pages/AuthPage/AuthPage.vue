@@ -7,7 +7,8 @@ import { showError, showSuccess, currentNotification } from '../../../../utils/e
 
 const router = useRouter();
 
-const isSignUp = ref(true); // Initialement sur la page d'inscription
+// Initialement sur la page de connection
+const isSignUp = ref(false);
 
 const formData = ref({
   username: "",
@@ -51,8 +52,12 @@ async function handleKeycloakLoginRegister() {
   } else {
     // Connexion de l'utilisateur
     try {
-      await loginUser(formData.value.email, formData.value.password);
-      router.push("/"); // Redirige vers la page d'accueil ou tableau de bord
+      await loginUser(formData.value.email, formData.value.password).then(
+        _ => {
+          // Redirige vers la page d'accueil ou tableau de bord
+          router.push("/");
+        }
+      )
     } catch (error) {
       showError(error.message || "Erreur lors de la connexion. Veuillez vérifier vos identifiants.");
     }

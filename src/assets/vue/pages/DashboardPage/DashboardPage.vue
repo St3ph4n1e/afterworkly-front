@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { getEvents } from '@/axios/api';
 import type { Event } from '@/assets/vue/types/types';
@@ -15,7 +15,6 @@ const errorMessage = ref<string | null>(null);
 onMounted(async () => {
   const storedUser = sessionStorage.getItem('user');
   if (storedUser) {
-    console.log(storedUser)
     const user = JSON.parse(storedUser);
     userName.value = user.username || 'Utilisateur';
   } else {
@@ -27,9 +26,8 @@ onMounted(async () => {
   try {
     const response = await getEvents({ page: 1, limit: 3 }); // Appel API avec pagination
     events.value = response;
-    console.log('Événements chargés :', events.value);
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Erreur lors du chargement des événements :', error);
     errorMessage.value = 'Impossible de charger les événements. Veuillez réessayer plus tard.';
   } finally {

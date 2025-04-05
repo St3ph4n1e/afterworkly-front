@@ -24,8 +24,14 @@ onMounted(() => {
 onMounted(async () => {
   try {
     isLoading.value = true;
-    events.value = await getEvents(); // Récupère tous les événements depuis l'API
-  } catch (error: any) {
+
+    await getEvents().then(
+      eventsRespons => {
+        events.value = eventsRespons
+      }
+    )
+
+  } catch (error) {
     console.error('Erreur lors de la récupération des événements:', error);
     errorMessage.value = 'Impossible de charger les événements. Veuillez réessayer plus tard.';
   } finally {

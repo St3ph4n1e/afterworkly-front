@@ -1,7 +1,7 @@
 <script setup lang="ts">
 
 // Props typées
-const props = defineProps({
+defineProps({
   participantInfos: {
     type: Object,
     required: true,

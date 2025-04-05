@@ -2,6 +2,9 @@
 import { ref } from 'vue';
 import { createEvent } from '@/axios/api';
 import { useRouter } from 'vue-router';
+import axios from 'axios';
+import {  showError, showSuccess, currentNotification } from '../../../../utils/errors.ts';
+
 
 const router = useRouter();
 
@@ -62,20 +65,16 @@ async function handleSubmit() {
   try {
     const response = await createEvent(eventData);
     createdEventId.value = response.event._id;
-    notification.value = {
-      message: 'Événement créé avec succès !',
-      type: 'success',
-      isVisible: true,
-    };
+    showSuccess("Événement créé avec succès !");
     resetForm();
     showModal.value = true;
-  } catch (error: any) {
-    notification.value = {
-      message: error.message || 'Une erreur est survenue.',
-      type: 'error',
-      isVisible: true,
-    };
+  } catch (error) {
+    if(axios.isAxiosError(error)) {
+      showError(error.response?.data.message || 'Une erreur est survenue.');
+    } else {
+      showError(error?.message || 'Une erreur est survenue.');
   }
+}
 }
 
 function resetForm() {
@@ -113,15 +112,22 @@ function createAnotherEvent() {
         :message="notification.message"
         :type="notification.type"
       />
+      <NotificationComponent
+      v-if="currentNotification.isVisible"
+      :message="currentNotification.message"
+      :type="currentNotification.type"
+      :isVisible="currentNotification.isVisible"
+    />
 
       <!-- Formulaire -->
       <form @submit.prevent="handleSubmit" class="space-y-6 bg-white p-8 shadow-lg rounded-lg">
         <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">Créer un nouvel événement</h2>
         <div>
-          <label for="eventName" class="block font-medium text-gray-700">Nom de l'événement</label>
+          <label for="eventName"  class="block font-medium text-gray-700">Nom de l'événement</label>
           <input
             v-model="formData.eventName"
             id="eventName"
+            required
             type="text"
             placeholder="Entrez le nom de l'événement"
             class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -135,6 +141,7 @@ function createAnotherEvent() {
               id="eventDate"
               type="date"
               class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              required
             />
           </div>
           <div>
@@ -144,6 +151,7 @@ function createAnotherEvent() {
               id="eventTime"
               type="time"
               class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              required
             />
           </div>
         </div>
@@ -155,6 +163,7 @@ function createAnotherEvent() {
             type="text"
             placeholder="Entrez le lieu de l'événement"
             class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            required
           />
         </div>
         <div>
@@ -219,14 +228,14 @@ function createAnotherEvent() {
       :buttons="[
          { text: 'Créer un autre événement', action: createAnotherEvent, class: 'bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition' },
         { text: 'Voir les détails', action: viewEventDetails, class: 'bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition' },
-       
+
       ]"
       @close="createAnotherEvent"
     >
       <p class="text-gray-600">
         Souhaitez-vous voir les détails de l'événement ou en créer un nouveau ?
       </p>
-      
+
     </ModalComponent>
   </div>
 </template>

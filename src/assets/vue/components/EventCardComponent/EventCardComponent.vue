@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router';
-import { getImageUrl } from '@/utils/url';
-import dayjs from 'dayjs';
 import 'dayjs/locale/fr';
+import dayjs from 'dayjs';
 
 dayjs.locale('fr');
 
@@ -38,6 +37,7 @@ function viewEvent(eventId: string) {
 function openGoogleMaps(location: string) {
   if (!location) {
     console.error('Lieu non disponible');
+
     return;
   }
   const encodedLocation = encodeURIComponent(location);

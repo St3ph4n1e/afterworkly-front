@@ -123,10 +123,11 @@ function createAnotherEvent() {
       <form @submit.prevent="handleSubmit" class="space-y-6 bg-white p-8 shadow-lg rounded-lg">
         <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">Créer un nouvel événement</h2>
         <div>
-          <label for="eventName" class="block font-medium text-gray-700">Nom de l'événement</label>
+          <label for="eventName"  class="block font-medium text-gray-700">Nom de l'événement</label>
           <input
             v-model="formData.eventName"
             id="eventName"
+            required
             type="text"
             placeholder="Entrez le nom de l'événement"
             class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -140,6 +141,7 @@ function createAnotherEvent() {
               id="eventDate"
               type="date"
               class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              required
             />
           </div>
           <div>
@@ -149,6 +151,7 @@ function createAnotherEvent() {
               id="eventTime"
               type="time"
               class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              required
             />
           </div>
         </div>
@@ -160,6 +163,7 @@ function createAnotherEvent() {
             type="text"
             placeholder="Entrez le lieu de l'événement"
             class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            required
           />
         </div>
         <div>

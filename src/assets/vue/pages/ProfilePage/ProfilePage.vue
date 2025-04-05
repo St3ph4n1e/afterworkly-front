@@ -53,7 +53,7 @@ onMounted(async () => {
 
     eventsCreated.value = response.eventsCreated.map((event: Event) => ({
       ...event,
-      id: event._id, 
+      id: event._id,
     }));
 
     eventsParticipating.value = response.eventsParticipating.map((event: Event) => ({
@@ -89,7 +89,7 @@ async function updateProfile() {
     isEditing.value = false; // Fermer le formulaire
   } catch (error) {
     console.error('Erreur lors de la mise à jour du profil :', error);
-    showError('Une erreur s’est produite. Veuillez réessayer.');
+    showError(error?.message || 'Une erreur s’est produite. Veuillez réessayer.');
   }
 }
 

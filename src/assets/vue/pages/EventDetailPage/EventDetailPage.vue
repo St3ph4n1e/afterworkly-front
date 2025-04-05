@@ -65,7 +65,7 @@ onMounted(async () => {
     const fetchedEvent = await getEventById(eventId);
 
     if (!fetchedEvent) {
-      showError('Événement introuvable.'); 
+      showError('Événement introuvable.');
 
       router.push('/404');
       return;
@@ -94,21 +94,21 @@ onMounted(async () => {
       if (error.response && error.response.status === 404) {
         showError("L'événement demandé n'a pas été trouvé.");
         setTimeout(() => {
-        router.push('/404'); 
+        router.push('/404');
       }, 3000);
       } else {
         showError(error.response?.data.message || "L'événement demandé n'a pas été trouvé.");
         setTimeout(() => {
-        router.push('/404'); 
+        router.push('/404');
       }, 3000);
       }
     } else {
       // Autres erreurs
       showError("L'événement demandé n'a pas été trouvé.");
       setTimeout(() => {
-        router.push('/404'); 
+        router.push('/404');
       }, 3000);
-     
+
     }
   } finally {
     isLoading.value = false;
@@ -165,7 +165,7 @@ async function toggleParticipation() {
     showNotification(`Vous avez ${newStatus === 'Confirmé' ? 'rejoint' : 'quitté'} l'événement.`, 'success');
   } catch (error) {
     console.error('Erreur lors de la mise à jour de la participation :', error);
-    showNotification('Une erreur est survenue. Veuillez réessayer.', 'error');
+    showNotification(error?.message || 'Une erreur est survenue. Veuillez réessayer.', 'error');
   }
 }
 

@@ -117,8 +117,6 @@ onMounted(async () => {
     // Handle image
     formData.value.eventImage = fetchedEvent.image ?? null;
 
-    console.log(fetchedEvent)
-
     // Invitation link
     inviteLink.value = `${window.location.origin}/event-detail/${eventId}?invitation=true`;
 
@@ -212,8 +210,6 @@ async function triggerSaveEvent() {
     await updateEvent(event.value.id, updatedEventData).then(
       response => {
         if (event.value) {
-          console.log(response.updatedEvent.image)
-          console.log(typeof formData.value.eventImage)
           event.value.image = response.updatedEvent.image
             ? response.updatedEvent.image
             : 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/logo-afterworkly.png';

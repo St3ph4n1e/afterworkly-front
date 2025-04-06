@@ -30,32 +30,17 @@ const notification = ref<{ message: string; type: 'success' | 'error'; visible: 
   visible: false,
 });
 
-const editedTitle = ref('');
-const editedDescription = ref('');
-const editedDate = ref('');
-const editedTime = ref('');
-const editedLocation = ref('');
-const editedImage = ref(null);
-const editedColor = ref(event.value?.color || '#f9f9f9');
-
-onMounted(async () => {
-  const eventId = route.params.id as string;
-  try {
-    const fetchedEvent = await getEventById(eventId);
-    event.value = fetchedEvent;
-    editedTitle.value = fetchedEvent.title;
-    editedDate.value = fetchedEvent.date;
-    editedTime.value = fetchedEvent.time;
-    editedLocation.value = fetchedEvent.location;
-    editedDescription.value = fetchedEvent.description;
-    editedImage.value = fetchedEvent.image;
-    editedColor.value = fetchedEvent.color || '#f9f9f9';
-  } catch (error) {
-    console.error("Erreur lors de la récupération de l'événement :", error);
-  } finally {
-    isLoading.value = false;
-  }
+const formData = ref({
+  eventName: '',
+  eventDate: '',
+  eventTime: '',
+  eventLocation: '',
+  eventImage: null as File | null,
+  eventColor: '#f9f9f9',
+  eventIsPublic: true,
+  eventDescription: ''
 });
+const imagePreviewUrl = ref<string | null>(null);
 
 
 const scrollContainer = ref<HTMLDivElement | null>(null);
@@ -105,7 +90,7 @@ const editEventMode = ref(false);
 onMounted(async () => {
   const eventId = route.params.id as string;
 
-  // Récupérer l'utilisateur connecté depuis le localStorage
+  // Set current user
   const storedUser = sessionStorage.getItem('user');
   if (storedUser) {
     const user = JSON.parse(storedUser);
@@ -115,48 +100,48 @@ onMounted(async () => {
   try {
     isLoading.value = true;
     const fetchedEvent = await getEventById(eventId);
-
     event.value = {
       ...fetchedEvent,
-      id: fetchedEvent._id, // Transformation de `_id` en `id`
+      id: fetchedEvent._id,
     };
 
-    // Créer un lien d'invitation
+    // Populate formData
+    formData.value.eventName = fetchedEvent.title;
+    formData.value.eventDate = fetchedEvent.date;
+    formData.value.eventTime = fetchedEvent.time;
+    formData.value.eventLocation = fetchedEvent.location;
+    formData.value.eventDescription = fetchedEvent.description;
+    formData.value.eventColor = fetchedEvent.color || '#f9f9f9';
+    formData.value.eventIsPublic = fetchedEvent.isPublic;
+
+    // Handle image
+    formData.value.eventImage = fetchedEvent.image ?? null;
+
+    console.log(fetchedEvent)
+
+    // Invitation link
     inviteLink.value = `${window.location.origin}/event-detail/${eventId}?invitation=true`;
 
-    // Initialisation de l'état de participation
-    attendanceConfirmed.value = event.value?.participants.some(
-  (participant) =>
-    participant.userId === currentUserId.value && participant.status === 'Confirmé'
-) ?? false;
-
-
-
-  } catch (error: any) {
+    // Participation status
+    attendanceConfirmed.value =
+      fetchedEvent.participants.some(
+        (participant) =>
+          participant.userId === currentUserId.value &&
+          participant.status === 'Confirmé'
+      ) ?? false;
+  } catch (error) {
     console.error("Erreur lors de la récupération de l'événement :", error);
     errorMessage.value = "Impossible de charger l'événement.";
   } finally {
     isLoading.value = false;
   }
-
-
-  console.log("Participants :", event.value?.participants);
-  console.log("Utilisateur connecté :", currentUserId.value);
-  console.log(
-    "Participation confirmée :",
-  event.value?.participants.some(
-    (participant) =>
-      participant.userId === currentUserId.value && participant.status === 'Confirmé'
-  )
-);
-
 });
 
 // Computed pour le style du thème
 const themeStyle = computed(() => {
   if (event.value) {
     return {
-      backgroundColor: editedColor.value || '#f9f9f9',
+      backgroundColor: formData.value.eventColor || '#f9f9f9',
     };
   }
   return {};
@@ -208,23 +193,33 @@ function quitEditEventMode() {
 
 async function triggerSaveEvent() {
   if (!event.value) return;
+
+  const updatedEventData = new FormData();
+
+  updatedEventData.append('title', formData.value.eventName);
+  updatedEventData.append('date', formData.value.eventDate);
+  updatedEventData.append('time', formData.value.eventTime);
+  updatedEventData.append('description', formData.value.eventDescription);
+  updatedEventData.append('location', formData.value.eventLocation);
+  updatedEventData.append('color', formData.value.eventColor);
+  updatedEventData.append('isPublic', formData.value.eventIsPublic.toString());
+
+  if (formData.value.eventImage) {
+    updatedEventData.append('image', formData.value.eventImage);
+  }
+
   try {
-    await updateEvent(event.value.id, {
-      title: editedTitle.value,
-      date: editedDate.value,
-      time: editedTime.value,
-      description: editedDescription.value,
-      location: editedLocation.value,
-      image: editedImage.value,
-      color: editedColor.value,
-    });
-    event.value.title = editedTitle.value;
-    event.value.date = editedDate.value;
-    event.value.time = editedTime.value;
-    event.value.description = editedDescription.value;
-    event.value.location = editedLocation.value;
-    event.value.image = editedImage.value;
-    event.value.color = editedColor.value;
+    await updateEvent(event.value.id, updatedEventData);
+    event.value.title = formData.value.eventName;
+    event.value.date = formData.value.eventDate;
+    event.value.time = formData.value.eventTime;
+    event.value.description = formData.value.eventDescription;
+    event.value.location = formData.value.eventLocation;
+    event.value.image = typeof formData.value.eventImage === 'string'
+      ? formData.value.eventImage
+      : null;
+    event.value.isPublic = formData.value.eventIsPublic;
+    event.value.color = formData.value.eventColor;
 
     // eventColor.value = editedColor.value;
     editEventMode.value = false;
@@ -293,7 +288,8 @@ async function sendInviteEmail(email: string) {
 function handleImageUpload(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0];
   if (file) {
-    editedImage.value = URL.createObjectURL(file);
+    formData.value.eventImage = file;
+    imagePreviewUrl.value = URL.createObjectURL(file);
   }
 }
 
@@ -332,7 +328,7 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
             v-if="showEditButtons"
             class="absolute bottom-4 right-12 text-gray-700 hover:text-gray-900 transition"
             title="Changer la couleur du thème">
-            <input type="color" v-model="editedColor" class="w-8 h-8 border rounded-lg cursor-pointer" />
+            <input type="color" v-model="formData.eventColor" class="w-8 h-8 border rounded-lg cursor-pointer" />
           </button>
           <div>
             <button
@@ -366,6 +362,13 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
           v-if="!editEventMode"
           class="p-6 space-y-6"
         >
+
+          <div class="flex justify-center items-center space-x-4 text-gray-600 mt-2">
+            <p class="flex items-center space-x-2">
+              <i class="fas fa-globe"></i>
+              <span class="font-medium">{{ event.isPublic ? 'Public' : 'Privé' }}</span>
+            </p>
+          </div>
           <div class="text-center">
             <h2 class="text-2xl font-bold text-gray-800">{{ event.title }}</h2>
             <h3 class="text-2xl font-bold text-gray-800">📍{{ event.location }}</h3>
@@ -439,11 +442,21 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
         </div>
 
         <div v-if="editEventMode" class="p-6 space-y-6">
+          <div class="flex items-center space-x-2">
+            <label class="text-gray-700 font-medium">Public</label>
+            <input
+              type="checkbox"
+              v-model="formData.eventIsPublic"
+              class="rounded-md"
+            />
+            <span>{{ formData.eventIsPublic ? 'Public' : 'Privé' }}</span>
+          </div>
+
           <div>
             <label class="block text-gray-700 font-medium">Titre</label>
             <input
               type="text"
-              v-model="editedTitle"
+              v-model="formData.eventName"
               class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
           </div>
@@ -451,7 +464,7 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
             <label class="block text-gray-700 font-medium">Lieu</label>
             <input
               type="text"
-              v-model="editedLocation"
+              v-model="formData.eventLocation"
               class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
           </div>
@@ -460,7 +473,7 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
               <label class="block text-gray-700 font-medium">Date</label>
               <input
                 type="date"
-                v-model="editedDate"
+                v-model="formData.eventDate"
                 class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
@@ -468,14 +481,14 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
               <label class="block text-gray-700 font-medium">Heure</label>
               <input
                 type="time"
-                v-model="editedTime"
+                v-model="formData.eventTime"
                 class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
           </div>
           <div>
             <label class="block text-gray-700 font-medium">Description</label>
-            <textarea v-model="editedDescription" class="border p-2 rounded w-full"></textarea>
+            <textarea v-model="formData.eventDescription" class="border p-2 rounded w-full"></textarea>
           </div>
 
           <div class="flex justify-end space-x-4">
@@ -538,6 +551,10 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
         <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
           <h2 class="text-lg font-bold mb-4">Changer l'image</h2>
           <input type="file" @change="handleImageUpload" class="mb-4 w-full" />
+          <img
+          :src="imagePreviewUrl ?? event?.image ?? 'fallback.jpg'"
+          style="width: 100px;"
+          />
           <div class="flex justify-end space-x-2">
             <button @click="showImageModal = false" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 mt-2">Annuler</button>
             <button @click="uploadImage" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mt-2">Sauvegarder</button>

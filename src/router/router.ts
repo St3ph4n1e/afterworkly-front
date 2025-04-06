@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import OfflinePage from '../assets/vue/pages/OfflinePage/OfflinePage.vue';
 
 
 const DashboardPage = () => import('@/assets/vue/pages/DashboardPage/DashboardPage.vue');
@@ -50,6 +51,12 @@ const routes = [
     component: () => import('@/assets/vue/pages/NotFoundPage/NotFoundPage.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/offline',
+    name: 'offline',
+    component: OfflinePage,
+  }
+  
 ]
 
 const router = createRouter({
@@ -60,8 +67,11 @@ const router = createRouter({
 //Navigation Guard pour protéger les routes
 router.beforeEach((to, from, next) => {
   const user = sessionStorage.getItem('user')
-  if (to.meta.requiresAuth && !user) {
-    next('/auth')
+  if (!navigator.onLine && to.name !== 'offline') {
+    sessionStorage.setItem('offlineRedirectPath', to.fullPath);
+    next('/offline');
+  } else if (to.meta.requiresAuth && !user) {
+    next('/auth');
   } else {
     next();
   }

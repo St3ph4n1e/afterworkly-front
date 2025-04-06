@@ -1,12 +1,12 @@
 
 <script setup lang="ts">
-const props = defineProps<{
+ defineProps<{
   isVisible: boolean;
   title: string;
   buttons: { text: string; action: () => void; class?: string }[];
 }>();
 
-const emits = defineEmits(['close']);
+ defineEmits(['close']);
 </script>
 
 

@@ -1,5 +1,7 @@
-import axios from "axios";
+import axios   from "axios";
 import { login, signUp } from '@/axios/api.ts'
+import type { User } from '../assets/vue/types/types.ts';
+import { showError } from "../utils/errors.ts"
 
 
 export async function loginUser(mail: string, password: string) {
@@ -16,23 +18,41 @@ export async function loginUser(mail: string, password: string) {
     sessionStorage.setItem("user", JSON.stringify(response.user));
 
     return response;
-  } catch (error: any) {
-    if (error.response?.status === 404) {
-      throw new Error("User not registered. Please sign up first.");
+  } catch (error: unknown ) {
+    if (axios.isAxiosError(error)) {
+      // Gestion des erreurs spécifiques
+      if (error.response?.status === 404) {
+        showError("Utilisateur non enregistré. Veuillez vous inscrire d'abord.");
+      } else if (error.response?.status === 401) {
+        showError("Échec de la connexion. Vérifiez vos identifiants.");
+      } else {
+        showError("Échec de la connexion. Veuillez réessayer plus tard.");
+      }
+    } else {
+      showError("Une erreur inattendue s'est produite.");
     }
-    console.error("Login failed:", error);
-    throw new Error("Échec de la connexion");
+    return Promise.reject(error);
+}
+
+}
+
+
+
+export async function createUser(userData: User) {
+  try {
+    const response = await signUp(userData);
+    return response.data; 
+  } catch (error: unknown) {
+    console.error("Error signing up:", error);
+    if (axios.isAxiosError(error)) {
+      showError("Erreur lors de l'inscription. Veuillez réessayer.");
+    } else {
+      showError("Erreur inattendue lors de l'inscription.");
+    }
+    throw error; 
   }
 }
 
-export async function createUser(userData) {
-  try {
-    const response = await signUp(userData)
-    console.log("User created:", response.data);
-  } catch (error: any) {
-    console.error("Error signing up:", error);
-  }
-}
 
 export function logoutUser() {
 

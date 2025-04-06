@@ -6,6 +6,8 @@ import { getEventById, toggleParticipantStatus, deleteEvent, updateEvent } from 
 // import { getImageUrl } from '@/utils/url';
 // import type { Event, EventParticipant } from '@/assets/vue/types/types';
 import type { Event } from '@/assets/vue/types/types';
+import {  showError, currentNotification } from '../../../../utils/errors.ts';
+import axios from 'axios';
 import dayjs from 'dayjs';
 import 'dayjs/locale/fr';
 
@@ -15,7 +17,7 @@ const route = useRoute();
 const router = useRouter();
 const event = ref<Event | null>(null);
 const isLoading = ref(true);
-const errorMessage = ref<string | null>(null);
+// const errorMessage = ref<string | null>(null);
 const currentUserId = ref<string | null>(null); // ID de l'utilisateur connecté
 const attendanceConfirmed = ref(false);
 const showEditButtons = ref(false);
@@ -41,7 +43,6 @@ const formData = ref({
   eventDescription: ''
 });
 const imagePreviewUrl = ref<string | null>(null);
-
 
 const scrollContainer = ref<HTMLDivElement | null>(null);
 
@@ -86,11 +87,13 @@ const showDeleteModal = ref(false);
 // Variables pour l'édition d'un event
 const editEventMode = ref(false);
 
+
 // Récupération de l'événement et initialisation
 onMounted(async () => {
   const eventId = route.params.id as string;
 
-  // Set current user
+
+  // Récupérer l'utilisateur connecté depuis le localStorage
   const storedUser = sessionStorage.getItem('user');
   if (storedUser) {
     const user = JSON.parse(storedUser);
@@ -100,6 +103,15 @@ onMounted(async () => {
   try {
     isLoading.value = true;
     const fetchedEvent = await getEventById(eventId);
+
+    if (!fetchedEvent) {
+      showError('Événement introuvable.');
+
+      router.push('/404');
+      return;
+    }
+
+
     event.value = {
       ...fetchedEvent,
       id: fetchedEvent._id,
@@ -120,16 +132,29 @@ onMounted(async () => {
     // Invitation link
     inviteLink.value = `${window.location.origin}/event-detail/${eventId}?invitation=true`;
 
-    // Participation status
-    attendanceConfirmed.value =
-      fetchedEvent.participants.some(
-        (participant) =>
-          participant.userId === currentUserId.value &&
-          participant.status === 'Confirmé'
-      ) ?? false;
+
   } catch (error) {
     console.error("Erreur lors de la récupération de l'événement :", error);
-    errorMessage.value = "Impossible de charger l'événement.";
+    if (axios.isAxiosError(error)) {
+      if (error.response && error.response.status === 404) {
+        showError("L'événement demandé n'a pas été trouvé.");
+        setTimeout(() => {
+        router.push('/404');
+      }, 3000);
+      } else {
+        showError(error.response?.data.message || "L'événement demandé n'a pas été trouvé.");
+        setTimeout(() => {
+        router.push('/404');
+      }, 3000);
+      }
+    } else {
+      // Autres erreurs
+      showError("L'événement demandé n'a pas été trouvé.");
+      setTimeout(() => {
+        router.push('/404');
+      }, 3000);
+
+    }
   } finally {
     isLoading.value = false;
   }
@@ -175,7 +200,7 @@ async function toggleParticipation() {
     showNotification(`Vous avez ${newStatus === 'Confirmé' ? 'rejoint' : 'quitté'} l'événement.`, 'success');
   } catch (error) {
     console.error('Erreur lors de la mise à jour de la participation :', error);
-    showNotification('Une erreur est survenue. Veuillez réessayer.', 'error');
+    showNotification(error?.message || 'Une erreur est survenue. Veuillez réessayer.', 'error');
   }
 }
 
@@ -191,6 +216,9 @@ function quitEditEventMode() {
 
 async function triggerSaveEvent() {
   if (!event.value) return;
+
+  isLoading.value = true;
+
 
   const updatedEventData = new FormData();
 
@@ -234,6 +262,8 @@ async function triggerSaveEvent() {
     };
   } catch (error) {
     console.error("Erreur lors de la mise à jour de l'événement :", error);
+  } finally {
+    isLoading.value = false;
   }
 }
 
@@ -306,10 +336,23 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
 
 <template>
   <div class="event-detail min-h-screen flex flex-col bg-gray-100">
+    <NotificationComponent
+      v-if="currentNotification.isVisible"
+      :message="currentNotification.message"
+      :type="currentNotification.type"
+      :isVisible="currentNotification.isVisible"
+    />
     <HeaderComponent />
 
     <main class="container-card h-screen overflow-auto mx-auto max-w-4xl p-4">
-      <div v-if="isLoading" class="text-center">
+<!--      <div v-if="isLoading" class="text-center">
+        <p class="text-gray-500">Chargement...</p>
+      </div>-->
+      <div v-if="isLoading" class="flex flex-col items-center justify-center py-20">
+        <svg class="animate-spin h-10 w-10 text-blue-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+        </svg>
         <p class="text-gray-500">Chargement...</p>
       </div>
 

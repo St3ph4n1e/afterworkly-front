@@ -71,7 +71,7 @@ function createEvent() {
       </div>
 
       <!-- Liste des événements et carte d'action -->
-      <section v-if="!isLoading && !errorMessage" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6 items-start">
+      <section v-if="!isLoading && !errorMessage" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6 items-stretch">
         <!-- Carte d'action -->
         <div
           class="bg-white shadow-lg rounded-lg p-6 flex flex-col justify-center items-center space-y-4 h-full"

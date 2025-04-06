@@ -158,7 +158,7 @@ const pageTitle = computed(() => {
       <!-- Liste des événements -->
       <section
         v-if="!isLoading && !errorMessage"
-        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"
+        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-2"
       >
         <!-- Tous les événements -->
         <template v-if="activeTab === 'all'">

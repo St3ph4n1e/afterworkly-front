@@ -7,6 +7,7 @@ import {  showError, showSuccess, currentNotification } from '../../../../utils/
 
 
 const router = useRouter();
+const imageInput = ref<HTMLInputElement | null>(null);
 
 const formData = ref({
   eventName: '',
@@ -88,6 +89,10 @@ function resetForm() {
     isPublic: true,
   };
   previewImage.value = null;
+
+  if (imageInput.value) {
+    imageInput.value.value = '';
+  }
 }
 
 function viewEventDetails() {
@@ -170,6 +175,7 @@ function createAnotherEvent() {
           <label for="eventImage" class="block font-medium text-gray-700">Photo de l'événement</label>
           <input
             id="eventImage"
+            ref="imageInput"
             type="file"
             class="block w-full text-gray-700 border rounded-lg p-3 mt-1"
             accept="image/*"

@@ -547,13 +547,13 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
       >
       </ModalComponent>
 
-      <div v-if="showImageModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-        <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+      <div v-if="showImageModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50" style="z-index: 9999;">
+        <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full" style="z-index: 10000;">
           <h2 class="text-lg font-bold mb-4">Changer l'image</h2>
           <input type="file" @change="handleImageUpload" class="mb-4 w-full" />
           <img
-          :src="imagePreviewUrl ?? event?.image ?? 'fallback.jpg'"
-          style="width: 100px;"
+            :src="imagePreviewUrl ?? event?.image ?? 'fallback.jpg'"
+            style="width: 100px;"
           />
           <div class="flex justify-end space-x-2">
             <button @click="showImageModal = false" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 mt-2">Annuler</button>

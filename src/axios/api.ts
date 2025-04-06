@@ -141,7 +141,7 @@ export async function updateEvent(eventId: string, updatedData: FormData | Recor
   return response.data;
 }
 
-export async function toggleParticipantStatus(eventId: string, participantData: { userId: string; status: string }) {
+export async function toggleParticipantStatus(eventId: string, participantData: { userId: string, isJoining: boolean }) {
   const response = await apiClient.post(`/events/${eventId}/participants`, participantData);
   return response.data;
 }

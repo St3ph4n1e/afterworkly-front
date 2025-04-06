@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { formatDate } from '@/utils/date'
-import { getEventById, toggleParticipantStatus, deleteEvent } from'@/axios/api';
+import { formatDate } from '@/utils/date';
+import { getEventById, toggleParticipantStatus, deleteEvent } from '@/axios/api';
 import type { Event } from '@/assets/vue/types/types';
-import {  showError, currentNotification } from '../../../../utils/errors.ts';
+import { showError, currentNotification } from '../../../../utils/errors.ts';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import 'dayjs/locale/fr';
@@ -15,11 +15,10 @@ const route = useRoute();
 const router = useRouter();
 const event = ref<Event | null>(null);
 const isLoading = ref(true);
-// const errorMessage = ref<string | null>(null);
-const currentUserId = ref<string | null>(null); // ID de l'utilisateur connecté
+const currentUserId = ref<string | null>(null);
 const attendanceConfirmed = ref(false);
 const showDeleteButton = ref(false);
-// Variables pour la pop-up d'invitation
+
 const showInviteModal = ref(false);
 const inviteLink = ref<string | null>(null);
 const emailToSend = ref<string>('');
@@ -28,20 +27,15 @@ const notification = ref<{ message: string; type: 'success' | 'error'; visible: 
   type: 'success',
   visible: false,
 });
-// Variables pour la pop-up de suppréssion
 const showDeleteModal = ref(false);
-
-
 const scrollContainer = ref<HTMLDivElement | null>(null);
 
-// Function to scroll left
 function scrollLeft() {
   if (scrollContainer.value) {
     scrollContainer.value.scrollLeft -= 200; // Scroll by 200px to the left
   }
 }
 
-// Function to scroll right
 function scrollRight() {
   if (scrollContainer.value) {
     scrollContainer.value.scrollLeft += 200; // Scroll by 200px to the right
@@ -68,15 +62,13 @@ onMounted(async () => {
 
     if (!fetchedEvent) {
       showError('Événement introuvable.');
-
       router.push('/404');
       return;
     }
 
-
     event.value = {
       ...fetchedEvent,
-      id: fetchedEvent._id, // Transformation de `_id` en `id`
+      id: fetchedEvent._id, // todo see about this
     };
 
     // Créer un lien d'invitation
@@ -84,47 +76,26 @@ onMounted(async () => {
 
     // Initialisation de l'état de participation
     attendanceConfirmed.value = event.value?.participants.some(
-  (participant) =>
-    participant.userId === currentUserId.value && participant.status === 'Confirmé'
-) ?? false;
-
-
+      (participant) => participant.userId === currentUserId.value
+    ) ?? false;
 
   } catch (error) {
     console.error("Erreur lors de la récupération de l'événement :", error);
     if (axios.isAxiosError(error)) {
       if (error.response && error.response.status === 404) {
         showError("L'événement demandé n'a pas été trouvé.");
-        setTimeout(() => {
-        router.push('/404');
-      }, 3000);
+        setTimeout(() => router.push('/404'), 3000);
       } else {
         showError(error.response?.data.message || "L'événement demandé n'a pas été trouvé.");
-        setTimeout(() => {
-        router.push('/404');
-      }, 3000);
+        setTimeout(() => router.push('/404'), 3000);
       }
     } else {
-      // Autres erreurs
       showError("L'événement demandé n'a pas été trouvé.");
-      setTimeout(() => {
-        router.push('/404');
-      }, 3000);
-
+      setTimeout(() => router.push('/404'), 3000);
     }
   } finally {
     isLoading.value = false;
   }
-
-
-// console.log(
-//   "Participation confirmée :",
-//   event.value?.participants.some(
-//     (participant) =>
-//       participant.userId === currentUserId.value && participant.status === 'Confirmé'
-//   )
-// );
-
 });
 
 // Computed pour le style du thème
@@ -149,27 +120,42 @@ function showNotification(message: string, type: 'success' | 'error') {
 }
 
 // Fonction pour rejoindre ou quitter un événement
-async function toggleParticipation() {
 
+async function toggleParticipation() {
   if (!event.value || !currentUserId.value) return;
+
+  const isParticipant = event.value.participants.some(
+    (p) => p.userId === currentUserId.value
+  );
+
   try {
-    const newStatus = attendanceConfirmed.value ? 'Indécis' : 'Confirmé';
-    const response = await toggleParticipantStatus(event.value.id, {
+    await toggleParticipantStatus(event.value.id, {
       userId: currentUserId.value,
-      status: newStatus,
+      isJoining: !isParticipant
     });
 
+    // Re-fetch event to get fresh data
+    const updatedEvent = await getEventById(event.value.id);
+    event.value = {
+      ...updatedEvent,
+      id: updatedEvent._id,
+    };
 
+    attendanceConfirmed.value = !isParticipant;
 
-    // Mettre à jour l'état local après succès
-    event.value.participants = response.updatedEvent.participants;
-    attendanceConfirmed.value = newStatus === 'Confirmé';
-    showNotification(`Vous avez ${newStatus === 'Confirmé' ? 'rejoint' : 'quitté'} l'événement.`, 'success');
+    showNotification(
+      `Vous avez ${!isParticipant ? 'rejoint' : 'quitté'} l'événement.`,
+      'success'
+    );
   } catch (error) {
     console.error('Erreur lors de la mise à jour de la participation :', error);
-    showNotification(error?.message || 'Une erreur est survenue. Veuillez réessayer.', 'error');
+    showNotification(
+      error?.message || 'Une erreur est survenue. Veuillez réessayer.',
+      'error'
+    );
   }
 }
+
 
 function triggerSaveEvent() {
   try{
@@ -187,9 +173,9 @@ function triggerSaveEvent() {
     // )
     showDeleteButton.value = false;
     notification.value = {
-          message: 'Événement sauvegardé avec succès !',
-          type: 'success',
-          isVisible: true,
+      message: 'Événement sauvegardé avec succès !',
+      type: 'success',
+      isVisible: true,
     };
     console.log('event saved');
 
@@ -207,23 +193,18 @@ function triggerSaveEvent() {
 
 async function triggerDeleteEvent() {
   //Essaie de suppression d'event
-  try{
-    //Appel de l'api de suppression de l'event
-    await deleteEvent(route.params.id).then(
-     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-     resp  => {
-        // console.log('event deleted');
-        notification.value = {
-          message: 'Événement supprimé avec succès !',
-          type: 'success',
-          isVisible: true,
-        };
-        router.push("/");
-       }
-    )
-
+  try {
+    // Appel de l'api de suppression de l'event
+    await deleteEvent(route.params.id).then(() => {
+      notification.value = {
+        message: 'Événement supprimé avec succès !',
+        type: 'success',
+        isVisible: true,
+      };
+      router.push('/');
+    });
   }
-  //Echec de suppression d'event
+  // Echec de suppression d'event
   catch (error) {
     console.log(error);
     notification.value = {

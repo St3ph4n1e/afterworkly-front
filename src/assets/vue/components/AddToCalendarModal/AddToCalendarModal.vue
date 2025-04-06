@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { ref, watch, defineProps, defineEmits } from 'vue';
 
 const props = defineProps({
   isVisible: Boolean,
   title: String,
-  startDate: String, // Format YYYY-MM-DD
+  startDate:  String, // Format YYYY-MM-DD
   startTime: String, // Format HH:mm
   location: String,
   description: String
@@ -14,13 +13,12 @@ const emit = defineEmits(['close']);
 
 const calendarOptions = [
   { label: 'Google Calendar', value: 'google' },
-  { label: 'Apple Calendar (.ics)', value: 'apple' },
-  { label: 'Autre (.ics)', value: 'other' },
+  { label: 'Télécharger le fichier .ics (Apple, Outlook, etc.)', value: 'ics' },
 ];
 
 function generateGoogleCalendarLink() {
-  const startDateTime = `${props.startDate.replace(/-/g, '')}T${props.startTime.replace(':', '')}00Z`;
-  const endDateTime = `${props.startDate.replace(/-/g, '')}T${props.startTime.replace(':', '')}59Z`;
+  const startDateTime = `${(props.startDate || '').replace(/-/g, '')}T${(props.startTime || '').replace(':', '')}00Z`;
+  const endDateTime = `${(props.startDate ?? '').replace(/-/g, '')}T${(props.startTime ?? '').replace(':', '')}59Z`;
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
     props.title || ''
   )}&dates=${startDateTime}/${endDateTime}&details=${encodeURIComponent(
@@ -30,9 +28,9 @@ function generateGoogleCalendarLink() {
 
 function downloadICSFile() {
   const icsContent = `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:${props.title}\nDTSTART:${
-    props.startDate.replace(/-/g, '') + 'T' + props.startTime.replace(':', '') + '00Z'
+    (props.startDate ?? '').replace(/-/g, '') + 'T' + (props.startTime ?? '00:00').replace(':', '') + '00Z'
   }\nDTEND:${
-    props.startDate.replace(/-/g, '') + 'T' + props.startTime.replace(':', '') + '59Z'
+    (props.startDate ?? '').replace(/-/g, '') + 'T' + (props.startTime ?? '00:00').replace(':', '') + '59Z'
   }\nLOCATION:${props.location}\nDESCRIPTION:${props.description}\nEND:VEVENT\nEND:VCALENDAR`;
 
   const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
@@ -45,7 +43,7 @@ function downloadICSFile() {
 function handleSelection(value: string) {
   if (value === 'google') {
     window.open(generateGoogleCalendarLink(), '_blank');
-  } else {
+  } else if (value === 'ics') {
     downloadICSFile();
   }
   emit('close');

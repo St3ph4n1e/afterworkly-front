@@ -42,6 +42,9 @@ const createdEventData = ref({
   description: '',
 });
 
+
+
+
 function handleFileUpload(event: Event) {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0] || null;
@@ -92,15 +95,10 @@ async function handleSubmit() {
       startDate: response.event.date,
       startTime: response.event.time,
       location: response.event.location,
-      description: response.event.description || '',
+      description: response.event.description || "Participez à notre événement !",
     };
 
-
-    notification.value = {
-      message: 'Événement créé avec succès !',
-      type: 'success',
-      isVisible: true,
-    };
+    // Afficher la notification de succès
     showSuccess("Événement créé avec succès !");
     resetForm();
     showModal.value = true;
@@ -108,10 +106,11 @@ async function handleSubmit() {
     if(axios.isAxiosError(error)) {
       showError(error.response?.data.message || 'Une erreur est survenue.');
     } else {
-      showError(error?.message || 'Une erreur est survenue.');
+      showError((error as Error)?.message || 'Une erreur est survenue.');
   }
 }
 }
+
 
 function resetForm() {
   formData.value = {
@@ -262,7 +261,7 @@ function createAnotherEvent() {
       title="Événement créé avec succès !"
       :isVisible="showModal"
       :buttons="[
-        { text: 'Ajouter à mon agenda', action: () => (showAddToCalendar = true), class: 'bg-green-500 text-white' },
+        { text: 'Ajouter à mon agenda', action: () => (showAddToCalendar = true), class: 'bg-green-500 text-white rounded-lg hover:bg-green-600 transition' },
         { text: 'Créer un autre événement', action: createAnotherEvent, class: 'bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition' },
         { text: 'Voir les détails', action: viewEventDetails, class: 'bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition' },
 

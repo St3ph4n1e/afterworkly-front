@@ -1,5 +1,10 @@
 <script setup lang="ts">
 
+/**
+ * Props received from parent component
+ * Used to pre-fill event information for calendar export
+ */
+
 const props = defineProps({
   isVisible: Boolean,
   title: String,
@@ -9,13 +14,23 @@ const props = defineProps({
   description: String
 });
 
+
+/**
+ * Emits when the modal should be closed
+ */
 const emit = defineEmits(['close']);
 
+/**
+ * List of available calendar export options
+ */
 const calendarOptions = [
   { label: 'Google Calendar', value: 'google' },
   { label: 'Télécharger le fichier .ics (Apple, Outlook, etc.)', value: 'ics' },
 ];
 
+/**
+ * Generates a pre-filled Google Calendar URL using the event details
+ */
 function generateGoogleCalendarLink() {
   const startDateTime = `${(props.startDate || '').replace(/-/g, '')}T${(props.startTime || '').replace(':', '')}00Z`;
   const endDateTime = `${(props.startDate ?? '').replace(/-/g, '')}T${(props.startTime ?? '').replace(':', '')}59Z`;
@@ -26,6 +41,9 @@ function generateGoogleCalendarLink() {
   )}&location=${encodeURIComponent(props.location || '')}`;
 }
 
+/**
+ * Creates and triggers the download of an .ics file with the event details
+ */
 function downloadICSFile() {
   const icsContent = `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:${props.title}\nDTSTART:${
     (props.startDate ?? '').replace(/-/g, '') + 'T' + (props.startTime ?? '00:00').replace(':', '') + '00Z'
@@ -40,6 +58,10 @@ function downloadICSFile() {
   link.click();
 }
 
+/**
+ * Handles user selection between calendar options
+ * Triggers corresponding action and closes the modal
+ */
 function handleSelection(value: string) {
   if (value === 'google') {
     window.open(generateGoogleCalendarLink(), '_blank');
@@ -76,4 +98,5 @@ function handleSelection(value: string) {
 </template>
 
 <style scoped>
+
 </style>

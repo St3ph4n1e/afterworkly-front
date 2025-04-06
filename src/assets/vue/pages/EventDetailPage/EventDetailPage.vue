@@ -209,19 +209,26 @@ async function triggerSaveEvent() {
   }
 
   try {
-    await updateEvent(event.value.id, updatedEventData);
+    await updateEvent(event.value.id, updatedEventData).then(
+      response => {
+        if (event.value) {
+          console.log(response.updatedEvent.image)
+          console.log(typeof formData.value.eventImage)
+          event.value.image = response.updatedEvent.image
+            ? response.updatedEvent.image
+            : 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/logo-afterworkly.png';
+        }
+      }
+    );
     event.value.title = formData.value.eventName;
     event.value.date = formData.value.eventDate;
     event.value.time = formData.value.eventTime;
     event.value.description = formData.value.eventDescription;
     event.value.location = formData.value.eventLocation;
-    event.value.image = typeof formData.value.eventImage === 'string'
-      ? formData.value.eventImage
-      : null;
+
     event.value.isPublic = formData.value.eventIsPublic;
     event.value.color = formData.value.eventColor;
 
-    // eventColor.value = editedColor.value;
     editEventMode.value = false;
     showEditButtons.value = false;
     notification.value = {
@@ -245,7 +252,7 @@ async function triggerDeleteEvent() {
         notification.value = {
           message: 'Événement supprimé avec succès !',
           type: 'success',
-          isVisible: true,
+          visible: true,
         };
         router.push("/");
        }
@@ -258,7 +265,7 @@ async function triggerDeleteEvent() {
     notification.value = {
       message: error.message || 'Une erreur est survenue.',
       type: 'error',
-      isVisible: true,
+      visible: true,
     };
   }
 }

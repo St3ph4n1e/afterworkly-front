@@ -145,6 +145,7 @@ onMounted(async () => {
     } else {
       showError("L'événement demandé n'a pas été trouvé.");
       setTimeout(() => router.push('/404'), 3000);
+      console.log(error)
     }
   } finally {
     isLoading.value = false;

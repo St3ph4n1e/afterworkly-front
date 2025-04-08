@@ -2,7 +2,9 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { formatDate } from '@/utils/date';
-import { getEventById, toggleParticipantStatus, deleteEvent } from '@/axios/api';
+import { getEventById, toggleParticipantStatus, deleteEvent, updateEvent } from '@/axios/api';
+// import { getImageUrl } from '@/utils/url';
+// import type { Event, EventParticipant } from '@/assets/vue/types/types';
 import type { Event } from '@/assets/vue/types/types';
 import { showError, currentNotification } from '../../../../utils/errors.ts';
 import axios from 'axios';
@@ -17,9 +19,9 @@ const event = ref<Event | null>(null);
 const isLoading = ref(true);
 const currentUserId = ref<string | null>(null);
 const attendanceConfirmed = ref(false);
-const showDeleteButton = ref(false);
-
+const showEditButtons = ref(false);
 const showInviteModal = ref(false);
+const showImageModal = ref(false);
 const inviteLink = ref<string | null>(null);
 const emailToSend = ref<string>('');
 const notification = ref<{ message: string; type: 'success' | 'error'; visible: boolean }>({
@@ -27,7 +29,19 @@ const notification = ref<{ message: string; type: 'success' | 'error'; visible: 
   type: 'success',
   visible: false,
 });
-const showDeleteModal = ref(false);
+
+const formData = ref({
+  eventName: '',
+  eventDate: '',
+  eventTime: '',
+  eventLocation: '',
+  eventImage: null as File | null,
+  eventColor: '#f9f9f9',
+  eventIsPublic: true,
+  eventDescription: ''
+});
+const imagePreviewUrl = ref<string | null>(null);
+
 const scrollContainer = ref<HTMLDivElement | null>(null);
 
 function scrollLeft() {
@@ -42,6 +56,32 @@ function scrollRight() {
   }
 }
 
+const mockParticipants = [
+  { userId: 1, username: 'User 1', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 2, username: 'User 2', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+  { userId: 3, username: 'User 4', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
+];
+// Variables pour la pop-up de suppréssion
+const showDeleteModal = ref(false);
+// Variables pour l'édition d'un event
+const editEventMode = ref(false);
 
 
 // Récupération de l'événement et initialisation
@@ -71,13 +111,26 @@ onMounted(async () => {
       id: fetchedEvent._id, // todo see about this
     };
 
-    // Créer un lien d'invitation
-    inviteLink.value = `${window.location.origin}/event-detail/${eventId}?invitation=true`;
+    // Populate formData
+    formData.value.eventName = fetchedEvent.title;
+    formData.value.eventDate = fetchedEvent.date;
+    formData.value.eventTime = fetchedEvent.time;
+    formData.value.eventLocation = fetchedEvent.location;
+    formData.value.eventDescription = fetchedEvent.description;
+    formData.value.eventColor = fetchedEvent.color || '#f9f9f9';
+    formData.value.eventIsPublic = fetchedEvent.isPublic;
+
+    // Handle image
+    formData.value.eventImage = fetchedEvent.image ?? null;
 
     // Initialisation de l'état de participation
-    attendanceConfirmed.value = event.value?.participants.some(
-      (participant) => participant.userId === currentUserId.value
-    ) ?? false;
+    //attendanceConfirmed.value = event.value?.participants.some(
+    //  (participant) => participant.userId === currentUserId.value
+    //) ?? false;
+
+    // Invitation link
+    inviteLink.value = `${window.location.origin}/event-detail/${eventId}?invitation=true`;
+
 
   } catch (error) {
     console.error("Erreur lors de la récupération de l'événement :", error);
@@ -102,7 +155,7 @@ onMounted(async () => {
 const themeStyle = computed(() => {
   if (event.value) {
     return {
-      backgroundColor: event.value.color || '#f9f9f9',
+      backgroundColor: formData.value.eventColor || '#f9f9f9',
     };
   }
   return {};
@@ -156,38 +209,66 @@ async function toggleParticipation() {
   }
 }
 
+function triggerEditEventMode() {
+  editEventMode.value = true;
+  showEditButtons.value = true;
+}
 
-function triggerSaveEvent() {
-  try{
-    //Appel de l'api de sauvegarde de l'event
-    // await deleteEvent(route.params.id).then(
-    //  resp  => {
-    //     console.log('event deleted');
-    //     notification.value = {
-    //       message: 'Événement supprimé avec succès !',
-    //       type: 'success',
-    //       isVisible: true,
-    //     };
-    //     router.push("/");
-    //    }
-    // )
-    showDeleteButton.value = false;
+function quitEditEventMode() {
+  editEventMode.value = false;
+  showEditButtons.value = false;
+}
+
+async function triggerSaveEvent() {
+  if (!event.value) return;
+
+  isLoading.value = true;
+
+
+  const updatedEventData = new FormData();
+
+  updatedEventData.append('title', formData.value.eventName);
+  updatedEventData.append('date', formData.value.eventDate);
+  updatedEventData.append('time', formData.value.eventTime);
+  updatedEventData.append('description', formData.value.eventDescription);
+  updatedEventData.append('location', formData.value.eventLocation);
+  updatedEventData.append('color', formData.value.eventColor);
+  updatedEventData.append('isPublic', formData.value.eventIsPublic.toString());
+
+  if (formData.value.eventImage) {
+    updatedEventData.append('image', formData.value.eventImage);
+  }
+
+  try {
+    await updateEvent(event.value.id, updatedEventData).then(
+      response => {
+        if (event.value) {
+          event.value.image = response.updatedEvent.image
+            ? response.updatedEvent.image
+            : 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/logo-afterworkly.png';
+        }
+      }
+    );
+    event.value.title = formData.value.eventName;
+    event.value.date = formData.value.eventDate;
+    event.value.time = formData.value.eventTime;
+    event.value.description = formData.value.eventDescription;
+    event.value.location = formData.value.eventLocation;
+
+    event.value.isPublic = formData.value.eventIsPublic;
+    event.value.color = formData.value.eventColor;
+
+    editEventMode.value = false;
+    showEditButtons.value = false;
     notification.value = {
       message: 'Événement sauvegardé avec succès !',
       type: 'success',
-      isVisible: true,
+      visible: true,
     };
-    console.log('event saved');
-
-  }
-  //Echec de sauvegarde d'event
-  catch (error) {
-    console.log(error);
-    notification.value = {
-      message: error.message || 'Une erreur est survenue.',
-      type: 'error',
-      isVisible: true,
-    };
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour de l'événement :", error);
+  } finally {
+    isLoading.value = false;
   }
 }
 
@@ -199,7 +280,7 @@ async function triggerDeleteEvent() {
       notification.value = {
         message: 'Événement supprimé avec succès !',
         type: 'success',
-        isVisible: true,
+        visible: true,
       };
       router.push('/');
     });
@@ -210,7 +291,7 @@ async function triggerDeleteEvent() {
     notification.value = {
       message: error.message || 'Une erreur est survenue.',
       type: 'error',
-      isVisible: true,
+      visible: true,
     };
   }
 }
@@ -237,6 +318,18 @@ async function sendInviteEmail(email: string) {
   }
 }
 
+function handleImageUpload(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (file) {
+    formData.value.eventImage = file;
+    imagePreviewUrl.value = URL.createObjectURL(file);
+  }
+}
+
+function uploadImage() {
+  showImageModal.value = false;
+}
+
 const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY'));
 
 </script>
@@ -251,8 +344,15 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
     />
     <HeaderComponent />
 
-    <main class="container mx-auto p-4 flex-grow flex justify-center items-center">
-      <div v-if="isLoading" class="text-center">
+    <main class="container-card h-screen overflow-auto mx-auto max-w-4xl p-4">
+<!--      <div v-if="isLoading" class="text-center">
+        <p class="text-gray-500">Chargement...</p>
+      </div>-->
+      <div v-if="isLoading" class="flex flex-col items-center justify-center py-20">
+        <svg class="animate-spin h-10 w-10 text-blue-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+        </svg>
         <p class="text-gray-500">Chargement...</p>
       </div>
 
@@ -263,45 +363,61 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
             alt="Image de l'événement"
             class="absolute w-4/6 h-auto object-contain rounded-lg"
           />
+          <button
+            v-if="showEditButtons"
+            @click="showImageModal = true"
+            class="absolute bottom-4 right-4 text-gray-700 hover:text-gray-900 transition"
+            title="Changer l'image">
+            <i class="fas fa-camera text-2xl"></i>
+          </button>
+          <button
+            v-if="showEditButtons"
+            class="absolute bottom-4 right-12 text-gray-700 hover:text-gray-900 transition"
+            title="Changer la couleur du thème">
+            <input type="color" v-model="formData.eventColor" class="w-8 h-8 border rounded-lg cursor-pointer" />
+          </button>
           <div>
             <button
-              v-if="showDeleteButton"
+              v-if="showEditButtons"
               @click="showDeleteModal = true"
-              class="absolute top-4 right-4 text-gray-700 hover:text-gray-900 transition"
+              class="absolute top-4 right-16 text-gray-700 hover:text-gray-900 transition"
               title="Supprimer l'événement"
             >
               <i class="fas fa-trash text-2xl text-red-500"></i>
             </button>
             <button
-              v-if="event.creator === currentUserId"
-              @click="showDeleteButton = true"
+              v-if="event.creator === currentUserId && showEditButtons == false"
+              @click="triggerEditEventMode"
               class="absolute top-4 right-16 text-gray-700 hover:text-gray-900 transition"
               title="Modifier l'événement"
             >
               <i class="fas fa-pencil-alt text-2xl"></i>
             </button>
             <button
-              v-if="event.creator === currentUserId && showDeleteButton == false"
+              v-if="event.creator === currentUserId"
               @click="showInviteModal = true"
               class="absolute top-4 right-4 text-gray-700 hover:text-gray-900 transition"
               title="Envoyer une invitation"
             >
               <i class="fas fa-envelope text-2xl"></i>
             </button>
-            <button
-              v-if="showDeleteButton"
-              @click="triggerSaveEvent"
-              class="absolute bottom-4 right-4 text-gray-700 hover:text-gray-900 transition"
-              title="Modifier l'événement"
-            >
-              <i class="fas fa-save text-2xl"></i>
-            </button>
           </div>
         </div>
 
-        <div class="p-6 space-y-6">
+        <div
+          v-if="!editEventMode"
+          class="p-6 space-y-6"
+        >
+
+          <div class="flex justify-center items-center space-x-4 text-gray-600 mt-2">
+            <p class="flex items-center space-x-2">
+              <i class="fas fa-globe"></i>
+              <span class="font-medium">{{ event.isPublic ? 'Public' : 'Privé' }}</span>
+            </p>
+          </div>
           <div class="text-center">
             <h2 class="text-2xl font-bold text-gray-800">{{ event.title }}</h2>
+            <h3 class="text-2xl font-bold text-gray-800">📍{{ event.location }}</h3>
             <div class="flex justify-center items-center space-x-4 text-gray-600 mt-2">
               <p class="flex items-center space-x-2">
                 <i class="fas fa-calendar-alt"></i>
@@ -370,6 +486,67 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
 
           </div>
         </div>
+
+        <div v-if="editEventMode" class="p-6 space-y-6">
+          <div class="flex items-center space-x-2">
+            <label class="text-gray-700 font-medium">Public</label>
+            <input
+              type="checkbox"
+              v-model="formData.eventIsPublic"
+              class="rounded-md"
+            />
+            <span>{{ formData.eventIsPublic ? 'Public' : 'Privé' }}</span>
+          </div>
+
+          <div>
+            <label class="block text-gray-700 font-medium">Titre</label>
+            <input
+              type="text"
+              v-model="formData.eventName"
+              class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label class="block text-gray-700 font-medium">Lieu</label>
+            <input
+              type="text"
+              v-model="formData.eventLocation"
+              class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            />
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-gray-700 font-medium">Date</label>
+              <input
+                type="date"
+                v-model="formData.eventDate"
+                class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label class="block text-gray-700 font-medium">Heure</label>
+              <input
+                type="time"
+                v-model="formData.eventTime"
+                class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              />
+            </div>
+          </div>
+          <div>
+            <label class="block text-gray-700 font-medium">Description</label>
+            <textarea v-model="formData.eventDescription" class="border p-2 rounded w-full"></textarea>
+          </div>
+
+          <div class="flex justify-end space-x-4">
+            <button @click="quitEditEventMode" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 mt-2">
+              Annuler
+            </button>
+            <button @click="triggerSaveEvent" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mt-2">
+              Sauvegarder
+            </button>
+          </div>
+        </div>
+
       </div>
 
 
@@ -379,7 +556,7 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
         :isVisible="showInviteModal"
         title="Inviter des participants"
         :buttons="[
-          { text: 'Fermer', action: () => (showInviteModal = false), class: 'bg-gray-500 text-white' }
+          { text: 'Fermer', action: () => (showInviteModal = false), class: 'bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 mt-2' }
         ]"
       >
         <div>
@@ -416,6 +593,21 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
       >
       </ModalComponent>
 
+      <div v-if="showImageModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50" style="z-index: 9999;">
+        <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full" style="z-index: 10000;">
+          <h2 class="text-lg font-bold mb-4">Changer l'image</h2>
+          <input type="file" @change="handleImageUpload" class="mb-4 w-full" />
+          <img
+            :src="imagePreviewUrl ?? event?.image ?? 'fallback.jpg'"
+            style="width: 100px;"
+          />
+          <div class="flex justify-end space-x-2">
+            <button @click="showImageModal = false" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 mt-2">Annuler</button>
+            <button @click="uploadImage" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mt-2">Sauvegarder</button>
+          </div>
+        </div>
+      </div>
+
       <NotificationComponent
         class="event-notification"
         v-if="notification.visible"
@@ -425,6 +617,7 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
     </main>
 
     <FooterComponent />
+
   </div>
 </template>
 <style src="./EventDetailPage.css" scoped></style>

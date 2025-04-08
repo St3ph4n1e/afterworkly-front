@@ -124,9 +124,9 @@ onMounted(async () => {
     formData.value.eventImage = fetchedEvent.image ?? null;
 
     // Initialisation de l'état de participation
-    //attendanceConfirmed.value = event.value?.participants.some(
-    //  (participant) => participant.userId === currentUserId.value
-    //) ?? false;
+    attendanceConfirmed.value = event.value?.participants.some(
+      (participant) => participant.userId === currentUserId.value
+    ) ?? false;
 
     // Invitation link
     inviteLink.value = `${window.location.origin}/event-detail/${eventId}?invitation=true`;

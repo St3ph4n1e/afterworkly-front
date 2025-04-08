@@ -15,10 +15,11 @@ const formData = ref({
   eventLocation: '',
   eventImage: null as File | null,
   eventColor: '#ffffff',
-  isPublic: true, // Nouveau champ pour définir si l'événement est public ou privé
+  isPublic: true, // Champ pour définir si l'événement est public ou privé
 });
 
 const previewImage = ref<string | null>(null);
+const showAddToCalendar = ref(false);
 
 const notification = ref<{
   message: string;
@@ -32,6 +33,17 @@ const notification = ref<{
 
 const showModal = ref(false);
 const createdEventId = ref<string | null>(null);
+
+const createdEventData = ref({
+  title: '',
+  startDate: '',
+  startTime: '',
+  location: '',
+  description: '',
+});
+
+
+
 
 function handleFileUpload(event: Event) {
   const target = event.target as HTMLInputElement;
@@ -50,6 +62,15 @@ function handleFileUpload(event: Event) {
 }
 
 async function handleSubmit() {
+
+
+  const date = new Date()
+
+  if(formData.value.eventDate < date.toISOString().split('T')[0]) {
+    showError("La date de l'événement ne peut pas être dans le passé.");
+    return;
+  }
+
   const eventData = new FormData();
   eventData.append('title', formData.value.eventName);
   eventData.append('date', formData.value.eventDate);
@@ -58,6 +79,8 @@ async function handleSubmit() {
   eventData.append('color', formData.value.eventColor);
   eventData.append('isPublic', formData.value.isPublic.toString());
 
+
+
   if (formData.value.eventImage) {
     eventData.append('image', formData.value.eventImage);
   }
@@ -65,6 +88,17 @@ async function handleSubmit() {
   try {
     const response = await createEvent(eventData);
     createdEventId.value = response.event._id;
+
+  // Préparer les infos pour le calendrier
+    createdEventData.value = {
+      title: response.event.title,
+      startDate: response.event.date,
+      startTime: response.event.time,
+      location: response.event.location,
+      description: response.event.description || "Participez à notre événement !",
+    };
+
+    // Afficher la notification de succès
     showSuccess("Événement créé avec succès !");
     resetForm();
     showModal.value = true;
@@ -72,10 +106,11 @@ async function handleSubmit() {
     if(axios.isAxiosError(error)) {
       showError(error.response?.data.message || 'Une erreur est survenue.');
     } else {
-      showError(error?.message || 'Une erreur est survenue.');
+      showError((error as Error)?.message || 'Une erreur est survenue.');
   }
 }
 }
+
 
 function resetForm() {
   formData.value = {
@@ -226,7 +261,8 @@ function createAnotherEvent() {
       title="Événement créé avec succès !"
       :isVisible="showModal"
       :buttons="[
-         { text: 'Créer un autre événement', action: createAnotherEvent, class: 'bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition' },
+        { text: 'Ajouter à mon agenda', action: () => (showAddToCalendar = true), class: 'bg-green-500 text-white rounded-lg hover:bg-green-600 transition' },
+        { text: 'Créer un autre événement', action: createAnotherEvent, class: 'bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition' },
         { text: 'Voir les détails', action: viewEventDetails, class: 'bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition' },
 
       ]"
@@ -237,6 +273,17 @@ function createAnotherEvent() {
       </p>
 
     </ModalComponent>
+
+    <AddToCalendarModal
+      v-if="showAddToCalendar"
+      :isVisible="showAddToCalendar"
+      :title="createdEventData.title"
+      :startDate="createdEventData.startDate"
+      :startTime="createdEventData.startTime"
+      :location="createdEventData.location"
+      :description="createdEventData.description"
+      @close="showAddToCalendar = false"
+    />
   </div>
 </template>
 

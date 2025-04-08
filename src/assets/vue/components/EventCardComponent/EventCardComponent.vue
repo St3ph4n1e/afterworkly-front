@@ -47,7 +47,7 @@ function openGoogleMaps(location: string) {
 
 <template>
   <div
-    class="aftw-event-card bg-white shadow rounded-lg p-6 flex flex-col items-center space-y-4 mx-6 transition transform hover:scale-105 hover:shadow-xl"
+    class="aftw-event-card bg-white shadow rounded-lg p-6 flex flex-col items-center space-y-4 mx-6 transition transform hover:scale-105 hover:shadow-xl h-full"
   >
     <!-- Image ou logo -->
     <div class="w-full h-56 overflow-hidden rounded-lg bg-gray-200">
@@ -77,7 +77,7 @@ function openGoogleMaps(location: string) {
     <!-- Bouton -->
     <button
       @click="viewEvent(id)"
-      class="mt-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-8 py-3 rounded-lg hover:from-purple-500 hover:to-blue-500 transition"
+      class="mt-auto bg-gradient-to-r from-blue-500 to-purple-500 text-white px-8 py-3 rounded-lg hover:from-purple-500 hover:to-blue-500 transition"
       aria-label="Voir les détails de l'événement"
     >
       Voir l'événement

@@ -8,7 +8,6 @@ const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Function to refresh the access token
 async function refreshAccessToken() {
   const refreshToken = localStorage.getItem("refresh_token");
   if (!refreshToken) {
@@ -22,7 +21,7 @@ async function refreshAccessToken() {
       refresh_token: refreshToken,
     });
 
-    // Store new tokens
+    // Stockage des nouveaux tokens
     sessionStorage.setItem("access_token", response.data.access_token);
     localStorage.setItem("refresh_token", response.data.refresh_token);
 
@@ -34,7 +33,7 @@ async function refreshAccessToken() {
   }
 }
 
-// Axios request interceptor to attach the access token
+// Intercepteur de requête Axios pour attacher le access token
 apiClient.interceptors.request.use(async (config) => {
   const token = sessionStorage.getItem("access_token");
 
@@ -45,7 +44,7 @@ apiClient.interceptors.request.use(async (config) => {
 });
 
 
-// Axios response interceptor to handle token expiration
+//  Intercepteur de réponse Axios pour gérer l'expiration des token
 apiClient.interceptors.response.use(
   (response) => {
     return response
@@ -120,10 +119,6 @@ export async function createEvent(eventData: FormData) {
   return response.data;
 }
 
-/*export async function getEvents() {
-  const response = await apiClient.get('/events')
-  return response.data
-}*/
 export async function getEvents(params?: { page?: number; limit?: number }) {
   const response = await apiClient.get('/events', { params });
   return response.data;
@@ -141,7 +136,7 @@ export async function updateEvent(eventId: string, updatedData: FormData | Recor
   return response.data;
 }
 
-export async function toggleParticipantStatus(eventId: string, participantData: { userId: string; status: string }) {
+export async function toggleParticipantStatus(eventId: string, participantData: { userId: string, isJoining: boolean }) {
   const response = await apiClient.post(`/events/${eventId}/participants`, participantData);
   return response.data;
 }

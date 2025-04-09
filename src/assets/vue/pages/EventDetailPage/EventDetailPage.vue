@@ -3,8 +3,6 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { formatDate } from '@/utils/date';
 import { getEventById, toggleParticipantStatus, deleteEvent, updateEvent } from '@/axios/api';
-// import { getImageUrl } from '@/utils/url';
-// import type { Event, EventParticipant } from '@/assets/vue/types/types';
 import type { Event } from '@/assets/vue/types/types';
 import { showError, currentNotification } from '../../../../utils/errors.ts';
 import axios from 'axios';
@@ -46,13 +44,13 @@ const scrollContainer = ref<HTMLDivElement | null>(null);
 
 function scrollLeft() {
   if (scrollContainer.value) {
-    scrollContainer.value.scrollLeft -= 200; // Scroll by 200px to the left
+    scrollContainer.value.scrollLeft -= 200; // Scroll de 200px vers la gauche
   }
 }
 
 function scrollRight() {
   if (scrollContainer.value) {
-    scrollContainer.value.scrollLeft += 200; // Scroll by 200px to the right
+    scrollContainer.value.scrollLeft += 200; // Scroll de 200px vers la right
   }
 }
 
@@ -108,10 +106,10 @@ onMounted(async () => {
 
     event.value = {
       ...fetchedEvent,
-      id: fetchedEvent._id, // todo see about this
+      id: fetchedEvent._id,
     };
 
-    // Populate formData
+    // Remplir formData
     formData.value.eventName = fetchedEvent.title;
     formData.value.eventDate = fetchedEvent.date;
     formData.value.eventTime = fetchedEvent.time;
@@ -120,7 +118,7 @@ onMounted(async () => {
     formData.value.eventColor = fetchedEvent.color || '#f9f9f9';
     formData.value.eventIsPublic = fetchedEvent.isPublic;
 
-    // Handle image
+    // Gérer l'image
     formData.value.eventImage = fetchedEvent.image ?? null;
 
     // Initialisation de l'état de participation
@@ -128,7 +126,7 @@ onMounted(async () => {
       (participant) => participant.userId === currentUserId.value
     ) ?? false;
 
-    // Invitation link
+    // Lien d'invitation
     inviteLink.value = `${window.location.origin}/event-detail/${eventId}?invitation=true`;
 
 

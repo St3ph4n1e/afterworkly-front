@@ -182,6 +182,8 @@ async function toggleParticipation() {
 
     if (!responseToggleParticipation) throw new Error('Échec de la mise à jour de la participation');
 
+
+    // todo if creator put to private, joiner has to refresh to get the change, otherwise it will still consider public because fetch is done at the beginning (add sws implem)
     if (wasParticipant && event.value.creator !== currentUserId.value && !event.value.isPublic) {
       router.push('/');
       return

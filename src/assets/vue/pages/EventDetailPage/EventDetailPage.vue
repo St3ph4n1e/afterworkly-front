@@ -162,11 +162,6 @@ const themeStyle = computed(() => {
   return {};
 });
 
-// Computed pour l'image de l'événement
-/*const eventImage = computed(() => {
-  return getImageUrl(event.value?.image || 'logo.png');
-});*/
-
 // Fonction pour afficher la notification
 function showNotification(message: string, type: 'success' | 'error') {
   notification.value = { message, type, visible: true };
@@ -174,31 +169,38 @@ function showNotification(message: string, type: 'success' | 'error') {
 }
 
 // Fonction pour rejoindre ou quitter un événement
-
 async function toggleParticipation() {
   if (!event.value || !currentUserId.value) return;
 
-  const isParticipant = event.value.participants.some(
+  const wasParticipant = event.value.participants.some(
     (p) => p.userId === currentUserId.value
   );
 
   try {
-    await toggleParticipantStatus(event.value.id, {
+    const responseToggleParticipation = await toggleParticipantStatus(event.value.id, {
       userId: currentUserId.value,
-      isJoining: !isParticipant
+      isJoining: !wasParticipant
     });
 
+    if (!responseToggleParticipation) throw new Error('Échec de la mise à jour de la participation');
+
+    if (wasParticipant && event.value.creator !== currentUserId.value && !event.value.isPublic) {
+      router.push('/');
+      return
+    }
     // Re-fetch event to get fresh data
     const updatedEvent = await getEventById(event.value.id);
+
     event.value = {
       ...updatedEvent,
       id: updatedEvent._id,
     };
 
-    attendanceConfirmed.value = !isParticipant;
+    attendanceConfirmed.value = !wasParticipant;
+
 
     showNotification(
-      `Vous avez ${!isParticipant ? 'rejoint' : 'quitté'} l'événement.`,
+      `Vous avez ${!wasParticipant ? 'rejoint' : 'quitté'} l'événement.`,
       'success'
     );
   } catch (error) {
@@ -209,6 +211,7 @@ async function toggleParticipation() {
     );
   }
 }
+
 
 function triggerEditEventMode() {
   editEventMode.value = true;

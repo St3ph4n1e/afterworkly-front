@@ -415,8 +415,7 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
 
           <div class="flex justify-center items-center space-x-4 text-gray-600 mt-2">
             <p class="flex items-center space-x-2">
-              <i class="fas fa-globe"></i>
-              <span class="font-medium">{{ event.isPublic ? 'Public' : 'Privé' }}</span>
+              🌐 <span class="ml-1 font-medium">{{ event.isPublic ? 'Public' : 'Privé' }}</span>
             </p>
           </div>
           <div class="text-center">

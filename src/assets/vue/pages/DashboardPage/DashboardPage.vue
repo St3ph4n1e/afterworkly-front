@@ -100,6 +100,7 @@ function createEvent() {
           v-for="event in events"
           :key="event.id"
           :id="event.id"
+          :is-public="event.isPublic"
           :title="event.title || 'Titre indisponible'"
           :location="event.location || 'Lieu indisponible'"
           :date="event.date"

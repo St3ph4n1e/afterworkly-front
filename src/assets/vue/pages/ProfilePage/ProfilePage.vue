@@ -300,6 +300,7 @@ function toggleDay(day: string) {
               <EventCardComponent
                 :key="event.id"
                 :id="event.id"
+                :is-public="event.isPublic"
                 :title="event.title"
                 :location="event.location"
                 :date="event.date"
@@ -320,6 +321,7 @@ function toggleDay(day: string) {
                 :key="event.id"
                 :id="event.id"
                 :title="event.title"
+                :is-public="event.isPublic"
                 :location="event.location"
                 :date="event.date"
                 :time="event.time"

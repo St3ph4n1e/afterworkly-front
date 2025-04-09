@@ -10,6 +10,7 @@ dayjs.locale('fr');
 const props = defineProps({
   id: { type: String, required: true },
   title: { type: String, default: 'Titre indisponible' },
+  isPublic: { type: Boolean, default: true },
   location: { type: String, default: 'Lieu indisponible' },
   date: { type: String, required: true },
   time: { type: String, required: true },
@@ -56,6 +57,11 @@ function openGoogleMaps(location: string) {
 
     <!-- Titre de l'événement -->
     <h3 class="text-lg font-bold text-center text-gray-800">{{ title }}</h3>
+
+    <!-- Public/Privé -->
+    <p class="text-gray-600 text-center">
+      🌐 <span class="font-medium">{{ isPublic ? 'Public' : 'Privé' }}</span>
+    </p>
 
     <!-- Localisation -->
     <p

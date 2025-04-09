@@ -3,10 +3,8 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { formatDate } from '@/utils/date';
 import { getEventById, toggleParticipantStatus, deleteEvent, updateEvent } from '@/axios/api';
-// import { getImageUrl } from '@/utils/url';
-// import type { Event, EventParticipant } from '@/assets/vue/types/types';
 import type { Event } from '@/assets/vue/types/types';
-import {  showError, currentNotification } from '../../../../utils/errors.ts';
+import { showError, currentNotification } from '../../../../utils/errors.ts';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import 'dayjs/locale/fr';
@@ -17,11 +15,9 @@ const route = useRoute();
 const router = useRouter();
 const event = ref<Event | null>(null);
 const isLoading = ref(true);
-// const errorMessage = ref<string | null>(null);
-const currentUserId = ref<string | null>(null); // ID de l'utilisateur connecté
+const currentUserId = ref<string | null>(null);
 const attendanceConfirmed = ref(false);
 const showEditButtons = ref(false);
-// Variables pour la pop-up d'invitation
 const showInviteModal = ref(false);
 const showImageModal = ref(false);
 const inviteLink = ref<string | null>(null);
@@ -46,17 +42,15 @@ const imagePreviewUrl = ref<string | null>(null);
 
 const scrollContainer = ref<HTMLDivElement | null>(null);
 
-// Function to scroll left
 function scrollLeft() {
   if (scrollContainer.value) {
-    scrollContainer.value.scrollLeft -= 200; // Scroll by 200px to the left
+    scrollContainer.value.scrollLeft -= 200; // Scroll de 200px vers la gauche
   }
 }
 
-// Function to scroll right
 function scrollRight() {
   if (scrollContainer.value) {
-    scrollContainer.value.scrollLeft += 200; // Scroll by 200px to the right
+    scrollContainer.value.scrollLeft += 200; // Scroll de 200px vers la right
   }
 }
 
@@ -106,18 +100,16 @@ onMounted(async () => {
 
     if (!fetchedEvent) {
       showError('Événement introuvable.');
-
       router.push('/404');
       return;
     }
-
 
     event.value = {
       ...fetchedEvent,
       id: fetchedEvent._id,
     };
 
-    // Populate formData
+    // Remplir formData
     formData.value.eventName = fetchedEvent.title;
     formData.value.eventDate = fetchedEvent.date;
     formData.value.eventTime = fetchedEvent.time;
@@ -126,10 +118,15 @@ onMounted(async () => {
     formData.value.eventColor = fetchedEvent.color || '#f9f9f9';
     formData.value.eventIsPublic = fetchedEvent.isPublic;
 
-    // Handle image
+    // Gérer l'image
     formData.value.eventImage = fetchedEvent.image ?? null;
 
-    // Invitation link
+    // Initialisation de l'état de participation
+    attendanceConfirmed.value = event.value?.participants.some(
+      (participant) => participant.userId === currentUserId.value
+    ) ?? false;
+
+    // Lien d'invitation
     inviteLink.value = `${window.location.origin}/event-detail/${eventId}?invitation=true`;
 
 
@@ -138,22 +135,15 @@ onMounted(async () => {
     if (axios.isAxiosError(error)) {
       if (error.response && error.response.status === 404) {
         showError("L'événement demandé n'a pas été trouvé.");
-        setTimeout(() => {
-        router.push('/404');
-      }, 3000);
+        setTimeout(() => router.push('/404'), 3000);
       } else {
         showError(error.response?.data.message || "L'événement demandé n'a pas été trouvé.");
-        setTimeout(() => {
-        router.push('/404');
-      }, 3000);
+        setTimeout(() => router.push('/404'), 3000);
       }
     } else {
-      // Autres erreurs
       showError("L'événement demandé n'a pas été trouvé.");
-      setTimeout(() => {
-        router.push('/404');
-      }, 3000);
-
+      setTimeout(() => router.push('/404'), 3000);
+      console.log(error)
     }
   } finally {
     isLoading.value = false;
@@ -170,11 +160,6 @@ const themeStyle = computed(() => {
   return {};
 });
 
-// Computed pour l'image de l'événement
-/*const eventImage = computed(() => {
-  return getImageUrl(event.value?.image || 'logo.png');
-});*/
-
 // Fonction pour afficher la notification
 function showNotification(message: string, type: 'success' | 'error') {
   notification.value = { message, type, visible: true };
@@ -183,26 +168,50 @@ function showNotification(message: string, type: 'success' | 'error') {
 
 // Fonction pour rejoindre ou quitter un événement
 async function toggleParticipation() {
-
   if (!event.value || !currentUserId.value) return;
+
+  const wasParticipant = event.value.participants.some(
+    (p) => p.userId === currentUserId.value
+  );
+
   try {
-    const newStatus = attendanceConfirmed.value ? 'Indécis' : 'Confirmé';
-    const response = await toggleParticipantStatus(event.value.id, {
+    const responseToggleParticipation = await toggleParticipantStatus(event.value.id, {
       userId: currentUserId.value,
-      status: newStatus,
+      isJoining: !wasParticipant
     });
 
+    if (!responseToggleParticipation) throw new Error('Échec de la mise à jour de la participation');
 
 
-    // Mettre à jour l'état local après succès
-    event.value.participants = response.updatedEvent.participants;
-    attendanceConfirmed.value = newStatus === 'Confirmé';
-    showNotification(`Vous avez ${newStatus === 'Confirmé' ? 'rejoint' : 'quitté'} l'événement.`, 'success');
+    // todo if creator put to private, joiner has to refresh to get the change, otherwise it will still consider public because fetch is done at the beginning (add sws implem)
+    if (wasParticipant && event.value.creator !== currentUserId.value && !event.value.isPublic) {
+      router.push('/');
+      return
+    }
+    // Re-fetch event to get fresh data
+    const updatedEvent = await getEventById(event.value.id);
+
+    event.value = {
+      ...updatedEvent,
+      id: updatedEvent._id,
+    };
+
+    attendanceConfirmed.value = !wasParticipant;
+
+
+    showNotification(
+      `Vous avez ${!wasParticipant ? 'rejoint' : 'quitté'} l'événement.`,
+      'success'
+    );
   } catch (error) {
     console.error('Erreur lors de la mise à jour de la participation :', error);
-    showNotification(error?.message || 'Une erreur est survenue. Veuillez réessayer.', 'error');
+    showNotification(
+      error?.message || 'Une erreur est survenue. Veuillez réessayer.',
+      'error'
+    );
   }
 }
+
 
 function triggerEditEventMode() {
   editEventMode.value = true;
@@ -269,23 +278,18 @@ async function triggerSaveEvent() {
 
 async function triggerDeleteEvent() {
   //Essaie de suppression d'event
-  try{
-    //Appel de l'api de suppression de l'event
-    await deleteEvent(route.params.id).then(
-     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-     resp  => {
-        // console.log('event deleted');
-        notification.value = {
-          message: 'Événement supprimé avec succès !',
-          type: 'success',
-          visible: true,
-        };
-        router.push("/");
-       }
-    )
-
+  try {
+    // Appel de l'api de suppression de l'event
+    await deleteEvent(route.params.id).then(() => {
+      notification.value = {
+        message: 'Événement supprimé avec succès !',
+        type: 'success',
+        visible: true,
+      };
+      router.push('/');
+    });
   }
-  //Echec de suppression d'event
+  // Echec de suppression d'event
   catch (error) {
     console.log(error);
     notification.value = {
@@ -411,8 +415,7 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
 
           <div class="flex justify-center items-center space-x-4 text-gray-600 mt-2">
             <p class="flex items-center space-x-2">
-              <i class="fas fa-globe"></i>
-              <span class="font-medium">{{ event.isPublic ? 'Public' : 'Privé' }}</span>
+              🌐 <span class="ml-1 font-medium">{{ event.isPublic ? 'Public' : 'Privé' }}</span>
             </p>
           </div>
           <div class="text-center">

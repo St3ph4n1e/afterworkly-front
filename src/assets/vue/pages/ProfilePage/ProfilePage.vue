@@ -6,7 +6,6 @@ import { Navigation, Pagination } from 'swiper/modules';
 import { getUserProfile, updateUserProfile, updateUserAvatar } from '@/axios/api';
 import { showError, showSuccess , currentNotification } from '../../../../utils/errors';
 import type { Event } from '@/assets/vue/types/types';
-// import { getImageUrl } from '@/utils/url';
 import 'vue-multiselect/dist/vue-multiselect.min.css';
 import 'swiper/css';
 import 'swiper/css/navigation';
@@ -93,7 +92,7 @@ async function updateProfile() {
   }
 }
 
-// Upload d'avatar
+// Téléchargement de l'avatar
 async function handleAvatarUpload(event: globalThis.Event) {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
@@ -300,6 +299,7 @@ function toggleDay(day: string) {
               <EventCardComponent
                 :key="event.id"
                 :id="event.id"
+                :is-public="event.isPublic"
                 :title="event.title"
                 :location="event.location"
                 :date="event.date"
@@ -320,6 +320,7 @@ function toggleDay(day: string) {
                 :key="event.id"
                 :id="event.id"
                 :title="event.title"
+                :is-public="event.isPublic"
                 :location="event.location"
                 :date="event.date"
                 :time="event.time"

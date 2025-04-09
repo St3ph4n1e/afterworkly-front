@@ -1,18 +1,17 @@
-import axios   from "axios";
+import axios from "axios";
 import { login, signUp } from '@/axios/api.ts'
 import type { User } from '../assets/vue/types/types.ts';
 import { showError } from "../utils/errors.ts"
-
 
 export async function loginUser(mail: string, password: string) {
   try {
     const response = await login({ mail, password });
 
-    // Store access token in sessionStorage
+    // Stocker le jeton d'accès dans sessionStorage
     sessionStorage.setItem("access_token", response.token);
 
-    // Refresh token should ideally be stored in an httpOnly cookie
-    // temporarily use localStorage (less secure)
+    // Le jeton d'actualisation devrait idéalement être stocké dans un cookie httpOnly
+    // utilisation temporaire de localStorage (moins sécurisé)
     localStorage.setItem("refresh_token", response.refresh_token);
 
     sessionStorage.setItem("user", JSON.stringify(response.user));
@@ -32,16 +31,13 @@ export async function loginUser(mail: string, password: string) {
       showError("Une erreur inattendue s'est produite.");
     }
     return Promise.reject(error);
+  }
 }
-
-}
-
-
 
 export async function createUser(userData: User) {
   try {
     const response = await signUp(userData);
-    return response.data; 
+    return response.data;
   } catch (error: unknown) {
     console.error("Error signing up:", error);
     if (axios.isAxiosError(error)) {
@@ -49,10 +45,9 @@ export async function createUser(userData: User) {
     } else {
       showError("Erreur inattendue lors de l'inscription.");
     }
-    throw error; 
+    throw error;
   }
 }
-
 
 export function logoutUser() {
 
@@ -63,7 +58,7 @@ export function logoutUser() {
     return;
   }
 
-  // Call Keycloak logout endpoint
+  // Appeler le point de terminaison de déconnexion de Keycloak
   axios
     .post(
       `${import.meta.env.VITE_KEYCLOAK_BASE_URL}/realms/${import.meta.env.VITE_REALM_NAME}/protocol/openid-connect/logout`,
@@ -77,18 +72,17 @@ export function logoutUser() {
     .then(() => {
       console.log("Logged out from Keycloak");
 
-      // Clear tokens from storage
+      // Supprimer les jetons du stockage
       sessionStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
       sessionStorage.removeItem("user");
 
-      // Redirect to login page
-      window.location.href = "/auth"; // Adjust as needed
+      // Rediriger vers la page de connexion
+      window.location.href = "/auth"; // À ajuster si nécessaire
     })
     .catch(err => console.error("Keycloak logout error:", err));
 
-
-  // Clear stored tokens
+  // Supprimer les jetons stockés
   sessionStorage.removeItem("access_token");
   localStorage.removeItem("refresh_token");
   sessionStorage.removeItem("user");

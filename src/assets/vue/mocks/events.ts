@@ -10,7 +10,7 @@ export const mockEvents = [
   {
     id: 1,
     title: 'Afterwork du Vendredi',
-    date: '20 Décembre 2024',
+    date: new Date('2024-12-20'),
     description: 'Une soirée conviviale pour échanger entre collègues et amis.',
     location: 'Café de Paris',
     image: '/src/assets/images/event1.jpeg',
@@ -24,7 +24,7 @@ export const mockEvents = [
   {
     id: 2,
     title: 'Afterwork du Lundi',
-    date: '18 Décembre 2024',
+    date: new Date('2024-12-18'),
     description: 'Un moment pour discuter entre collègues après un début de semaine chargé.',
     location: 'Bar Le Coco',
     image: '/src/assets/images/event2.jpeg',
@@ -38,7 +38,7 @@ export const mockEvents = [
   {
     id: 3,
     title: 'Afterwork du Mercredi',
-    date: '22 Décembre 2024',
+    date: new Date('2024-12-22'),
     description: 'Rejoignez-nous pour une ambiance détendue et des conversations agréables.',
     location: 'Terrasse 360',
     image: null,
@@ -52,8 +52,8 @@ export const mockEvents = [
   {
     id: 4,
     title: 'Team Building',
-    date: '15 Janvier 2025',
-    description: 'Une journée dédiée à la cohésion d’équipe.',
+    date: new Date('2025-01-15'),
+    description: 'Un événement incontournable pour découvrir les innovations de l’année.',
     location: 'Salle de conférence A',
     image: '/src/assets/images/event4.jpeg',
     color: '#FFC300',
@@ -66,8 +66,8 @@ export const mockEvents = [
   {
     id: 5,
     title: 'Réunion mensuelle',
-    date: '10 Janvier 2025',
-    description: 'Planification et mise à jour des objectifs de l’équipe.',
+    date: new Date('2025-01-10'),
+    description: 'Un événement incontournable pour découvrir les innovations de l’année.',
     location: 'Salle B',
     image: null,
     color: '#007BFF',
@@ -80,7 +80,7 @@ export const mockEvents = [
   {
     id: 6,
     title: 'Présentation de projet',
-    date: '5 Février 2025',
+    date: new Date('2025-02-05'),
     description: 'Présentation des nouvelles fonctionnalités du projet en cours.',
     location: 'Salle de réunion 2',
     image: '/src/assets/images/event6.jpeg',
@@ -94,7 +94,7 @@ export const mockEvents = [
   {
     id: 7,
     title: 'Atelier créatif',
-    date: '12 Février 2025',
+    date: new Date('2025-02-12'),
     description: 'Un atelier pour libérer votre créativité et collaborer en équipe.',
     location: 'Studio Créatif',
     image: null,
@@ -108,7 +108,7 @@ export const mockEvents = [
   {
     id: 8,
     title: 'Soirée jeux',
-    date: '19 Février 2025',
+    date: new Date('2025-02-19'),
     description: 'Une soirée ludique pour renforcer les liens entre collègues.',
     location: 'Salle de détente',
     image: '/src/assets/images/event8.jpeg',
@@ -122,8 +122,8 @@ export const mockEvents = [
   {
     id: 9,
     title: 'Conférence annuelle',
-    date: '25 Mars 2025',
-    description: 'Un événement incontournable pour découvrir les innovations de l’année.',
+    date: new Date('2025-03-25'),
+    description:  'Un événement incontournable pour découvrir les innovations de l’année.',
     location: 'Auditorium principal',
     image: '/src/assets/images/event9.jpeg',
     color: '#00CED1',
@@ -136,7 +136,7 @@ export const mockEvents = [
   {
     id: 10,
     title: 'Afterwork Bowling',
-    date: '7 Avril 2025',
+    date: new Date('2025-04-07'),
     description: 'Un moment de détente autour du bowling avec vos collègues.',
     location: 'Bowling Center',
     image: null,
@@ -150,7 +150,7 @@ export const mockEvents = [
   {
     id: 11,
     title: 'Petit-déjeuner collaboratif',
-    date: '15 Avril 2025',
+    date: new Date('2025-04-15'),
     description: 'Un petit-déjeuner pour partager idées et expériences.',
     location: 'Cafétéria',
     image: '/src/assets/images/event11.jpeg',
@@ -164,7 +164,7 @@ export const mockEvents = [
   {
     id: 12,
     title: 'Séminaire de formation',
-    date: '20 Avril 2025',
+    date: new Date('2025-04-20'),
     description: 'Développez vos compétences avec ce séminaire enrichissant.',
     location: 'Centre de formation',
     image: '/src/assets/images/event12.jpeg',

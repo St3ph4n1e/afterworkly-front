@@ -4,9 +4,12 @@ import EventDetailPage from '@/assets/vue/pages/EventDetailPage/EventDetailPage.
 import * as api from '@/axios/api'
 
 // Déclaration d'un ID créateur, d'un ID d'utilisateur lambda, et d'un ID d'utilisateur participant
-const CREATOR_ID = '607d1f77bcf86cd799439011' // ID d'un utilisateur créateur d'événement
-const NON_CREATOR_ID = '607d1f77bcf86cd799439012' // ID d'un utilisateur qui n'est pas le créateur de l'événement
-const PARTICIPANT_ID = '607d1f77bcf86cd799439013' // ID d'un utilisateur participant à l'événement
+ // ID d'un utilisateur créateur d'événement
+const CREATOR_ID = '607d1f77bcf86cd799439011'
+// ID d'un utilisateur qui n'est pas le créateur de l'événement
+const NON_CREATOR_ID = '607d1f77bcf86cd799439012'
+// ID d'un utilisateur participant à l'événement
+const PARTICIPANT_ID = '607d1f77bcf86cd799439013'
 
 // Mock de la vue-router pour simuler la récupération de l'ID de l'événement via la route
 vi.mock('vue-router', () => ({
@@ -65,7 +68,7 @@ describe('EventDetailPage.vue - Permissions', () => {
     vi.mocked(api.getEventById).mockResolvedValue(mockEvent)
   })
 
-  // Test pour vérifier que le bouton "Modifier" n'est pas affiché pour un utilisateur non créateur
+
   it('n\'affiche pas le bouton "Modifier" si l\'utilisateur n\'est pas le créateur', async () => {
     // Simulation du stockage de session pour un utilisateur qui n'est pas le créateur
     Object.defineProperty(window, 'sessionStorage', {
@@ -94,7 +97,6 @@ describe('EventDetailPage.vue - Permissions', () => {
     expect(wrapper.find('button[title="Bouton qui n\'existe pas"]').exists()).toBe(false)
   })
 
-  // Test pour vérifier que le bouton "Modifier" est affiché si l'utilisateur est le créateur
   it('Affiche le bouton "Modifier" si l\'utilisateur est le créateur de l\'événement', async () => {
     // Simulation du stockage de session pour un utilisateur créateur
     Object.defineProperty(window, 'sessionStorage', {
@@ -121,7 +123,6 @@ describe('EventDetailPage.vue - Permissions', () => {
     expect(wrapper.find('button[title="Envoyer une invitation"]').exists()).toBe(true)
   })
 
-  // Test pour vérifier que le bouton "Modifier" est visible si l'utilisateur est un participant
   it('Affiche le bouton "Modifier" si l\'utilisateur est un participant de l\'événement', async () => {
     // Simulation du stockage de session pour un utilisateur participant
     Object.defineProperty(window, 'sessionStorage', {

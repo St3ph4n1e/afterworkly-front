@@ -1,0 +1,37 @@
+section {
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  /* Cartes plus grandes sur desktop */
+  .grid-cols-1 > * {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes sparkle {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.sparkle-animation {
+  background-size: 300% 300%;
+  animation: sparkle 10s ease-in-out infinite;
+}
+
+.bg-gradient-to-r {
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.text-gray-800 {
+  color: #1f2937;
+}

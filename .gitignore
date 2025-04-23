@@ -27,3 +27,6 @@ coverage
 *.sln
 *.sw?
 *.tsbuildinfo
+
+# firebase
+public/firebase-messaging-sw.js

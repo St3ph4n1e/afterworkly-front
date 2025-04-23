@@ -1,0 +1,19 @@
+main {
+  max-width: 800px;
+}
+
+button {
+  border: none;
+  outline: none;
+}
+
+.swiper-button-next,
+.swiper-button-prev {
+  color: #4a5568;
+  transition: color 0.3s ease;
+}
+
+.swiper-button-next:hover,
+.swiper-button-prev:hover {
+  color: #2b6cb0;
+}

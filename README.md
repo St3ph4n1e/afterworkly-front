@@ -20,6 +20,11 @@ See [Vite Configuration Reference](https://vite.dev/config/).
 npm install
 ```
 
+For Firebase ( run it once ):
+```sh
+npm run generate-sw
+```
+
 ### Compile and Hot-Reload for Development
 
 ```sh

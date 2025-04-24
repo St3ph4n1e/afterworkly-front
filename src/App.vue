@@ -1,25 +1,32 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, computed } from 'vue';
 import { notification, showError, showSuccess } from './utils/errors';
-import router from './router/router';
-
+import 'firebase/compat/auth';
+import 'firebase/compat/firestore';
+import { messaging, getMessagingToken, onMessage } from './utils/firebase.ts'
 
 const isOffline = ref(false);
 const wasOffline = ref(false);
 
+getMessagingToken(messaging)
+
+onMessage(messaging, (payload: any) => {
+  console.log('Message received from App.vue. ', payload);
+});
+
 
 function handleConnectionStatus() {
   if (navigator.onLine) {
-    isOffline.value = false; 
+    isOffline.value = false;
     if (wasOffline.value) {
       showSuccess("Vous êtes maintenant connecté à Internet.");
-     
+
     }
-    wasOffline.value = false; 
+    wasOffline.value = false;
   } else {
-    isOffline.value = true; 
+    isOffline.value = true;
     showError("Vous avez perdu la connexion Internet. Certaines fonctionnalités peuvent être limitées.");
-    wasOffline.value = true; 
+    wasOffline.value = true;
   }
 }
 

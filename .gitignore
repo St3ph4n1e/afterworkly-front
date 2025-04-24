@@ -15,7 +15,6 @@ coverage
 *.local
 
 .env
-
 /cypress/videos/
 /cypress/screenshots/
 
@@ -29,3 +28,6 @@ coverage
 *.sln
 *.sw?
 *.tsbuildinfo
+
+# firebase
+public/firebase-messaging-sw.js

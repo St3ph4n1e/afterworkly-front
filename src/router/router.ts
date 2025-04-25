@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import OfflinePage from '../assets/vue/pages/OfflinePage/OfflinePage.vue';
+import { getMessagingToken } from '@/utils/firebase.ts'
 
 
 const DashboardPage = () => import('@/assets/vue/pages/DashboardPage/DashboardPage.vue');
@@ -56,7 +57,7 @@ const routes = [
     name: 'offline',
     component: OfflinePage,
   }
-  
+
 ]
 
 const router = createRouter({
@@ -65,8 +66,13 @@ const router = createRouter({
 })
 
 //Navigation Guard pour protéger les routes
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const user = sessionStorage.getItem('user')
+  try {
+    await getMessagingToken();
+  } catch (error) {
+    console.error(error)
+  }
   if (!navigator.onLine && to.name !== 'offline') {
     sessionStorage.setItem('offlineRedirectPath', to.fullPath);
     next('/offline');

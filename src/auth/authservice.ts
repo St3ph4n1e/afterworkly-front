@@ -85,6 +85,12 @@ export function logoutUser() {
   // Supprimer les jetons stockés
   sessionStorage.removeItem("access_token");
   localStorage.removeItem("refresh_token");
+  localStorage.removeItem("fcmToken");
   sessionStorage.removeItem("user");
 
 }
+
+export function isUserAuthenticated() {
+  return !!sessionStorage.getItem("user")
+}
+

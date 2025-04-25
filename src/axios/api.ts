@@ -173,3 +173,8 @@ export async function getUserInfo(id: string) {
   const response = await apiClient.get('/auth/' + id)
   return response.data
 }
+
+export async function updateFCMToken(fcmToken: string) {
+  const response = await apiClient.put('/auth/fcm-token', { 'fcmToken': fcmToken })
+  return response.data
+}

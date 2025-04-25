@@ -2,6 +2,8 @@ import { initializeApp } from "firebase/app";
 import type { FirebaseApp } from "firebase/app";  // <-- Type-only import
 import { getMessaging, type Messaging } from "firebase/messaging";  // <-- Combined type import
 import { getToken, onMessage } from "firebase/messaging";
+import { updateFCMToken } from '@/axios/api.ts'
+import { isUserAuthenticated } from '@/auth/authservice.ts'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -23,11 +25,25 @@ export const getMessagingToken = async (): Promise<string | void> => {
       vapidKey: import.meta.env.VITE_PUBLIC_FIREBASE_VAPID_KEY
     });
 
-    if (currentToken) {
-      console.log("FCM Token:", currentToken);
-      return currentToken;
+    if (!currentToken) {
+      console.warn('No registration token available.');
+      return;
     }
-    console.warn('No registration token available. Request permission to generate one.');
+
+    const savedToken = localStorage.getItem("fcmToken");
+
+    if (currentToken !== savedToken) {
+      console.log("New FCM Token detected:", currentToken);
+      localStorage.setItem("fcmToken", currentToken);
+
+      if (isUserAuthenticated()) {
+        await updateFCMToken(currentToken);
+      }
+    } else {
+      console.log("FCM Token unchanged, no need to send again.");
+    }
+
+    return currentToken;
   } catch (err) {
     console.error('Token retrieval error:', err);
     throw err;

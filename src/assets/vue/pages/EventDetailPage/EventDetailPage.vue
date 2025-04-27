@@ -82,6 +82,24 @@ const showDeleteModal = ref(false);
 const editEventMode = ref(false);
 
 
+onMessage(messaging, (payload: any) => {
+  // console.log('Message received from App.vue. ', payload);
+
+  console.log("on message event")
+
+  if (payload.data && payload.data.topic && payload.data.topic === "event") {
+    console.log("**************")
+    console.log(payload.data)
+    console.log("**************")
+
+    if (event.value) {
+      event.value!.title = payload.data.eventTitle
+    }
+
+  }
+});
+
+
 // Récupération de l'événement et initialisation
 onMounted(async () => {
   const eventId = route.params.id as string;
@@ -170,13 +188,14 @@ function showNotification(message: string, type: 'success' | 'error') {
 async function toggleParticipation() {
   if (!event.value || !currentUserId.value) return;
 
+  isLoading.value = true;
+
   const wasParticipant = event.value.participants.some(
     (p) => p.userId === currentUserId.value
   );
 
   try {
     const responseToggleParticipation = await toggleParticipantStatus(event.value.id, {
-      userId: currentUserId.value,
       isJoining: !wasParticipant
     });
 
@@ -209,6 +228,8 @@ async function toggleParticipation() {
       error?.message || 'Une erreur est survenue. Veuillez réessayer.',
       'error'
     );
+  }  finally {
+      isLoading.value = false;
   }
 }
 
@@ -438,6 +459,7 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
             <button
               v-if="currentUserId !== event.creator"
               @click="toggleParticipation"
+              :disabled="isLoading"
               :class="[
                 'px-6 py-2 rounded-lg transition font-medium',
                 attendanceConfirmed

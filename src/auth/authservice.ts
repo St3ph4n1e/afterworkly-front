@@ -85,8 +85,11 @@ export function logoutUser() {
   // Supprimer les jetons stockés
   sessionStorage.removeItem("access_token");
   localStorage.removeItem("refresh_token");
-  localStorage.removeItem("fcmToken");
   sessionStorage.removeItem("user");
+
+  // Si un autre user se connecte ensuite sur le même navigateur il sera réassigner au fcm token du navigateur
+  // car comme la valeur do localStorage est nulle il va faire la requête vers le back pour changer
+  localStorage.removeItem("fcmToken");
 
 }
 

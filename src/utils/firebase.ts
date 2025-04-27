@@ -34,10 +34,11 @@ export const getMessagingToken = async (): Promise<string | void> => {
 
     if (currentToken !== savedToken) {
       console.log("New FCM Token detected:", currentToken);
-      localStorage.setItem("fcmToken", currentToken);
 
       if (isUserAuthenticated()) {
-        await updateFCMToken(currentToken);
+        await updateFCMToken(currentToken).then(
+          () => localStorage.setItem("fcmToken", currentToken)
+        )
       }
     } else {
       console.log("FCM Token unchanged, no need to send again.");

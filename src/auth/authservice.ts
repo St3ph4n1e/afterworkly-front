@@ -8,13 +8,13 @@ export async function loginUser(mail: string, password: string) {
     const response = await login({ mail, password });
 
     // Stocker le jeton d'accès dans sessionStorage
-    sessionStorage.setItem("access_token", response.token);
+    sessionStorage.setItem('access_token', response.token);
 
     // Le jeton d'actualisation devrait idéalement être stocké dans un cookie httpOnly
     // utilisation temporaire de localStorage (moins sécurisé)
-    localStorage.setItem("refresh_token", response.refresh_token);
+    localStorage.setItem('refresh_token', response.refresh_token);
 
-    sessionStorage.setItem("user", JSON.stringify(response.user));
+    sessionStorage.setItem('user', JSON.stringify(response.user));
 
     return response;
   } catch (error: unknown ) {

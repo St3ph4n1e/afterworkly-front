@@ -69,9 +69,8 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const user = sessionStorage.getItem('user')
   try {
-    if (Notification.permission === 'granted') {
+      // Permet aussi de faire la demande d'acceptation des notifications
       await getMessagingToken();
-    }
   } catch (error) {
     console.error(error)
   }

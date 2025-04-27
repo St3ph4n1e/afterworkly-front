@@ -8,6 +8,7 @@ import { showError, currentNotification } from '../../../../utils/errors.ts';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import 'dayjs/locale/fr';
+import { messaging, onMessage } from '@/utils/firebase.ts'
 
 dayjs.locale('fr');
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router';
 import { formatDate } from '@/utils/date';
 import { getEventById, toggleParticipantStatus, deleteEvent, updateEvent } from '@/axios/api';
@@ -83,45 +83,57 @@ const showDeleteModal = ref(false);
 const editEventMode = ref(false);
 
 
-onMessage(messaging, (payload: any) => {
+// Récupération de l'événement et initialisation
+let unsubscribeOnMessage: (() => void) | null = null;
 
 
-  if (payload.data && payload.data.topic && payload.data.topic === "event") {
 
-    if (event.value) {
-      event.value!.participants = JSON.parse(payload.data.participants)
-    }
+onMounted(async () => {
 
-  }
+  unsubscribeOnMessage = onMessage(messaging, (payload: any) => {
 
-  if (payload.data && payload.data.topic && payload.data.topic === "eventUpdate") {
-    if (event.value) {
 
-      if (payload.data.redirect === 'true') {
-        router.push('/')
+    if (payload.data && payload.data.topic ) {
+
+      if (payload.data.topic === "event-participant-join") {
+
+        if (event.value) {
+          event.value!.participants = JSON.parse(payload.data.participants)
+        }
+
       }
 
-      event.value!.isPublic = payload.data.eventIsPublic === 'true'
-      event.value!.title = payload.data.eventTitle
-      event.value!.location = payload.data.eventLocation
-      event.value!.description = payload.data.eventDescription
-      event.value!.image = payload.data.eventImage
-      event.value!.color = payload.data.eventColor
-      formData.value.eventColor = payload.data.eventColor;
+      if (payload.data.topic === "event-update")  {
+        if (event.value) {
 
-      event.value!.title = payload.data.eventTitle
+          if (payload.data.redirect === 'true') {
+            router.push('/')
+          }
 
-      console.log('color:', payload.data.eventColor)
-      console.log('public:', payload.data.eventIsPublic)
+          event.value!.isPublic = payload.data.eventIsPublic === 'true'
+          event.value!.title = payload.data.eventTitle
+          event.value!.location = payload.data.eventLocation
+          event.value!.description = payload.data.eventDescription
+          event.value!.image = payload.data.eventImage
+          event.value!.color = payload.data.eventColor
+          formData.value.eventColor = payload.data.eventColor;
+
+          event.value!.title = payload.data.eventTitle
+
+          console.log('color:', payload.data.eventColor)
+          console.log('public:', payload.data.eventIsPublic)
+        }
+      }
+
+      if (payload.data.topic === "event-delete") {
+        showNotification(payload.data.redirectMessage, 'error');
+        setTimeout(() => router.push('/'), 3000);
+      }
+
     }
+  })
 
 
-  }
-});
-
-
-// Récupération de l'événement et initialisation
-onMounted(async () => {
   const eventId = route.params.id as string;
 
 
@@ -376,6 +388,11 @@ function uploadImage() {
 }
 
 const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY'));
+
+onUnmounted(() => {
+  console.log("unmounted")
+  if (unsubscribeOnMessage) unsubscribeOnMessage(); // When you call onMessage(messaging, callback), it returns an unsubscribe function.
+})
 
 </script>
 

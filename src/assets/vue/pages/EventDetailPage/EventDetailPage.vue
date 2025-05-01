@@ -84,18 +84,37 @@ const editEventMode = ref(false);
 
 
 onMessage(messaging, (payload: any) => {
-  // console.log('Message received from App.vue. ', payload);
 
-  console.log("on message event")
 
   if (payload.data && payload.data.topic && payload.data.topic === "event") {
-    console.log("**************")
-    console.log(payload.data)
-    console.log("**************")
 
     if (event.value) {
-      event.value!.title = payload.data.eventTitle
+      event.value!.participants = JSON.parse(payload.data.participants)
     }
+
+  }
+
+  if (payload.data && payload.data.topic && payload.data.topic === "eventUpdate") {
+    if (event.value) {
+
+      if (payload.data.redirect === 'true') {
+        router.push('/')
+      }
+
+      event.value!.isPublic = payload.data.eventIsPublic === 'true'
+      event.value!.title = payload.data.eventTitle
+      event.value!.location = payload.data.eventLocation
+      event.value!.description = payload.data.eventDescription
+      event.value!.image = payload.data.eventImage
+      event.value!.color = payload.data.eventColor
+      formData.value.eventColor = payload.data.eventColor;
+
+      event.value!.title = payload.data.eventTitle
+
+      console.log('color:', payload.data.eventColor)
+      console.log('public:', payload.data.eventIsPublic)
+    }
+
 
   }
 });

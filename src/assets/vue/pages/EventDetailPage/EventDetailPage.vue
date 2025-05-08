@@ -90,50 +90,6 @@ let unsubscribeOnMessage: (() => void) | null = null;
 
 onMounted(async () => {
 
-  unsubscribeOnMessage = onMessage(messaging, (payload: any) => {
-
-
-    if (payload.data && payload.data.topic ) {
-
-      if (payload.data.topic === "event-participant-join") {
-
-        if (event.value) {
-          event.value!.participants = JSON.parse(payload.data.participants)
-        }
-
-      }
-
-      if (payload.data.topic === "event-update")  {
-        if (event.value) {
-
-          if (payload.data.redirect === 'true') {
-            router.push('/')
-          }
-
-          event.value!.isPublic = payload.data.eventIsPublic === 'true'
-          event.value!.title = payload.data.eventTitle
-          event.value!.location = payload.data.eventLocation
-          event.value!.description = payload.data.eventDescription
-          event.value!.image = payload.data.eventImage
-          event.value!.color = payload.data.eventColor
-          formData.value.eventColor = payload.data.eventColor;
-
-          event.value!.title = payload.data.eventTitle
-
-          console.log('color:', payload.data.eventColor)
-          console.log('public:', payload.data.eventIsPublic)
-        }
-      }
-
-      if (payload.data.topic === "event-delete") {
-        showNotification(payload.data.redirectMessage, 'error');
-        setTimeout(() => router.push('/'), 3000);
-      }
-
-    }
-  })
-
-
   const eventId = route.params.id as string;
 
 
@@ -234,7 +190,6 @@ async function toggleParticipation() {
     if (!responseToggleParticipation) throw new Error('Échec de la mise à jour de la participation');
 
 
-    // todo if creator put to private, joiner has to refresh to get the change, otherwise it will still consider public because fetch is done at the beginning (add sws implem)
     if (wasParticipant && event.value.creator !== currentUserId.value && !event.value.isPublic) {
       router.push('/');
       return

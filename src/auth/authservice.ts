@@ -2,6 +2,7 @@ import axios from "axios";
 import { login, signUp } from '@/axios/api.ts'
 import type { User } from '../assets/vue/types/types.ts';
 import { showError } from "../utils/errors.ts"
+import { setupSocket } from '@/utils/socket.ts'
 
 export async function loginUser(mail: string, password: string) {
   try {
@@ -15,6 +16,8 @@ export async function loginUser(mail: string, password: string) {
     localStorage.setItem('refresh_token', response.refresh_token);
 
     sessionStorage.setItem('user', JSON.stringify(response.user));
+
+    const socket = setupSocket();
 
     return response;
   } catch (error: unknown ) {

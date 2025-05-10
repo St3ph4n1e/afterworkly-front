@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { getEvents } from '@/axios/api';
 import type { Event } from '@/assets/vue/types/types';
+import { getSocket } from '@/utils/socket.ts'
 
 const router = useRouter();
 const userName = ref('');
@@ -20,6 +21,14 @@ onMounted(async () => {
   } else {
     router.push('/auth');
     return;
+  }
+
+  const socket = getSocket();
+
+  if (socket) {
+    socket.on('server-response', (data) => {
+      console.log('Received message from server:', data);
+    });
   }
 
   // Charge les événements depuis l'API

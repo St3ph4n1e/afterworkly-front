@@ -173,6 +173,22 @@ function showNotification(message: string, type: 'success' | 'error') {
   setTimeout(() => (notification.value.visible = false), 3000);
 }
 
+const socket = getSocket();
+
+
+function sendMessage() {
+  if (socket?.connected) {
+    socket.emit('custom-event1', { message: 'Hello from Vue + TS' })
+  }
+}
+
+if (socket?.connected) {
+  socket.on('hey vue', (data) => {
+    console.log('📨 Received from server:', data)
+  })
+}
+
+
 // Fonction pour rejoindre ou quitter un événement
 async function toggleParticipation() {
   if (!event.value || !currentUserId.value) return;

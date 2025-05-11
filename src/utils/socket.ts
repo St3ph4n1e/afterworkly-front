@@ -12,6 +12,9 @@ interface ClientToServerEvents {
 let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
 
 export function setupSocket(): Socket<ServerToClientEvents, ClientToServerEvents> {
+
+  if (socket) return socket; // prevent re-init
+
   const token = sessionStorage.getItem('access_token') || '';
   const user = sessionStorage.getItem('user') ? JSON.parse(sessionStorage.getItem('user')) : null;
 

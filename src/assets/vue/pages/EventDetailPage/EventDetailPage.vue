@@ -8,7 +8,7 @@ import { showError, currentNotification } from '../../../../utils/errors.ts';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import 'dayjs/locale/fr';
-import { getSocket } from '@/utils/socket.ts';
+import { getSocket, setupSocket } from '@/utils/socket.ts'
 
 
 dayjs.locale('fr');
@@ -83,16 +83,27 @@ const showDeleteModal = ref(false);
 // Variables pour l'édition d'un event
 const editEventMode = ref(false);
 
-
-// Récupération de l'événement et initialisation
-let unsubscribeOnMessage: (() => void) | null = null;
-
-
+let socket: any = null
 
 onMounted(async () => {
 
   const eventId = route.params.id as string;
 
+  socket = setupSocket();
+
+  socket.on('event-participant-join', (eventData) => {
+
+    console.log('on join')
+    if (eventData) {
+      if (eventData.eventId === eventId) {
+        if (event.value) {
+          console.log(eventData)
+          event.value!.participants = JSON.parse(eventData.participants)
+        }
+      }
+    }
+
+  })
 
   // Récupérer l'utilisateur connecté depuis le localStorage
   const storedUser = sessionStorage.getItem('user');
@@ -173,20 +184,6 @@ function showNotification(message: string, type: 'success' | 'error') {
   setTimeout(() => (notification.value.visible = false), 3000);
 }
 
-const socket = getSocket();
-
-
-function sendMessage() {
-  if (socket?.connected) {
-    socket.emit('custom-event1', { message: 'Hello from Vue + TS' })
-  }
-}
-
-if (socket?.connected) {
-  socket.on('hey vue', (data) => {
-    console.log('📨 Received from server:', data)
-  })
-}
 
 
 // Fonction pour rejoindre ou quitter un événement
@@ -363,7 +360,9 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
 
 onUnmounted(() => {
   console.log("unmounted")
-  if (unsubscribeOnMessage) unsubscribeOnMessage(); // When you call onMessage(messaging, callback), it returns an unsubscribe function.
+  if (socket) {
+    socket.off('event-participant-join')
+  }
 })
 
 </script>

@@ -17,7 +17,7 @@ let socket: any = null
 
 // Vérifie si l'utilisateur est connecté
 onMounted(async () => {
-  const storedUser = sessionStorage.getItem('user');
+  const storedUser = localStorage.getItem('user');
   if (storedUser) {
     const user = JSON.parse(storedUser);
     userName.value = user.username || 'Utilisateur';

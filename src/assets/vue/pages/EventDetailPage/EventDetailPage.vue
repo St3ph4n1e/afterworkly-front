@@ -210,7 +210,7 @@ onMounted(async () => {
   })
 
   // Récupérer l'utilisateur connecté depuis le localStorage
-  const storedUser = sessionStorage.getItem('user')
+  const storedUser = localStorage.getItem('user')
   if (storedUser) {
     const user = JSON.parse(storedUser)
     currentUserId.value = user._id

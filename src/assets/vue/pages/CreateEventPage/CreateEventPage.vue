@@ -152,7 +152,7 @@ function createAnotherEvent() {
 
 onMounted(async () => {
   try {
-    const storedUser = sessionStorage.getItem('user');
+    const storedUser = localStorage.getItem('user');
 
     if (storedUser) {
       const myUser = JSON.parse(storedUser);

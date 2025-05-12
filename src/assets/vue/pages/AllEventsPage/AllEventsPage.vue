@@ -14,7 +14,7 @@ const currentUserId = ref<string | null>(null); // ID de l'utilisateur connecté
 
 // Récupérer l'ID de l'utilisateur connecté depuis le localStorage
 onMounted(() => {
-  const storedUser = sessionStorage.getItem('user');
+  const storedUser = localStorage.getItem('user');
   if (storedUser) {
     const user = JSON.parse(storedUser);
     currentUserId.value = user._id;

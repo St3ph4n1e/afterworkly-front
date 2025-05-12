@@ -22,7 +22,7 @@ async function refreshAccessToken() {
     });
 
     // Stockage des nouveaux tokens
-    sessionStorage.setItem("access_token", response.data.access_token);
+    localStorage.setItem("access_token", response.data.access_token);
     localStorage.setItem("refresh_token", response.data.refresh_token);
 
     return response.data.access_token;
@@ -35,7 +35,7 @@ async function refreshAccessToken() {
 
 // Intercepteur de requête Axios pour attacher le access token
 apiClient.interceptors.request.use(async (config) => {
-  const token = sessionStorage.getItem("access_token");
+  const token = localStorage.getItem("access_token");
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

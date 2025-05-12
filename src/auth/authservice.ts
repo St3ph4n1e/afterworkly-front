@@ -9,13 +9,13 @@ export async function loginUser(mail: string, password: string) {
     const response = await login({ mail, password });
 
     // Stocker le jeton d'accès dans sessionStorage
-    sessionStorage.setItem('access_token', response.token);
+    localStorage.setItem('access_token', response.token);
 
     // Le jeton d'actualisation devrait idéalement être stocké dans un cookie httpOnly
     // utilisation temporaire de localStorage (moins sécurisé)
     localStorage.setItem('refresh_token', response.refresh_token);
 
-    sessionStorage.setItem('user', JSON.stringify(response.user));
+    localStorage.setItem('user', JSON.stringify(response.user));
 
     const socket = setupSocket();
 
@@ -76,9 +76,9 @@ export function logoutUser() {
       console.log("Logged out from Keycloak");
 
       // Supprimer les jetons du stockage
-      sessionStorage.removeItem("access_token");
+      localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
-      sessionStorage.removeItem("user");
+      localStorage.removeItem("user");
 
       // Rediriger vers la page de connexion
       window.location.href = "/auth"; // À ajuster si nécessaire
@@ -86,13 +86,13 @@ export function logoutUser() {
     .catch(err => console.error("Keycloak logout error:", err));
 
   // Supprimer les jetons stockés
-  sessionStorage.removeItem("access_token");
+  localStorage.removeItem("access_token");
   localStorage.removeItem("refresh_token");
-  sessionStorage.removeItem("user");
+  localStorage.removeItem("user");
 
 }
 
 export function isUserAuthenticated() {
-  return !!sessionStorage.getItem("user")
+  return !!localStorage.getItem("user")
 }
 

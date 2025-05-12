@@ -66,7 +66,7 @@ const router = createRouter({
 
 // Navigation Guard pour protéger les routes
 router.beforeEach(async (to, from, next) => {
-  const user = sessionStorage.getItem('user')
+  const user = localStorage.getItem('user')
   if (!navigator.onLine && to.name !== 'offline') {
     sessionStorage.setItem('offlineRedirectPath', to.fullPath);
     next('/offline');

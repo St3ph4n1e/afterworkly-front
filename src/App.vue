@@ -22,8 +22,8 @@ function handleConnectionStatus() {
 }
 
 onMounted(() => {
-  const token = sessionStorage.getItem('access_token');
-  const user = sessionStorage.getItem('user');
+  const token = localStorage.getItem('access_token');
+  const user = localStorage.getItem('user');
 
   if (token && user) {
     setupSocket();

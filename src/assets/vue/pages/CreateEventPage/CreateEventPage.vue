@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { createEvent, getUsers } from '@/axios/api'
 import { useRouter } from 'vue-router';
 import axios from 'axios';
@@ -17,10 +17,17 @@ const formData = ref({
   eventLocation: '',
   eventImage: null as File | null,
   eventColor: '#ffffff',
+  eventParticipants: [] as string[],
   isPublic: false, // Champ pour définir si l'événement est public ou privé
 });
 
 const selectedUsers = ref([])
+
+watch(selectedUsers, (newVal) => {
+  formData.value.eventParticipants = newVal.map((user: any) => user._id)
+})
+
+
 const userList = ref([])
 
 const previewImage = ref<string | null>(null);
@@ -144,8 +151,15 @@ function createAnotherEvent() {
 
 onMounted(async () => {
   try {
-    const response = await getUsers();
-    userList.value = response.users
+    const storedUser = sessionStorage.getItem('user');
+
+    if (storedUser) {
+      const myUser = JSON.parse(storedUser);
+      const response = await getUsers();
+
+      // Filter pour me retirer de la liste des participants
+      userList.value = response.users.filter(user => user._id !== myUser._id)
+    }
   } catch (error) {
     console.error('Erreur lors de la récupération des utilisateurs:', error);
   }

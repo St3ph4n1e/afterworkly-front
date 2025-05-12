@@ -52,6 +52,7 @@ const createdEventData = ref({
   startTime: '',
   location: '',
   description: '',
+  participants: []
 });
 
 function handleFileUpload(event: Event) {
@@ -87,8 +88,7 @@ async function handleSubmit() {
   eventData.append('location', formData.value.eventLocation);
   eventData.append('color', formData.value.eventColor);
   eventData.append('isPublic', formData.value.isPublic.toString());
-
-
+  eventData.append('participants', JSON.stringify(formData.value.eventParticipants));
 
   if (formData.value.eventImage) {
     eventData.append('image', formData.value.eventImage);
@@ -129,6 +129,7 @@ function resetForm() {
     eventLocation: '',
     eventImage: null,
     eventColor: '#ffffff',
+    eventParticipants: [],
     isPublic: true,
   };
   previewImage.value = null;
@@ -263,8 +264,9 @@ onMounted(async () => {
         <div>
 
           <div>
-            <label class="block text-gray-800 font-medium mb-2">Invités :</label>
+            <label for="eventParticipants" class="block text-gray-800 font-medium mb-2">Invités :</label>
             <multiselect
+              id="eventParticipants"
               v-model="selectedUsers"
               :options="userList"
               :multiple="true"

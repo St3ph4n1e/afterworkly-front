@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { createEvent } from '@/axios/api';
+import { onMounted, ref } from 'vue'
+import { createEvent, getUsers } from '@/axios/api'
 import { useRouter } from 'vue-router';
 import axios from 'axios';
-import {  showError, showSuccess, currentNotification } from '../../../../utils/errors.ts';
-
+import { showError, showSuccess, currentNotification } from '../../../../utils/errors.ts';
+import Multiselect from 'vue-multiselect'
+import 'vue-multiselect/dist/vue-multiselect.min.css'
 
 const router = useRouter();
 const imageInput = ref<HTMLInputElement | null>(null);
@@ -18,6 +19,9 @@ const formData = ref({
   eventColor: '#ffffff',
   isPublic: false, // Champ pour définir si l'événement est public ou privé
 });
+
+const selectedUsers = ref([])
+const userList = ref([])
 
 const previewImage = ref<string | null>(null);
 const showAddToCalendar = ref(false);
@@ -42,9 +46,6 @@ const createdEventData = ref({
   location: '',
   description: '',
 });
-
-
-
 
 function handleFileUpload(event: Event) {
   const target = event.target as HTMLInputElement;
@@ -140,6 +141,15 @@ function viewEventDetails() {
 function createAnotherEvent() {
   showModal.value = false;
 }
+
+onMounted(async () => {
+  try {
+    const response = await getUsers();
+    userList.value = response.users
+  } catch (error) {
+    console.error('Erreur lors de la récupération des utilisateurs:', error);
+  }
+})
 </script>
 
 <template>
@@ -234,6 +244,34 @@ function createAnotherEvent() {
             type="color"
             class="w-16 h-10 border rounded-lg mt-1"
           />
+        </div>
+
+        <div>
+
+          <div>
+            <label class="block text-gray-800 font-medium mb-2">Invités :</label>
+            <multiselect
+              v-model="selectedUsers"
+              :options="userList"
+              :multiple="true"
+              :close-on-select="false"
+              placeholder="Choisissez une ou plusieurs personnes"
+              label="username"
+              track-by="_id"
+            >
+              <template #option="{ option }">
+                <img :src="option.photo" class="avatar" />
+                <span>{{ option.username }}</span>
+              </template>
+
+              <template #selection="{ values }">
+                <span v-for="user in values" :key="user._id" class="selection-item">
+                  <img :src="user.photo" class="avatar-small" />
+                  {{ user.username }}
+                </span>
+              </template>
+            </multiselect>
+          </div>
         </div>
 
         <!-- Toggle public/privé -->

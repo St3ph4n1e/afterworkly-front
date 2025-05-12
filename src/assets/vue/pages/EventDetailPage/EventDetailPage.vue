@@ -177,8 +177,6 @@ onMounted(async () => {
           router.push('/')
         }
 
-  socket = setupSocket();
-
         event.value!.isPublic = updatedEventData.eventIsPublic === 'true'
         event.value!.title = updatedEventData.eventTitle
         event.value!.location = updatedEventData.eventLocation

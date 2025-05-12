@@ -16,7 +16,7 @@ const formData = ref({
   eventLocation: '',
   eventImage: null as File | null,
   eventColor: '#ffffff',
-  isPublic: true, // Champ pour définir si l'événement est public ou privé
+  isPublic: false, // Champ pour définir si l'événement est public ou privé
 });
 
 const previewImage = ref<string | null>(null);

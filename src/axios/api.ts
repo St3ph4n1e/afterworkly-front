@@ -85,11 +85,11 @@ apiClient.interceptors.response.use(
 // Debugging en mode développement
 if (import.meta.env.MODE === 'development') {
   apiClient.interceptors.request.use((config) => {
-    console.debug('Request:', config);
+   //  console.debug('Request:', config);
     return config;
   });
   apiClient.interceptors.response.use((response) => {
-    console.debug('Response:', response);
+    // console.debug('Response:', response);
     return response;
   });
 }
@@ -171,10 +171,5 @@ export async function updateUserAvatar(file: File) {
 
 export async function getUserInfo(id: string) {
   const response = await apiClient.get('/auth/' + id)
-  return response.data
-}
-
-export async function updateFCMToken(fcmToken: string) {
-  const response = await apiClient.put('/auth/fcm-token', { 'fcmToken': fcmToken })
   return response.data
 }

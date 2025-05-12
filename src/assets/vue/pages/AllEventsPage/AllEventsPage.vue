@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { getEvents } from '@/axios/api';
 import dayjs from 'dayjs';
 import type { Event } from '@/assets/vue/types/types';
+import { setupSocket } from '@/utils/socket.ts'
 
 // Données et état
 const events = ref<Event[]>([]);
@@ -19,6 +20,9 @@ onMounted(() => {
     currentUserId.value = user._id;
   }
 });
+
+let socket: any = null
+
 
 // Chargement des événements depuis l'API
 onMounted(async () => {
@@ -37,6 +41,13 @@ onMounted(async () => {
   } finally {
     isLoading.value = false;
   }
+
+  socket = setupSocket();
+
+  socket.on('event-update-all-events', (updatedEventData) =>  {
+    events.value = updatedEventData
+  })
+
 });
 
 // todo set filter logic in back
@@ -73,6 +84,10 @@ const pageTitle = computed(() => {
       return 'Tous les événements';
   }
 });
+
+onUnmounted(() => {
+  socket.off('event-update-all-events')
+})
 </script>
 
 <template>

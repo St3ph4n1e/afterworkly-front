@@ -42,7 +42,6 @@ onMounted(async () => {
 
   socket.on('event-update-dashboard', (updatedEvents) => {
     if (updatedEvents) {
-      console.log("updatedEvents: ", updatedEvents)
       events.value = updatedEvents;
     }
 

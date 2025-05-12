@@ -171,7 +171,6 @@ onMounted(async () => {
 
   socket.on('event-update', (updatedEventData) => {
     if (updatedEventData) {
-      console.log(updatedEventData)
       if (updatedEventData.eventId === eventId) {
         if (updatedEventData.redirect === 'true') {
           router.push('/')
@@ -195,7 +194,6 @@ onMounted(async () => {
     if (eventData) {
       if (eventData.eventId === eventId) {
         if (event.value) {
-          console.log(eventData)
           event.value!.participants = JSON.parse(eventData.participants)
         }
       }

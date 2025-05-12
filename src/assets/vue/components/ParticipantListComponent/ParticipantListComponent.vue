@@ -19,7 +19,10 @@ defineProps({
 </script>
 
 <template>
-  <div style="width: 100%; margin-top: 10px; display: flex; flex-direction: column; align-items: flex-start;">
+  <div
+    style="width: 100%; margin-top: 10px; display: flex; flex-direction: column; align-items: flex-start;"
+    :class="{ 'opacity-50 grayscale': participantInfos.status === 'Attente' }"
+  >
     <div style="display: flex; flex-direction: column; align-items: center">
       <img
         v-if="participantInfos.photo"

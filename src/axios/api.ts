@@ -85,11 +85,11 @@ apiClient.interceptors.response.use(
 // Debugging en mode développement
 if (import.meta.env.MODE === 'development') {
   apiClient.interceptors.request.use((config) => {
-    console.debug('Request:', config);
+   //  console.debug('Request:', config);
     return config;
   });
   apiClient.interceptors.response.use((response) => {
-    console.debug('Response:', response);
+    // console.debug('Response:', response);
     return response;
   });
 }
@@ -136,7 +136,7 @@ export async function updateEvent(eventId: string, updatedData: FormData | Recor
   return response.data;
 }
 
-export async function toggleParticipantStatus(eventId: string, participantData: { userId: string, isJoining: boolean }) {
+export async function toggleParticipantStatus(eventId: string, participantData: { isJoining: boolean }) {
   const response = await apiClient.post(`/events/${eventId}/participants`, participantData);
   return response.data;
 }

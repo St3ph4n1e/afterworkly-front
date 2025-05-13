@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router';
 import { getEvents } from '@/axios/api';
 import type { Event } from '@/assets/vue/types/types';
+import { getSocket, setupSocket } from '@/utils/socket.ts'
 
 const router = useRouter();
 const userName = ref('');
@@ -10,6 +11,9 @@ const events = ref<Event[]>([]);
 
 const isLoading = ref(true);
 const errorMessage = ref<string | null>(null);
+
+
+let socket: any = null
 
 // Vérifie si l'utilisateur est connecté
 onMounted(async () => {
@@ -33,6 +37,16 @@ onMounted(async () => {
   } finally {
     isLoading.value = false;
   }
+
+  socket = setupSocket();
+
+  socket.on('event-update-dashboard', (updatedEvents) => {
+    if (updatedEvents) {
+      events.value = updatedEvents;
+    }
+
+  })
+
 });
 
 // Navigation vers les pages
@@ -43,6 +57,12 @@ function viewAllEvents() {
 function createEvent() {
   router.push('/create-event');
 }
+
+onUnmounted(() => {
+  if (socket) {
+    socket.off('event-update-dashboard')
+  }
+})
 </script>
 
 <template>

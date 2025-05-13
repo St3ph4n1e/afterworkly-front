@@ -1,19 +1,10 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, computed } from 'vue';
 import { notification, showError, showSuccess } from './utils/errors';
-import 'firebase/compat/auth';
-import 'firebase/compat/firestore';
-import { messaging, getMessagingToken, onMessage } from './utils/firebase.ts'
+import { setupSocket } from '@/utils/socket.ts'
 
 const isOffline = ref(false);
 const wasOffline = ref(false);
-
-getMessagingToken(messaging)
-
-onMessage(messaging, (payload: any) => {
-  console.log('Message received from App.vue. ', payload);
-});
-
 
 function handleConnectionStatus() {
   if (navigator.onLine) {
@@ -31,6 +22,13 @@ function handleConnectionStatus() {
 }
 
 onMounted(() => {
+  const token = sessionStorage.getItem('access_token');
+  const user = sessionStorage.getItem('user');
+
+  if (token && user) {
+    setupSocket();
+  }
+
   handleConnectionStatus();
   window.addEventListener('offline', handleConnectionStatus);
   window.addEventListener('online', handleConnectionStatus);

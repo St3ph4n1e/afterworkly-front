@@ -56,7 +56,7 @@ const routes = [
     name: 'offline',
     component: OfflinePage,
   }
-  
+
 ]
 
 const router = createRouter({
@@ -64,8 +64,8 @@ const router = createRouter({
   routes,
 })
 
-//Navigation Guard pour protéger les routes
-router.beforeEach((to, from, next) => {
+// Navigation Guard pour protéger les routes
+router.beforeEach(async (to, from, next) => {
   const user = sessionStorage.getItem('user')
   if (!navigator.onLine && to.name !== 'offline') {
     sessionStorage.setItem('offlineRedirectPath', to.fullPath);

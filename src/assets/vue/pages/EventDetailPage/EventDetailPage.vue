@@ -1,32 +1,33 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { formatDate } from '@/utils/date';
-import { getEventById, toggleParticipantStatus, deleteEvent, updateEvent } from '@/axios/api';
-import type { Event } from '@/assets/vue/types/types';
-import { showError, currentNotification } from '../../../../utils/errors.ts';
-import axios from 'axios';
-import dayjs from 'dayjs';
-import 'dayjs/locale/fr';
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { formatDate } from '@/utils/date'
+import { getEventById, toggleParticipantStatus, deleteEvent, updateEvent } from '@/axios/api'
+import type { Event } from '@/assets/vue/types/types'
+import { showError, currentNotification } from '../../../../utils/errors.ts'
+import axios from 'axios'
+import dayjs from 'dayjs'
+import 'dayjs/locale/fr'
+import { getSocket, setupSocket } from '@/utils/socket.ts'
 
-dayjs.locale('fr');
+dayjs.locale('fr')
 
-const route = useRoute();
-const router = useRouter();
-const event = ref<Event | null>(null);
-const isLoading = ref(true);
-const currentUserId = ref<string | null>(null);
-const attendanceConfirmed = ref(false);
-const showEditButtons = ref(false);
-const showInviteModal = ref(false);
-const showImageModal = ref(false);
-const inviteLink = ref<string | null>(null);
-const emailToSend = ref<string>('');
+const route = useRoute()
+const router = useRouter()
+const event = ref<Event | null>(null)
+const isLoading = ref(true)
+const currentUserId = ref<string | null>(null)
+const attendanceConfirmed = ref(false)
+const showEditButtons = ref(false)
+const showInviteModal = ref(false)
+const showImageModal = ref(false)
+const inviteLink = ref<string | null>(null)
+const emailToSend = ref<string>('')
 const notification = ref<{ message: string; type: 'success' | 'error'; visible: boolean }>({
   message: '',
   type: 'success',
   visible: false,
-});
+})
 
 const formData = ref({
   eventName: '',
@@ -36,243 +37,350 @@ const formData = ref({
   eventImage: null as File | null,
   eventColor: '#f9f9f9',
   eventIsPublic: true,
-  eventDescription: ''
-});
-const imagePreviewUrl = ref<string | null>(null);
+  eventDescription: '',
+})
+const imagePreviewUrl = ref<string | null>(null)
 
-const scrollContainer = ref<HTMLDivElement | null>(null);
+const scrollContainer = ref<HTMLDivElement | null>(null)
 
 function scrollLeft() {
   if (scrollContainer.value) {
-    scrollContainer.value.scrollLeft -= 200; // Scroll de 200px vers la gauche
+    scrollContainer.value.scrollLeft -= 200 // Scroll de 200px vers la gauche
   }
 }
 
 function scrollRight() {
   if (scrollContainer.value) {
-    scrollContainer.value.scrollLeft += 200; // Scroll de 200px vers la right
+    scrollContainer.value.scrollLeft += 200 // Scroll de 200px vers la right
   }
 }
 
 const mockParticipants = [
-  { userId: 1, username: 'User 1', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 2, username: 'User 2', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 3', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-  { userId: 3, username: 'User 4', photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg' },
-];
+  {
+    userId: 1,
+    username: 'User 1',
+    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
+  },
+  {
+    userId: 2,
+    username: 'User 2',
+    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
+  },
+  {
+    userId: 3,
+    username: 'User 3',
+    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
+  },
+  {
+    userId: 3,
+    username: 'User 3',
+    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
+  },
+  {
+    userId: 3,
+    username: 'User 3',
+    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
+  },
+  {
+    userId: 3,
+    username: 'User 3',
+    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
+  },
+  {
+    userId: 3,
+    username: 'User 3',
+    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
+  },
+  {
+    userId: 3,
+    username: 'User 3',
+    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
+  },
+  {
+    userId: 3,
+    username: 'User 3',
+    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
+  },
+  {
+    userId: 3,
+    username: 'User 3',
+    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
+  },
+  {
+    userId: 3,
+    username: 'User 3',
+    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
+  },
+  {
+    userId: 3,
+    username: 'User 3',
+    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
+  },
+  {
+    userId: 3,
+    username: 'User 3',
+    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
+  },
+  {
+    userId: 3,
+    username: 'User 3',
+    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
+  },
+  {
+    userId: 3,
+    username: 'User 3',
+    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
+  },
+  {
+    userId: 3,
+    username: 'User 3',
+    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
+  },
+  {
+    userId: 3,
+    username: 'User 3',
+    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
+  },
+  {
+    userId: 3,
+    username: 'User 3',
+    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
+  },
+  {
+    userId: 3,
+    username: 'User 3',
+    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
+  },
+  {
+    userId: 3,
+    username: 'User 4',
+    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
+  },
+]
 // Variables pour la pop-up de suppréssion
-const showDeleteModal = ref(false);
+const showDeleteModal = ref(false)
 // Variables pour l'édition d'un event
-const editEventMode = ref(false);
+const editEventMode = ref(false)
 
+let socket: any = null
 
-// Récupération de l'événement et initialisation
 onMounted(async () => {
-  const eventId = route.params.id as string;
+  const eventId = route.params.id as string
 
+  socket = setupSocket()
+
+  socket.on('event-update', (updatedEventData) => {
+    if (updatedEventData) {
+      if (updatedEventData.eventId === eventId) {
+        if (updatedEventData.redirect === 'true') {
+          router.push('/')
+        }
+
+        event.value!.isPublic = updatedEventData.eventIsPublic === 'true'
+        event.value!.title = updatedEventData.eventTitle
+        event.value!.location = updatedEventData.eventLocation
+        event.value!.description = updatedEventData.eventDescription
+        event.value!.image = updatedEventData.eventImage
+        event.value!.color = updatedEventData.eventColor
+        event.value!.date = updatedEventData.eventDate
+        event.value!.time = updatedEventData.eventTime
+        formData.value.eventColor = updatedEventData.eventColor
+        event.value!.title = updatedEventData.eventTitle
+      }
+    }
+  })
+
+  socket.on('event-participant-join', (eventData: any) => {
+    if (eventData) {
+      if (eventData.eventId === eventId) {
+        if (event.value) {
+          event.value!.participants = JSON.parse(eventData.participants)
+        }
+      }
+    }
+  })
+
+  socket.on('event-delete', (eventDeletedData: any) => {
+    if (eventDeletedData) {
+      if (eventDeletedData.eventId === eventId) {
+        showNotification(eventDeletedData.redirectMessage, 'error')
+        setTimeout(() => router.push('/'), 3000)
+      }
+    }
+  })
 
   // Récupérer l'utilisateur connecté depuis le localStorage
-  const storedUser = sessionStorage.getItem('user');
+  const storedUser = sessionStorage.getItem('user')
   if (storedUser) {
-    const user = JSON.parse(storedUser);
-    currentUserId.value = user._id;
+    const user = JSON.parse(storedUser)
+    currentUserId.value = user._id
   }
 
   try {
-    isLoading.value = true;
-    const fetchedEvent = await getEventById(eventId);
+    isLoading.value = true
+    const fetchedEvent = await getEventById(eventId)
 
     if (!fetchedEvent) {
-      showError('Événement introuvable.');
-      router.push('/404');
-      return;
+      showError('Événement introuvable.')
+      router.push('/404')
+      return
     }
 
     event.value = {
       ...fetchedEvent,
       id: fetchedEvent._id,
-    };
+    }
 
     // Remplir formData
-    formData.value.eventName = fetchedEvent.title;
-    formData.value.eventDate = fetchedEvent.date;
-    formData.value.eventTime = fetchedEvent.time;
-    formData.value.eventLocation = fetchedEvent.location;
-    formData.value.eventDescription = fetchedEvent.description;
-    formData.value.eventColor = fetchedEvent.color || '#f9f9f9';
-    formData.value.eventIsPublic = fetchedEvent.isPublic;
+    formData.value.eventName = fetchedEvent.title
+    formData.value.eventDate = fetchedEvent.date
+    formData.value.eventTime = fetchedEvent.time
+    formData.value.eventLocation = fetchedEvent.location
+    formData.value.eventDescription = fetchedEvent.description
+    formData.value.eventColor = fetchedEvent.color || '#f9f9f9'
+    formData.value.eventIsPublic = fetchedEvent.isPublic
 
     // Gérer l'image
-    formData.value.eventImage = fetchedEvent.image ?? null;
+    formData.value.eventImage = fetchedEvent.image ?? null
 
     // Initialisation de l'état de participation
-    attendanceConfirmed.value = event.value?.participants.some(
-      (participant) => participant.userId === currentUserId.value
-    ) ?? false;
+    attendanceConfirmed.value =
+      event.value?.participants.some((participant) => participant.userId === currentUserId.value) ??
+      false
 
     // Lien d'invitation
-    inviteLink.value = `${window.location.origin}/event-detail/${eventId}?invitation=true`;
-
-
+    inviteLink.value = `${window.location.origin}/event-detail/${eventId}?invitation=true`
   } catch (error) {
-    console.error("Erreur lors de la récupération de l'événement :", error);
+    console.error("Erreur lors de la récupération de l'événement :", error)
     if (axios.isAxiosError(error)) {
       if (error.response && error.response.status === 404) {
-        showError("L'événement demandé n'a pas été trouvé.");
-        setTimeout(() => router.push('/404'), 3000);
+        showError("L'événement demandé n'a pas été trouvé.")
+        setTimeout(() => router.push('/404'), 3000)
       } else {
-        showError(error.response?.data.message || "L'événement demandé n'a pas été trouvé.");
-        setTimeout(() => router.push('/404'), 3000);
+        showError(error.response?.data.message || "L'événement demandé n'a pas été trouvé.")
+        setTimeout(() => router.push('/404'), 3000)
       }
     } else {
-      showError("L'événement demandé n'a pas été trouvé.");
-      setTimeout(() => router.push('/404'), 3000);
+      showError("L'événement demandé n'a pas été trouvé.")
+      setTimeout(() => router.push('/404'), 3000)
       console.log(error)
     }
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
-});
+})
 
 // Computed pour le style du thème
 const themeStyle = computed(() => {
   if (event.value) {
     return {
       backgroundColor: formData.value.eventColor || '#f9f9f9',
-    };
+    }
   }
-  return {};
-});
+  return {}
+})
 
 // Fonction pour afficher la notification
 function showNotification(message: string, type: 'success' | 'error') {
-  notification.value = { message, type, visible: true };
-  setTimeout(() => (notification.value.visible = false), 3000);
+  notification.value = { message, type, visible: true }
+  setTimeout(() => (notification.value.visible = false), 3000)
 }
 
 // Fonction pour rejoindre ou quitter un événement
 async function toggleParticipation() {
-  if (!event.value || !currentUserId.value) return;
+  if (!event.value || !currentUserId.value) return
 
-  const wasParticipant = event.value.participants.some(
-    (p) => p.userId === currentUserId.value
-  );
+  isLoading.value = true
+
+  const wasParticipant = event.value.participants.some((p) => p.userId === currentUserId.value)
 
   try {
     const responseToggleParticipation = await toggleParticipantStatus(event.value.id, {
-      userId: currentUserId.value,
-      isJoining: !wasParticipant
-    });
+      isJoining: !wasParticipant,
+    })
 
-    if (!responseToggleParticipation) throw new Error('Échec de la mise à jour de la participation');
+    if (!responseToggleParticipation) throw new Error('Échec de la mise à jour de la participation')
 
-
-    // todo if creator put to private, joiner has to refresh to get the change, otherwise it will still consider public because fetch is done at the beginning (add sws implem)
     if (wasParticipant && event.value.creator !== currentUserId.value && !event.value.isPublic) {
-      router.push('/');
+      router.push('/')
       return
     }
     // Re-fetch event to get fresh data
-    const updatedEvent = await getEventById(event.value.id);
+    const updatedEvent = await getEventById(event.value.id)
 
     event.value = {
       ...updatedEvent,
       id: updatedEvent._id,
-    };
+    }
 
-    attendanceConfirmed.value = !wasParticipant;
+    attendanceConfirmed.value = !wasParticipant
 
-
-    showNotification(
-      `Vous avez ${!wasParticipant ? 'rejoint' : 'quitté'} l'événement.`,
-      'success'
-    );
+    showNotification(`Vous avez ${!wasParticipant ? 'rejoint' : 'quitté'} l'événement.`, 'success')
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de la participation :', error);
-    showNotification(
-      error?.message || 'Une erreur est survenue. Veuillez réessayer.',
-      'error'
-    );
+    console.error('Erreur lors de la mise à jour de la participation :', error)
+    showNotification(error?.message || 'Une erreur est survenue. Veuillez réessayer.', 'error')
+  } finally {
+    isLoading.value = false
   }
 }
 
-
 function triggerEditEventMode() {
-  editEventMode.value = true;
-  showEditButtons.value = true;
+  editEventMode.value = true
+  showEditButtons.value = true
 }
 
 function quitEditEventMode() {
-  editEventMode.value = false;
-  showEditButtons.value = false;
+  editEventMode.value = false
+  showEditButtons.value = false
 }
 
 async function triggerSaveEvent() {
-  if (!event.value) return;
+  if (!event.value) return
 
-  isLoading.value = true;
+  isLoading.value = true
 
+  const updatedEventData = new FormData()
 
-  const updatedEventData = new FormData();
-
-  updatedEventData.append('title', formData.value.eventName);
-  updatedEventData.append('date', formData.value.eventDate);
-  updatedEventData.append('time', formData.value.eventTime);
-  updatedEventData.append('description', formData.value.eventDescription);
-  updatedEventData.append('location', formData.value.eventLocation);
-  updatedEventData.append('color', formData.value.eventColor);
-  updatedEventData.append('isPublic', formData.value.eventIsPublic.toString());
+  updatedEventData.append('title', formData.value.eventName)
+  updatedEventData.append('date', formData.value.eventDate)
+  updatedEventData.append('time', formData.value.eventTime)
+  updatedEventData.append('description', formData.value.eventDescription)
+  updatedEventData.append('location', formData.value.eventLocation)
+  updatedEventData.append('color', formData.value.eventColor)
+  updatedEventData.append('isPublic', formData.value.eventIsPublic.toString())
 
   if (formData.value.eventImage) {
-    updatedEventData.append('image', formData.value.eventImage);
+    updatedEventData.append('image', formData.value.eventImage)
   }
 
   try {
-    await updateEvent(event.value.id, updatedEventData).then(
-      response => {
-        if (event.value) {
-          event.value.image = response.updatedEvent.image
-            ? response.updatedEvent.image
-            : 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/logo-afterworkly.png';
-        }
+    await updateEvent(event.value.id, updatedEventData).then((response) => {
+      if (event.value) {
+        event.value.image = response.updatedEvent.image
+          ? response.updatedEvent.image
+          : 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/logo-afterworkly.png'
       }
-    );
-    event.value.title = formData.value.eventName;
-    event.value.date = formData.value.eventDate;
-    event.value.time = formData.value.eventTime;
-    event.value.description = formData.value.eventDescription;
-    event.value.location = formData.value.eventLocation;
+    })
+    event.value.title = formData.value.eventName
+    event.value.date = formData.value.eventDate
+    event.value.time = formData.value.eventTime
+    event.value.description = formData.value.eventDescription
+    event.value.location = formData.value.eventLocation
 
-    event.value.isPublic = formData.value.eventIsPublic;
-    event.value.color = formData.value.eventColor;
+    event.value.isPublic = formData.value.eventIsPublic
+    event.value.color = formData.value.eventColor
 
-    editEventMode.value = false;
-    showEditButtons.value = false;
+    editEventMode.value = false
+    showEditButtons.value = false
     notification.value = {
       message: 'Événement sauvegardé avec succès !',
       type: 'success',
       visible: true,
-    };
+    }
   } catch (error) {
-    console.error("Erreur lors de la mise à jour de l'événement :", error);
+    console.error("Erreur lors de la mise à jour de l'événement :", error)
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
 }
 
@@ -285,57 +393,61 @@ async function triggerDeleteEvent() {
         message: 'Événement supprimé avec succès !',
         type: 'success',
         visible: true,
-      };
-      router.push('/');
-    });
-  }
-  // Echec de suppression d'event
-  catch (error) {
-    console.log(error);
+      }
+      router.push('/')
+    })
+  } catch (error) {
+    // Echec de suppression d'event
+    console.log(error)
     notification.value = {
       message: error.message || 'Une erreur est survenue.',
       type: 'error',
       visible: true,
-    };
+    }
   }
 }
-
-
 
 // Fonction pour copier le lien d'invitation dans le presse-papiers
 function copyInviteLink() {
   if (inviteLink.value) {
     navigator.clipboard.writeText(inviteLink.value).then(() => {
-      showNotification('Lien d’invitation copié dans le presse-papiers.', 'success');
-    });
+      showNotification('Lien d’invitation copié dans le presse-papiers.', 'success')
+    })
   }
 }
 
 // Fonction pour envoyer un email d'invitation
 async function sendInviteEmail(email: string) {
   try {
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Simule un délai
-    showNotification(`Invitation envoyée à ${email}.`, 'success');
+    await new Promise((resolve) => setTimeout(resolve, 1000)) // Simule un délai
+    showNotification(`Invitation envoyée à ${email}.`, 'success')
   } catch (error) {
-    console.error('Erreur lors de l’envoi de l’invitation :', error);
-    showNotification('Échec de l’envoi de l’invitation.', 'error');
+    console.error('Erreur lors de l’envoi de l’invitation :', error)
+    showNotification('Échec de l’envoi de l’invitation.', 'error')
   }
 }
 
 function handleImageUpload(event: Event) {
-  const file = (event.target as HTMLInputElement).files?.[0];
+  const file = (event.target as HTMLInputElement).files?.[0]
   if (file) {
-    formData.value.eventImage = file;
-    imagePreviewUrl.value = URL.createObjectURL(file);
+    formData.value.eventImage = file
+    imagePreviewUrl.value = URL.createObjectURL(file)
   }
 }
 
 function uploadImage() {
-  showImageModal.value = false;
+  showImageModal.value = false
 }
 
-const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY'));
+const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY'))
 
+onUnmounted(() => {
+  if (socket) {
+    socket.off('event-update')
+    socket.off('event-participant-join')
+    socket.off('event-delete')
+  }
+})
 </script>
 
 <template>
@@ -349,13 +461,29 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
     <HeaderComponent />
 
     <main class="container-card h-screen overflow-auto mx-auto max-w-4xl p-4">
-<!--      <div v-if="isLoading" class="text-center">
+      <!--      <div v-if="isLoading" class="text-center">
         <p class="text-gray-500">Chargement...</p>
       </div>-->
       <div v-if="isLoading" class="flex flex-col items-center justify-center py-20">
-        <svg class="animate-spin h-10 w-10 text-blue-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+        <svg
+          class="animate-spin h-10 w-10 text-blue-500 mb-4"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          ></circle>
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+          ></path>
         </svg>
         <p class="text-gray-500">Chargement...</p>
       </div>
@@ -363,7 +491,10 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
       <div v-else-if="event" class="w-full max-w-4xl bg-white shadow-lg rounded-lg overflow-hidden">
         <div class="relative flex items-center justify-center h-72 sm:h-96" :style="themeStyle">
           <img
-            :src="event.image ?? 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/logo-afterworkly.png'"
+            :src="
+              event.image ??
+              'https://afterworkly-media.s3.eu-north-1.amazonaws.com/logo-afterworkly.png'
+            "
             alt="Image de l'événement"
             class="absolute w-4/6 h-auto object-contain rounded-lg"
           />
@@ -371,14 +502,20 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
             v-if="showEditButtons"
             @click="showImageModal = true"
             class="absolute bottom-4 right-4 text-gray-700 hover:text-gray-900 transition"
-            title="Changer l'image">
+            title="Changer l'image"
+          >
             <i class="fas fa-camera text-2xl"></i>
           </button>
           <button
             v-if="showEditButtons"
             class="absolute bottom-4 right-12 text-gray-700 hover:text-gray-900 transition"
-            title="Changer la couleur du thème">
-            <input type="color" v-model="formData.eventColor" class="w-8 h-8 border rounded-lg cursor-pointer" />
+            title="Changer la couleur du thème"
+          >
+            <input
+              type="color"
+              v-model="formData.eventColor"
+              class="w-8 h-8 border rounded-lg cursor-pointer"
+            />
           </button>
           <div>
             <button
@@ -408,11 +545,7 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
           </div>
         </div>
 
-        <div
-          v-if="!editEventMode"
-          class="p-6 space-y-6"
-        >
-
+        <div v-if="!editEventMode" class="p-6 space-y-6">
           <div class="flex justify-center items-center space-x-4 text-gray-600 mt-2">
             <p class="flex items-center space-x-2">
               🌐 <span class="ml-1 font-medium">{{ event.isPublic ? 'Public' : 'Privé' }}</span>
@@ -438,6 +571,7 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
             <button
               v-if="currentUserId !== event.creator"
               @click="toggleParticipation"
+              :disabled="isLoading"
               :class="[
                 'px-6 py-2 rounded-lg transition font-medium',
                 attendanceConfirmed
@@ -449,22 +583,29 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
             </button>
           </div>
           <div>
-
             <h3 class="font-semibold text-gray-800">Participants</h3>
-            <div style="width: 100%; overflow: hidden; position: relative;">
+            <div style="width: 100%; overflow: hidden; position: relative">
               <!-- Sliding Container -->
               <div
                 ref="scrollContainer"
                 class="space-y-2 scroll-div"
-                style="display: flex; justify-content: flex-start; align-items: center; gap: 10px; flex-wrap: nowrap; overflow-x: auto; scroll-behavior: smooth;">
-
-
+                style="
+                  display: flex;
+                  justify-content: flex-start;
+                  align-items: center;
+                  gap: 10px;
+                  flex-wrap: nowrap;
+                  overflow-x: auto;
+                  scroll-behavior: smooth;
+                "
+              >
                 <div
                   v-for="participant in event.participants"
                   :key="participant.userId"
-                  class="flex items-center">
+                  class="flex items-center"
+                >
                   <ParticipantListComponent
-                    style="flex-shrink: 0; width: 80px; margin: 0;"
+                    style="flex-shrink: 0; width: 80px; margin: 0"
                     :participantInfos="participant"
                     confirmed-class="text-green-600 font-bold"
                     undecided-class="text-yellow-500 italic"
@@ -475,29 +616,48 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
               <!-- Left Button -->
               <button
                 @click="scrollLeft"
-                style="position: absolute; left: -10px; top: 50%; transform: translateY(-50%); background-color: rgba(195,192,192,0.5); border: none; padding: 10px; border-radius: 50%; cursor: pointer; z-index: 2;">
+                style="
+                  position: absolute;
+                  left: -10px;
+                  top: 50%;
+                  transform: translateY(-50%);
+                  background-color: rgba(195, 192, 192, 0.5);
+                  border: none;
+                  padding: 10px;
+                  border-radius: 50%;
+                  cursor: pointer;
+                  z-index: 2;
+                "
+              >
                 ⟨
               </button>
 
               <!-- Right Button -->
               <button
                 @click="scrollRight"
-                style="position: absolute; right: -10px; top: 50%; transform: translateY(-50%); background-color: rgba(195,192,192,0.5); border: none; padding: 10px; border-radius: 50%; cursor: pointer; z-index: 2;">
+                style="
+                  position: absolute;
+                  right: -10px;
+                  top: 50%;
+                  transform: translateY(-50%);
+                  background-color: rgba(195, 192, 192, 0.5);
+                  border: none;
+                  padding: 10px;
+                  border-radius: 50%;
+                  cursor: pointer;
+                  z-index: 2;
+                "
+              >
                 〉
               </button>
             </div>
-
           </div>
         </div>
 
         <div v-if="editEventMode" class="p-6 space-y-6">
           <div class="flex items-center space-x-2">
             <label class="text-gray-700 font-medium">Public</label>
-            <input
-              type="checkbox"
-              v-model="formData.eventIsPublic"
-              class="rounded-md"
-            />
+            <input type="checkbox" v-model="formData.eventIsPublic" class="rounded-md" />
             <span>{{ formData.eventIsPublic ? 'Public' : 'Privé' }}</span>
           </div>
 
@@ -537,21 +697,28 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
           </div>
           <div>
             <label class="block text-gray-700 font-medium">Description</label>
-            <textarea v-model="formData.eventDescription" class="border p-2 rounded w-full"></textarea>
+            <textarea
+              v-model="formData.eventDescription"
+              class="border p-2 rounded w-full"
+            ></textarea>
           </div>
 
           <div class="flex justify-end space-x-4">
-            <button @click="quitEditEventMode" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 mt-2">
+            <button
+              @click="quitEditEventMode"
+              class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 mt-2"
+            >
               Annuler
             </button>
-            <button @click="triggerSaveEvent" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mt-2">
+            <button
+              @click="triggerSaveEvent"
+              class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mt-2"
+            >
               Sauvegarder
             </button>
           </div>
         </div>
-
       </div>
-
 
       <!-- Modal d'invitation aux événements  -->
       <ModalComponent
@@ -559,15 +726,28 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
         :isVisible="showInviteModal"
         title="Inviter des participants"
         :buttons="[
-          { text: 'Fermer', action: () => (showInviteModal = false), class: 'bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 mt-2' }
+          {
+            text: 'Fermer',
+            action: () => (showInviteModal = false),
+            class: 'bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 mt-2',
+          },
         ]"
       >
         <div>
-          <p class="mb-4">Lien d'invitation : <code class="bg-gray-200 p-1 rounded">{{ inviteLink }}</code></p>
-          <button @click="copyInviteLink" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition">Copier le lien</button>
+          <p class="mb-4">
+            Lien d'invitation : <code class="bg-gray-200 p-1 rounded">{{ inviteLink }}</code>
+          </p>
+          <button
+            @click="copyInviteLink"
+            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+          >
+            Copier le lien
+          </button>
 
           <div class="mt-4">
-            <label for="email" class="block text-gray-700 mb-2">Envoyer une invitation par email :</label>
+            <label for="email" class="block text-gray-700 mb-2"
+              >Envoyer une invitation par email :</label
+            >
             <input
               id="email"
               type="email"
@@ -590,23 +770,42 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
         :isVisible="showDeleteModal"
         title="Voulez-vous vraiment supprimer cet événement ?"
         :buttons="[
-          { text: 'Oui', action: triggerDeleteEvent, class: 'bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mt-2' },
-          { text: 'Non', action: () => (showDeleteModal = false), class: 'bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 mt-2' }
+          {
+            text: 'Oui',
+            action: triggerDeleteEvent,
+            class: 'bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mt-2',
+          },
+          {
+            text: 'Non',
+            action: () => (showDeleteModal = false),
+            class: 'bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 mt-2',
+          },
         ]"
       >
       </ModalComponent>
 
-      <div v-if="showImageModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50" style="z-index: 9999;">
-        <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full" style="z-index: 10000;">
+      <div
+        v-if="showImageModal"
+        class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
+        style="z-index: 9999"
+      >
+        <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full" style="z-index: 10000">
           <h2 class="text-lg font-bold mb-4">Changer l'image</h2>
           <input type="file" @change="handleImageUpload" class="mb-4 w-full" />
-          <img
-            :src="imagePreviewUrl ?? event?.image ?? 'fallback.jpg'"
-            style="width: 100px;"
-          />
+          <img :src="imagePreviewUrl ?? event?.image ?? 'fallback.jpg'" style="width: 100px" />
           <div class="flex justify-end space-x-2">
-            <button @click="showImageModal = false" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 mt-2">Annuler</button>
-            <button @click="uploadImage" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mt-2">Sauvegarder</button>
+            <button
+              @click="showImageModal = false"
+              class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 mt-2"
+            >
+              Annuler
+            </button>
+            <button
+              @click="uploadImage"
+              class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mt-2"
+            >
+              Sauvegarder
+            </button>
           </div>
         </div>
       </div>
@@ -620,7 +819,6 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
     </main>
 
     <FooterComponent />
-
   </div>
 </template>
 <style src="./EventDetailPage.css" scoped></style>

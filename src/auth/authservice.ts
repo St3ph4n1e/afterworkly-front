@@ -2,19 +2,22 @@ import axios from "axios";
 import { login, signUp } from '@/axios/api.ts'
 import type { User } from '../assets/vue/types/types.ts';
 import { showError } from "../utils/errors.ts"
+import { setupSocket } from '@/utils/socket.ts'
 
 export async function loginUser(mail: string, password: string) {
   try {
     const response = await login({ mail, password });
 
     // Stocker le jeton d'accès dans sessionStorage
-    sessionStorage.setItem("access_token", response.token);
+    sessionStorage.setItem('access_token', response.token);
 
     // Le jeton d'actualisation devrait idéalement être stocké dans un cookie httpOnly
     // utilisation temporaire de localStorage (moins sécurisé)
-    localStorage.setItem("refresh_token", response.refresh_token);
+    localStorage.setItem('refresh_token', response.refresh_token);
 
-    sessionStorage.setItem("user", JSON.stringify(response.user));
+    sessionStorage.setItem('user', JSON.stringify(response.user));
+
+    const socket = setupSocket();
 
     return response;
   } catch (error: unknown ) {
@@ -88,3 +91,8 @@ export function logoutUser() {
   sessionStorage.removeItem("user");
 
 }
+
+export function isUserAuthenticated() {
+  return !!sessionStorage.getItem("user")
+}
+

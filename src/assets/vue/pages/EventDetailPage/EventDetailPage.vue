@@ -17,7 +17,7 @@ const router = useRouter()
 const event = ref<Event | null>(null)
 const isLoading = ref(true)
 const currentUserId = ref<string | null>(null)
-const attendanceConfirmed = ref(false)
+const attendanceConfirmed = ref<'confirmed' | 'pending' | 'not_joined' >('not_joined')
 const showEditButtons = ref(false)
 const showInviteModal = ref(false)
 const showImageModal = ref(false)
@@ -243,10 +243,22 @@ onMounted(async () => {
     // Gérer l'image
     formData.value.eventImage = fetchedEvent.image ?? null
 
+    const participant = event.value?.participants.find(
+      (p) => p.userId === currentUserId.value
+    )
+
     // Initialisation de l'état de participation
-    attendanceConfirmed.value =
-      event.value?.participants.some((participant) => participant.userId === currentUserId.value) ??
-      false
+    if (participant) {
+      if (participant.status === 'confirmed') {
+        attendanceConfirmed.value = 'confirmed'
+      } else if (participant.status === 'pending') {
+        attendanceConfirmed.value = 'pending'
+      } else {
+        attendanceConfirmed.value = 'not_joined'
+      }
+    } else {
+      attendanceConfirmed.value = 'not_joined'
+    }
 
     // Lien d'invitation
     inviteLink.value = `${window.location.origin}/event-detail/${eventId}?invitation=true`
@@ -267,6 +279,16 @@ onMounted(async () => {
     }
   } finally {
     isLoading.value = false
+  }
+})
+
+const participationButtonStyle = computed(() => {
+  if (attendanceConfirmed.value === 'confirmed') {
+    return 'bg-red-500 text-white hover:bg-red-600'
+  } else if (attendanceConfirmed.value === 'pending') {
+    return 'bg-blue-500 text-white hover:bg-blue-600'
+  } else {
+    return 'bg-green-500 text-white hover:bg-green-600'
   }
 })
 
@@ -293,15 +315,21 @@ async function toggleParticipation() {
   isLoading.value = true
 
   const wasParticipant = event.value.participants.some((p) => p.userId === currentUserId.value)
+  const wasParticipantInPending = event.value.participants.some((p) => p.userId === currentUserId.value && p.status === "pending")
 
   try {
-    const responseToggleParticipation = await toggleParticipantStatus(event.value.id, {
-      isJoining: !wasParticipant,
-    })
+    if (!wasParticipant) {
+      // User wants to join
+      await toggleParticipantStatus(event.value.id, { isJoining: true, status: 'confirmed' });
+    } else if (wasParticipantInPending) {
+      // User confirms participation
+      await toggleParticipantStatus(event.value.id, { isJoining: undefined, status: 'confirmed' });
+    } else {
+      // User quits
+      await toggleParticipantStatus(event.value.id, { isJoining: false });
+    }
 
-    if (!responseToggleParticipation) throw new Error('Échec de la mise à jour de la participation')
-
-    if (wasParticipant && event.value.creator !== currentUserId.value && !event.value.isPublic) {
+    if (wasParticipant && !wasParticipantInPending && event.value.creator !== currentUserId.value && !event.value.isPublic) {
       router.push('/')
       return
     }
@@ -313,9 +341,34 @@ async function toggleParticipation() {
       id: updatedEvent._id,
     }
 
-    attendanceConfirmed.value = !wasParticipant
+    // Update attendanceConfirmed state based on new event data
+    const participant = updatedEvent.participants.find(
+      (p) => p.userId === currentUserId.value
+    )
+    if (participant) {
+      if (participant.status === 'confirmed') {
+        attendanceConfirmed.value = 'confirmed'
+      } else if (participant.status === 'pending') {
+        attendanceConfirmed.value = 'pending'
+      } else {
+        attendanceConfirmed.value = 'not_joined'
+      }
+    } else {
+      attendanceConfirmed.value = 'not_joined'
+    }
 
-    showNotification(`Vous avez ${!wasParticipant ? 'rejoint' : 'quitté'} l'événement.`, 'success')
+
+    let notifMessage = ""
+
+    if (wasParticipantInPending) {
+      notifMessage = 'Vous avez confirmer votre présence'
+    } else if (wasParticipant) {
+      notifMessage = 'Vous avez quitté l\'événement.'
+    } else {
+      notifMessage = 'Vous avez rejoint l\'événement.'
+    }
+
+    showNotification(notifMessage, 'success')
   } catch (error) {
     console.error('Erreur lors de la mise à jour de la participation :', error)
     showNotification(error?.message || 'Une erreur est survenue. Veuillez réessayer.', 'error')
@@ -448,6 +501,46 @@ onUnmounted(() => {
     socket.off('event-delete')
   }
 })
+
+async function quitFromPending() {
+  if (!event.value || !currentUserId.value) return
+
+  isLoading.value = true
+
+  try {
+    await toggleParticipantStatus(event.value.id, { isJoining: false });
+
+    // Re-fetch event to get fresh data
+    const updatedEvent = await getEventById(event.value.id)
+    event.value = {
+      ...updatedEvent,
+      id: updatedEvent._id,
+    }
+
+    // Update attendanceConfirmed state based on new event data
+    const participant = updatedEvent.participants.find(
+      (p) => p.userId === currentUserId.value
+    )
+    if (participant) {
+      if (participant.status === 'confirmed') {
+        attendanceConfirmed.value = 'confirmed'
+      } else if (participant.status === 'pending') {
+        attendanceConfirmed.value = 'pending'
+      } else {
+        attendanceConfirmed.value = 'not_joined'
+      }
+    } else {
+      attendanceConfirmed.value = 'not_joined'
+    }
+
+    showNotification('Vous avez quitté l\'événement.', 'success')
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de la participation :', error)
+    showNotification(error?.message || 'Une erreur est survenue. Veuillez réessayer.', 'error')
+  } finally {
+    isLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -569,18 +662,30 @@ onUnmounted(() => {
 
           <div class="text-center mt-6">
             <button
-              v-if="currentUserId !== event.creator"
-              @click="toggleParticipation"
+              :class="`px-4 py-2 rounded-lg font-semibold transition ${participationButtonStyle}`"
               :disabled="isLoading"
-              :class="[
-                'px-6 py-2 rounded-lg transition font-medium',
-                attendanceConfirmed
-                  ? 'bg-red-500 text-white hover:bg-red-600'
-                  : 'bg-blue-500 text-white hover:bg-blue-600',
-              ]"
+              @click="toggleParticipation"
+              v-if="currentUserId !== event.creator && attendanceConfirmed !== 'pending'"
             >
-              {{ attendanceConfirmed ? 'Quitter' : 'Rejoindre' }} l'événement
+              <template v-if="attendanceConfirmed === 'confirmed'">Quitter</template>
+              <template v-else> Rejoindre</template>
             </button>
+            <div v-if="currentUserId !== event.creator && attendanceConfirmed === 'pending'" class="space-x-4">
+              <button
+                class="px-4 py-2 rounded-lg font-semibold transition bg-green-500 text-white hover:bg-green-600"
+                :disabled="isLoading"
+                @click="toggleParticipation"
+              >
+                Confirmer ma présence
+              </button>
+              <button
+                class="px-4 py-2 rounded-lg font-semibold transition bg-red-500 text-white hover:bg-red-600"
+                :disabled="isLoading"
+                @click="quitFromPending"
+              >
+                Quitter
+              </button>
+            </div>
           </div>
           <div>
             <h3 class="font-semibold text-gray-800">Participants</h3>

@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { formatDate } from '@/utils/date'
-import { getEventById, toggleParticipantStatus, deleteEvent, updateEvent } from '@/axios/api'
+import { getEventById, toggleParticipantStatus, deleteEvent, updateEvent, sendInviataionEmail } from '@/axios/api'
 import type { Event } from '@/assets/vue/types/types'
 import { showError, currentNotification } from '../../../../utils/errors.ts'
 import axios from 'axios'
@@ -38,7 +38,9 @@ const formData = ref({
   eventColor: '#f9f9f9',
   eventIsPublic: true,
   eventDescription: '',
+  code: ''
 })
+
 const imagePreviewUrl = ref<string | null>(null)
 
 const scrollContainer = ref<HTMLDivElement | null>(null)
@@ -157,6 +159,7 @@ const mockParticipants = [
     photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
   },
 ]
+
 // Variables pour la pop-up de suppréssion
 const showDeleteModal = ref(false)
 // Variables pour l'édition d'un event
@@ -239,6 +242,7 @@ onMounted(async () => {
     formData.value.eventDescription = fetchedEvent.description
     formData.value.eventColor = fetchedEvent.color || '#f9f9f9'
     formData.value.eventIsPublic = fetchedEvent.isPublic
+    formData.value.code = fetchedEvent.code
 
     // Gérer l'image
     formData.value.eventImage = fetchedEvent.image ?? null
@@ -401,6 +405,7 @@ async function triggerSaveEvent() {
   updatedEventData.append('location', formData.value.eventLocation)
   updatedEventData.append('color', formData.value.eventColor)
   updatedEventData.append('isPublic', formData.value.eventIsPublic.toString())
+  updatedEventData.append('code', formData.value.code)
 
   if (formData.value.eventImage) {
     updatedEventData.append('image', formData.value.eventImage)
@@ -419,7 +424,6 @@ async function triggerSaveEvent() {
     event.value.time = formData.value.eventTime
     event.value.description = formData.value.eventDescription
     event.value.location = formData.value.eventLocation
-
     event.value.isPublic = formData.value.eventIsPublic
     event.value.color = formData.value.eventColor
 
@@ -472,8 +476,16 @@ function copyInviteLink() {
 // Fonction pour envoyer un email d'invitation
 async function sendInviteEmail(email: string) {
   try {
-    await new Promise((resolve) => setTimeout(resolve, 1000)) // Simule un délai
-    showNotification(`Invitation envoyée à ${email}.`, 'success')
+    // await new Promise((resolve) => setTimeout(resolve, 1000)) // Simule un délai
+    console.log("current event")
+    console.log(event.value)
+    console.log("current event")
+    await sendInviataionEmail(email, event.value).then(
+      () => {
+        showNotification(`Invitation envoyée à ${email}.`, 'success')
+      }
+    )
+
   } catch (error) {
     console.error('Erreur lors de l’envoi de l’invitation :', error)
     showNotification('Échec de l’envoi de l’invitation.', 'error')
@@ -540,6 +552,15 @@ async function quitFromPending() {
   } finally {
     isLoading.value = false
   }
+}
+
+function generateRandomCode(length = 6) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
 }
 </script>
 
@@ -807,6 +828,20 @@ async function quitFromPending() {
               class="border p-2 rounded w-full"
             ></textarea>
           </div>
+          <div v-if="event.creator === currentUserId">
+            <label class="block text-gray-700 font-medium">Code</label>
+            <input disabled
+              v-model="formData.code"
+              class="border p-2 rounded w-full"
+            />
+          </div>
+          <button
+            type="button"
+            class="px-3 py-1 bg-blue-500 text-white rounded"
+            @click="formData.code = generateRandomCode()"
+          >
+            Régénérer le code
+          </button>
 
           <div class="flex justify-end space-x-4">
             <button

@@ -19,6 +19,7 @@ const formData = ref({
   eventColor: '#ffffff',
   eventParticipants: [] as string[],
   isPublic: false, // Champ pour définir si l'événement est public ou privé
+  code: '',
 });
 
 const selectedUsers = ref([])
@@ -71,6 +72,15 @@ function handleFileUpload(event: Event) {
   }
 }
 
+function generateRandomCode(length = 6) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
 async function handleSubmit() {
 
 
@@ -89,6 +99,7 @@ async function handleSubmit() {
   eventData.append('color', formData.value.eventColor);
   eventData.append('isPublic', formData.value.isPublic.toString());
   eventData.append('participants', JSON.stringify(formData.value.eventParticipants));
+  eventData.append('code', formData.value.code);
 
   if (formData.value.eventImage) {
     eventData.append('image', formData.value.eventImage);
@@ -131,6 +142,7 @@ function resetForm() {
     eventColor: '#ffffff',
     eventParticipants: [],
     isPublic: true,
+    code: generateRandomCode()
   };
   previewImage.value = null;
 
@@ -153,6 +165,7 @@ function createAnotherEvent() {
 onMounted(async () => {
   try {
     const storedUser = localStorage.getItem('user');
+    formData.value.code = generateRandomCode();
 
     if (storedUser) {
       const myUser = JSON.parse(storedUser);
@@ -305,6 +318,26 @@ onMounted(async () => {
             ></div>
           </label>
         </div>
+        <div class="mb-4">
+          <label for="eventCode" class="block text-gray-700 font-bold mb-2">
+            Code de l'événement
+          </label>
+          <input
+            id="eventCode"
+            type="text"
+            v-model="formData.code"
+            class="border rounded w-full py-2 px-3 text-gray-700 bg-gray-100"
+            disabled
+          />
+        </div>
+
+        <button
+          type="button"
+          class="px-3 py-1 bg-blue-500 text-white rounded"
+          @click="formData.code = generateRandomCode()"
+        >
+          Régénérer le code
+        </button>
 
         <button
           type="submit"

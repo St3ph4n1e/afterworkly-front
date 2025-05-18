@@ -146,7 +146,29 @@ export async function deleteEvent(eventId: string) {
   return response.data;
 }
 
+export async function sendInviataionEmail(email: string, event: any) {
+  const response = await apiClient.post('/events/send-invitation', { email, event })
+  return response.data
+}
 
+export async function getEventByIdForOutsider(eventId: string) {
+  const response = await apiClient.get(`/events-outsider/${eventId}`)
+  return response.data
+}
+
+export async function addOutsiderToParticipates(eventId: string, username: string, photo: string) {
+  const response = await apiClient.post(`/events-outsider/${eventId}/toggle-participation`, { username, photo })
+  return response.data
+}
+
+export async function exitEventForOutsider(username: string, eventId: string) {
+  // todo check username not taken for outsider
+  // todo quit implem
+  console.log(username)
+  const response = await apiClient.post(`/events-outsider/${eventId}/quit`, { username })
+  return response.data
+
+}
 // Profil utilisateur
 export async function getUserProfile() {
   const response = await apiClient.get('/auth/profile');

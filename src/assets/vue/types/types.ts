@@ -19,6 +19,7 @@ export interface Event {
   creator: string; // Identifiant du créateur de l'événement
   participants: EventParticipant[]; // Liste des participants
   isPublic: boolean; // Visibilité de l'événement
+  code: string; // Code de l'événement
 }
 
 export interface User {

@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import OfflinePage from '../assets/vue/pages/OfflinePage/OfflinePage.vue';
+import OutsiderJoiningPage from '@/assets/vue/pages/OutsiderJoiningPage/OutsiderJoiningPage.vue'
 
 
 const DashboardPage = () => import('@/assets/vue/pages/DashboardPage/DashboardPage.vue');
@@ -7,6 +8,7 @@ const CreateEventPage = () => import('@/assets/vue/pages/CreateEventPage/CreateE
 const ProfilePage = () => import('@/assets/vue/pages/ProfilePage/ProfilePage.vue');
 const AuthPage = () => import('@/assets/vue/pages/AuthPage/AuthPage.vue');
 const EventDetailPage = () => import('@/assets/vue/pages/EventDetailPage/EventDetailPage.vue');
+const EventDetailOutsiderPage = () => import('@/assets/vue/pages/EventDetailOutsiderPage/EventDetailOutsiderPage.vue');
 const AllEventsPage = () => import('@/assets/vue/pages/AllEventsPage/AllEventsPage.vue');
 
 
@@ -36,6 +38,11 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/event-detail-outsider/:id',
+    name: 'EventDetailOutsiderPage',
+    component: EventDetailOutsiderPage,
+  },
+  {
     path: '/all-events',
     name: 'allEvents',
     component: AllEventsPage,
@@ -55,7 +62,13 @@ const routes = [
     path: '/offline',
     name: 'offline',
     component: OfflinePage,
+  },
+  {
+    path: '/join',
+    name: 'join',
+    component: OutsiderJoiningPage,
   }
+
 
 ]
 

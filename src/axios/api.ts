@@ -146,8 +146,8 @@ export async function deleteEvent(eventId: string) {
   return response.data;
 }
 
-export async function sendInviataionEmail(email: string, event: any) {
-  const response = await apiClient.post('/events/send-invitation', { email, event })
+export async function sendInviataionEmail(email: string, eventId: string) {
+  const response = await apiClient.post(`/events-outsider/${eventId}/invite`, { email })
   return response.data
 }
 
@@ -167,8 +167,27 @@ export async function exitEventForOutsider(username: string, eventId: string) {
   console.log(username)
   const response = await apiClient.post(`/events-outsider/${eventId}/quit`, { username })
   return response.data
-
 }
+
+export async function generateJoinLink(eventId: string) {
+  const response = await apiClient.post(`/events-outsider/${eventId}/join-link`);
+  return response.data;
+}
+
+export async function validateJoinLink(eventId: string, token: string) {
+  const response = await apiClient.get(`/events-outsider/${eventId}/join-link/validate`, {
+    params: { token }
+  });
+  return response.data;
+}
+
+export async function markJoinLinkAsUsed(eventId: string, token: string) {
+  const response = await apiClient.post(`/events-outsider/${eventId}/join-link/use`, {
+    token
+  });
+  return response.data;
+}
+
 // Profil utilisateur
 export async function getUserProfile() {
   const response = await apiClient.get('/auth/profile');

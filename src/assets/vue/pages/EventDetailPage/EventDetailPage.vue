@@ -476,15 +476,16 @@ function copyInviteLink() {
 // Fonction pour envoyer un email d'invitation
 async function sendInviteEmail(email: string) {
   try {
-    // await new Promise((resolve) => setTimeout(resolve, 1000)) // Simule un délai
     console.log("current event")
     console.log(event.value)
     console.log("current event")
-    await sendInviataionEmail(email, event.value).then(
-      () => {
-        showNotification(`Invitation envoyée à ${email}.`, 'success')
-      }
-    )
+    if (event.value?.id) {
+      await sendInviataionEmail(email, event.value.id).then(
+        () => {
+          showNotification(`Invitation envoyée à ${email}.`, 'success')
+        }
+      )
+    }
 
   } catch (error) {
     console.error('Erreur lors de l’envoi de l’invitation :', error)

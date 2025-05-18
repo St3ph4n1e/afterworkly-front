@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { formatDate } from '@/utils/date'
-import { getEventById, toggleParticipantStatus, deleteEvent, updateEvent, sendInviataionEmail } from '@/axios/api'
+import { getEventById, toggleParticipantStatus, deleteEvent, updateEvent, sendInviataionEmail, generateJoinLink } from '@/axios/api'
 import type { Event } from '@/assets/vue/types/types'
 import { showError, currentNotification } from '../../../../utils/errors.ts'
 import axios from 'axios'
@@ -22,6 +22,8 @@ const showEditButtons = ref(false)
 const showInviteModal = ref(false)
 const showImageModal = ref(false)
 const inviteLink = ref<string | null>(null)
+const inviteLinkExpiry = ref<Date | null>(null)
+const isGeneratingLink = ref(false)
 const emailToSend = ref<string>('')
 const notification = ref<{ message: string; type: 'success' | 'error'; visible: boolean }>({
   message: '',
@@ -56,109 +58,6 @@ function scrollRight() {
     scrollContainer.value.scrollLeft += 200 // Scroll de 200px vers la right
   }
 }
-
-const mockParticipants = [
-  {
-    userId: 1,
-    username: 'User 1',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 2,
-    username: 'User 2',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 4',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-]
 
 // Variables pour la pop-up de suppréssion
 const showDeleteModal = ref(false)
@@ -264,8 +163,7 @@ onMounted(async () => {
       attendanceConfirmed.value = 'not_joined'
     }
 
-    // Lien d'invitation
-    inviteLink.value = `${window.location.origin}/event-detail/${eventId}?invitation=true`
+
   } catch (error) {
     console.error("Erreur lors de la récupération de l'événement :", error)
     if (axios.isAxiosError(error)) {
@@ -563,6 +461,23 @@ function generateRandomCode(length = 6) {
   }
   return result;
 }
+
+async function generateNewJoinLink() {
+  if (!event.value?.id) return
+
+  isGeneratingLink.value = true
+  try {
+    const response = await generateJoinLink(event.value.id)
+    inviteLink.value = response.link
+    inviteLinkExpiry.value = new Date(response.expiresAt)
+    showNotification('Lien généré avec succès !', 'success')
+  } catch (error) {
+    console.error('Erreur lors de la génération du lien :', error)
+    showNotification('Échec de la génération du lien.', 'error')
+  } finally {
+    isGeneratingLink.value = false
+  }
+}
 </script>
 
 <template>
@@ -690,7 +605,7 @@ function generateRandomCode(length = 6) {
               v-if="currentUserId !== event.creator && attendanceConfirmed !== 'pending'"
             >
               <template v-if="attendanceConfirmed === 'confirmed'">Quitter</template>
-              <template v-else> Rejoindre</template>
+              <template v-else>Rejoindre</template>
             </button>
             <div v-if="currentUserId !== event.creator && attendanceConfirmed === 'pending'" class="space-x-4">
               <button
@@ -874,34 +789,62 @@ function generateRandomCode(length = 6) {
           },
         ]"
       >
-        <div>
-          <p class="mb-4">
-            Lien d'invitation : <code class="bg-gray-200 p-1 rounded">{{ inviteLink }}</code>
-          </p>
-          <button
-            @click="copyInviteLink"
-            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
-          >
-            Copier le lien
-          </button>
+        <div class="space-y-6">
+          <!-- Section Generation de lien  -->
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-semibold text-gray-800">Lien d'invitation</h3>
+              <button
+                @click="generateNewJoinLink"
+                :disabled="isGeneratingLink"
+                class="flex items-center space-x-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition disabled:opacity-50"
+              >
+                <i class="fas fa-link"></i>
+                <span>{{ isGeneratingLink ? 'Génération...' : 'Générer un lien' }}</span>
+              </button>
+            </div>
 
-          <div class="mt-4">
-            <label for="email" class="block text-gray-700 mb-2"
-              >Envoyer une invitation par email :</label
-            >
-            <input
-              id="email"
-              type="email"
-              v-model="emailToSend"
-              class="border p-2 rounded w-full"
-              placeholder="Saisissez une adresse email"
-            />
-            <button
-              @click="sendInviteEmail(emailToSend)"
-              class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mt-2"
-            >
-              Envoyer
-            </button>
+            <div v-if="inviteLink" class="space-y-2">
+              <div class="flex items-center space-x-2 bg-white p-2 rounded border">
+                <code class="flex-1 text-sm break-all">{{ inviteLink }}</code>
+                <button
+                  @click="copyInviteLink"
+                  class="text-blue-500 hover:text-blue-600 transition"
+                  title="Copier le lien"
+                >
+                  <i class="fas fa-copy"></i>
+                </button>
+              </div>
+              <p v-if="inviteLinkExpiry" class="text-sm text-gray-500">
+                Expire le {{ new Date(inviteLinkExpiry).toLocaleString() }}
+              </p>
+            </div>
+            <p v-else class="text-gray-500 text-sm">
+              Cliquez sur "Générer un lien" pour créer un lien d'invitation
+            </p>
+          </div>
+
+          <!-- Section Invitation Email -->
+          <div class="border-t pt-4">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Inviter par email</h3>
+            <div class="space-y-4">
+              <div>
+                <label for="email" class="block text-gray-700 mb-2">Adresse email :</label>
+                <input
+                  id="email"
+                  type="email"
+                  v-model="emailToSend"
+                  class="border p-2 rounded w-full"
+                  placeholder="Saisissez une adresse email"
+                />
+              </div>
+              <button
+                @click="sendInviteEmail(emailToSend)"
+                class="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition"
+              >
+                Envoyer l'invitation
+              </button>
+            </div>
           </div>
         </div>
       </ModalComponent>

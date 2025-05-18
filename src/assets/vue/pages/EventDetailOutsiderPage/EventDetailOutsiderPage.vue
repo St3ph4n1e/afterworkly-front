@@ -27,6 +27,7 @@ const notification = ref<{ message: string; type: 'success' | 'error'; visible: 
   type: 'success',
   visible: false,
 })
+const showQuitModal = ref(false)
 
 const formData = ref({
   eventName: '',
@@ -312,7 +313,7 @@ async function quitEvent() {
               <button
                 class="px-4 py-2 rounded-lg font-semibold transition bg-red-500 text-white hover:bg-red-600"
                 :disabled="isLoading"
-                @click="quitEvent"
+                @click="showQuitModal = true"
               >
                 Quitter
               </button>
@@ -402,6 +403,29 @@ async function quitEvent() {
     </main>
 
     <FooterComponent />
+
+    <ModalComponent
+      v-if="showQuitModal"
+      :isVisible="showQuitModal"
+      title="Êtes-vous sûr de vouloir quitter l'événement ?"
+      title-class="text-center"
+      :buttons="[
+        {
+          text: 'Annuler',
+          action: () => (showQuitModal = false),
+          class: 'bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 mt-2',
+        },
+        {
+          text: 'Quitter',
+          action: quitEvent,
+          class: 'bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 mt-2',
+        },
+      ]"
+    >
+      <div class="text-center">
+        <p class="text-gray-700">Cette action est irréversible.</p>
+      </div>
+    </ModalComponent>
   </div>
 </template>
 

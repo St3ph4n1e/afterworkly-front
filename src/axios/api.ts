@@ -156,8 +156,12 @@ export async function getEventByIdForOutsider(eventId: string) {
   return response.data
 }
 
-export async function addOutsiderToParticipates(eventId: string, username: string, photo: string) {
-  const response = await apiClient.post(`/events-outsider/${eventId}/toggle-participation`, { username, photo })
+export async function addOutsiderToParticipates(eventId: string, formData: FormData) {
+  const response = await apiClient.post(`/events-outsider/${eventId}/toggle-participation`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
   return response.data
 }
 

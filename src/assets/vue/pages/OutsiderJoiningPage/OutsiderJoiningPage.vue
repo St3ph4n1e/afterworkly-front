@@ -20,9 +20,11 @@ const linkError = ref<string>('')
 
 const formData = ref({
   username: "",
-  photo: "",
+  photo: null as File | null,
   type: 'outsider'
 });
+
+const previewImage = ref<string | null>(null);
 
 const route = useRoute()
 
@@ -79,6 +81,22 @@ function checkCodeValidity() {
   }
 }
 
+function handleFileUpload(event: globalThis.Event) {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0] || null;
+  formData.value.photo = file;
+
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      previewImage.value = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  } else {
+    previewImage.value = null;
+  }
+}
+
 async function joinEvent() {
   if (!formData.value.username || !formData.value.photo) {
     showNotification('Veuillez remplir tous les champs', 'error')
@@ -89,11 +107,16 @@ async function joinEvent() {
     // Mark the join link as used before joining
     await markJoinLinkAsUsed(eventId, token)
 
-    await addOutsiderToParticipates(eventId, formData.value.username, formData.value.photo).then(
+    const formDataToSend = new FormData();
+    formDataToSend.append('username', formData.value.username);
+    formDataToSend.append('photo', formData.value.photo);
+    formDataToSend.append('type', formData.value.type);
+
+    await addOutsiderToParticipates(eventId, formDataToSend).then(
       () => {
         const user = JSON.stringify({
           username: formData.value.username,
-          photo: formData.value.photo
+          photo: previewImage.value
         })
 
         localStorage.setItem('outsider', user)
@@ -161,13 +184,16 @@ async function joinEvent() {
           />
         </div>
         <div>
-          <label class="block text-gray-700 font-medium mb-2">Photo de profil (URL)</label>
+          <label class="block text-gray-700 font-medium mb-2">Photo de profil</label>
           <input
-            v-model="formData.photo"
-            type="text"
+            type="file"
+            accept="image/*"
             class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            placeholder="URL de votre photo de profil"
+            @change="handleFileUpload"
           />
+          <div v-if="previewImage" class="mt-4">
+            <img :src="previewImage" alt="Aperçu" class="w-32 h-32 rounded-full object-cover mx-auto" />
+          </div>
         </div>
         <button
           @click="joinEvent"

@@ -96,6 +96,7 @@ onMounted(async () => {
     if (eventData) {
       if (eventData.eventId === eventId) {
         if (event.value) {
+          console.log(eventData.participants)
           event.value!.participants = JSON.parse(eventData.participants)
         }
       }
@@ -478,6 +479,13 @@ async function generateNewJoinLink() {
     isGeneratingLink.value = false
   }
 }
+
+async function handleRemoveParticipant(userId: string, event: Event, username: string) {
+  if (event) {
+    event.participants =  event.participants.filter(p => p.userId !== userId && p.username !== username)
+  }
+}
+
 </script>
 
 <template>
@@ -651,6 +659,9 @@ async function generateNewJoinLink() {
                     :participantInfos="participant"
                     confirmed-class="text-green-600 font-bold"
                     undecided-class="text-yellow-500 italic"
+                    :eventId="event.id"
+                    :isCreator="event.creator === currentUserId"
+                    @participantRemoved="(id) => handleRemoveParticipant(id, event, participant.username)"
                   />
                 </div>
               </div>

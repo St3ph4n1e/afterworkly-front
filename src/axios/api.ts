@@ -224,3 +224,8 @@ export async function getUsers() {
   console.log(response.data)
   return response.data
 }
+
+export async function removeParticipant(eventId: string, params: { userId?: string; username?: string; type: 'member' | 'outsider' }) {
+  const response = await apiClient.post(`/events/${eventId}/remove-participant`, params);
+  return response.data;
+}

@@ -108,14 +108,24 @@ function handleFileUpload(event: globalThis.Event) {
 }
 
 async function joinEvent() {
+  
+  // Check si outsider existe déjà dans localStorage
+  const outsiderData = localStorage.getItem('outsider')
+  if (outsiderData) {
+    showNotification('Vous participez déjà à un événemt', 'error')
+    const eventId = JSON.parse(outsiderData).eventId
+    if (eventId && eventId !== '') {
+      router.push('/event-detail-outsider/' + eventId)
+    }
+    return
+  }
+
   if (!formData.value.username) {
     showNotification('Veuillez entrer votre nom d\'utilisateur', 'error')
     return
   }
 
   try {
-
-
     const formDataToSend = new FormData();
     formDataToSend.append('username', formData.value.username);
     if (formData.value.photo) {
@@ -127,7 +137,8 @@ async function joinEvent() {
       async () => {
         const user = JSON.stringify({
           username: formData.value.username,
-          photo: previewImage.value
+          photo: previewImage.value,
+          eventId: eventId
         })
         // Marquer le lien d'invitation comme utilisé avant de rejoindre
         await markJoinLinkAsUsed(eventId, token)

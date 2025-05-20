@@ -332,7 +332,7 @@ async function quitEvent() {
               </button>
             </div>
           </div>
-          <div>
+          <div v-if="event.participants && event.participants.length > 0">
             <h3 class="font-semibold text-gray-800">Participants</h3>
             <div style="width: 100%; overflow: hidden; position: relative">
               <!-- Sliding Container -->
@@ -347,18 +347,22 @@ async function quitEvent() {
                   flex-wrap: nowrap;
                   overflow-x: auto;
                   scroll-behavior: smooth;
+                  padding: 10px 0;
+                  min-height: 90px;
                 "
               >
                 <div
                   v-for="participant in event.participants"
                   :key="participant.userId"
-                  class="flex items-center"
+                  class="flex items-center flex-shrink-0"
+                  style="width: 80px; margin: 0;"
                 >
                   <ParticipantListComponent
-                    style="flex-shrink: 0; width: 80px; margin: 0"
                     :participantInfos="participant"
                     confirmed-class="text-green-600 font-bold"
                     undecided-class="text-yellow-500 italic"
+                    :eventId="eventId"
+                    :isCreator="false"
                   />
                 </div>
               </div>

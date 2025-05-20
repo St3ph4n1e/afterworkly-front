@@ -37,6 +37,16 @@ const eventId = route.query.eventId as string
 const token = route.query.token as string
 
 onMounted(async () => {
+  // Vérifier si l'utilisateur est déjà connecté
+  const accessToken = localStorage.getItem('access_token');
+  const refreshToken = localStorage.getItem('refresh_token');
+  const user = localStorage.getItem('user');
+
+  if (accessToken && refreshToken && user) {
+    router.push('/');
+    return;
+  }
+
   if (!eventId || !token) {
     linkError.value = 'Lien invalide'
     isLoading.value = false

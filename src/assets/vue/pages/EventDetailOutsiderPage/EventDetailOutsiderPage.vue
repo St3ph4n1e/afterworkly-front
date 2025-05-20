@@ -58,8 +58,21 @@ function scrollRight() {
 
 const eventId = route.params.id as string
 onMounted(async () => {
-  // todo see if i do socket for outsider too
-  // todo add delete pop up
+  // Vérifier si l'utilisateur est déjà connecté
+  const accessToken = localStorage.getItem('access_token');
+  const refreshToken = localStorage.getItem('refresh_token');
+  const user = localStorage.getItem('user');
+
+  if (accessToken && refreshToken && user) {
+    router.push('/');
+    return;
+  }
+
+  const outsider = localStorage.getItem('outsider')
+  if (!outsider) {
+    router.push('/')
+    return
+  }
 
 
   try {

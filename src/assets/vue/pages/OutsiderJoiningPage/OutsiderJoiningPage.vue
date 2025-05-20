@@ -98,26 +98,29 @@ function handleFileUpload(event: globalThis.Event) {
 }
 
 async function joinEvent() {
-  if (!formData.value.username || !formData.value.photo) {
-    showNotification('Veuillez remplir tous les champs', 'error')
+  if (!formData.value.username) {
+    showNotification('Veuillez entrer votre nom d\'utilisateur', 'error')
     return
   }
 
   try {
-    // Mark the join link as used before joining
-    await markJoinLinkAsUsed(eventId, token)
+
 
     const formDataToSend = new FormData();
     formDataToSend.append('username', formData.value.username);
-    formDataToSend.append('photo', formData.value.photo);
+    if (formData.value.photo) {
+      formDataToSend.append('photo', formData.value.photo);
+    }
     formDataToSend.append('type', formData.value.type);
 
     await addOutsiderToParticipates(eventId, formDataToSend).then(
-      () => {
+      async () => {
         const user = JSON.stringify({
           username: formData.value.username,
           photo: previewImage.value
         })
+        // Marquer le lien d'invitation comme utilisé avant de rejoindre
+        await markJoinLinkAsUsed(eventId, token)
 
         localStorage.setItem('outsider', user)
         showNotification('Vous avez rejoint l\'événement avec succès !', 'success')

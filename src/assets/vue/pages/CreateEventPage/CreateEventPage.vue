@@ -7,6 +7,29 @@ import { showError, showSuccess, currentNotification } from '../../../../utils/e
 import Multiselect from 'vue-multiselect'
 import 'vue-multiselect/dist/vue-multiselect.min.css'
 
+interface User {
+  _id: string;
+  username: string;
+  photo?: string;
+  availability?: string[];
+}
+
+interface AvailabilityCheck {
+  unavailable: User[];
+}
+
+interface EventResponse {
+  event: {
+    _id: string;
+    title: string;
+    date: string;
+    time: string;
+    description: string;
+    location: string;
+    image?: string;
+  }
+}
+
 const router = useRouter();
 const imageInput = ref<HTMLInputElement | null>(null);
 
@@ -25,7 +48,7 @@ const formData = ref({
 const selectedUsers = ref([])
 
 watch(selectedUsers, (newVal) => {
-  formData.value.eventParticipants = newVal.map((user: any) => user._id)
+  formData.value.eventParticipants = newVal.map((user: User) => user._id)
 })
 
 
@@ -53,8 +76,24 @@ const createdEventData = ref({
   startTime: '',
   location: '',
   description: '',
-  participants: []
+  participants: [] as User[]
 });
+
+// Fonction pour obtenir le jour de la semaine
+function getDayOfWeek(date: string): string {
+  const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+  return days[new Date(date).getDay()];
+}
+
+// Fonction pour vérifier la disponibilité des participants
+function checkParticipantAvailability(eventDate: string, participants: User[]): AvailabilityCheck {
+  const eventDay = getDayOfWeek(eventDate);
+  const unavailableParticipants = participants.filter(participant => {
+    return !participant.availability?.includes(eventDay);
+  });
+
+  return { unavailable: unavailableParticipants };
+}
 
 function handleFileUpload(event: Event) {
   const target = event.target as HTMLInputElement;
@@ -82,12 +121,18 @@ function generateRandomCode(length = 6) {
 }
 
 async function handleSubmit() {
-
-
   const date = new Date()
 
   if(formData.value.eventDate < date.toISOString().split('T')[0]) {
     showError("La date de l'événement ne peut pas être dans le passé.");
+    return;
+  }
+
+  // Vérifier la disponibilité des participants
+  const availabilityCheck = checkParticipantAvailability(formData.value.eventDate, selectedUsers.value);
+  if (availabilityCheck.unavailable.length > 0) {
+    const unavailableNames = availabilityCheck.unavailable.map(user => user.username).join(', ');
+    showError(`Les participants suivants ne sont pas disponibles le ${getDayOfWeek(formData.value.eventDate)} : ${unavailableNames}`);
     return;
   }
 
@@ -106,16 +151,16 @@ async function handleSubmit() {
   }
 
   try {
-    const response = await createEvent(eventData);
+    const response = await createEvent(eventData) as EventResponse;
     createdEventId.value = response.event._id;
 
-  // Préparer les infos pour le calendrier
     createdEventData.value = {
       title: response.event.title,
       startDate: response.event.date,
       startTime: response.event.time,
       location: response.event.location,
       description: response.event.description || "Participez à notre événement !",
+      participants: []
     };
 
     // Afficher la notification de succès
@@ -288,12 +333,12 @@ onMounted(async () => {
               label="username"
               track-by="_id"
             >
-              <template #option="{ option }">
+              <template #option="{ option }: { option: User }">
                 <img :src="option.photo" class="avatar" />
                 <span>{{ option.username }}</span>
               </template>
 
-              <template #selection="{ values }">
+              <template #selection="{ values }: { values: User[] }">
                 <span v-for="user in values" :key="user._id" class="selection-item">
                   <img :src="user.photo" class="avatar-small" />
                   {{ user.username }}

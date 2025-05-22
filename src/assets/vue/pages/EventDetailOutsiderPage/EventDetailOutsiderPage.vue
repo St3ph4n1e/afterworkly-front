@@ -213,8 +213,8 @@ async function quitEvent() {
     console.log(parsedUser)
     await exitEventForOutsider(parsedUser.username, eventId).then(
       () => {
-        router.push('/404')
-        // localStorage.removeItem('outsider')
+        router.push('/auth')
+        localStorage.removeItem('outsider')
       }
     )
   }

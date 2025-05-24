@@ -229,3 +229,19 @@ export async function removeParticipant(eventId: string, params: { userId?: stri
   const response = await apiClient.post(`/events/${eventId}/remove-participant`, params);
   return response.data;
 }
+
+// Memories
+export async function getEventMemories(memoryId: string) {
+  console.log(memoryId)
+  const response = await apiClient.get(`/memories/${memoryId}`);
+  return response.data;
+}
+
+export async function createEventMemory(memoryId: string, memoryData: FormData) {
+  const response = await apiClient.put(`/memories/${memoryId}`, memoryData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+}

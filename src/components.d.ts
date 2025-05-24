@@ -12,6 +12,7 @@ declare module 'vue' {
     EventCardComponent: typeof import('./assets/vue/components/EventCardComponent/EventCardComponent.vue')['default']
     FooterComponent: typeof import('./assets/vue/components/FooterComponent/FooterComponent.vue')['default']
     HeaderComponent: typeof import('./assets/vue/components/HeaderComponent/HeaderComponent.vue')['default']
+    MemoryComponentCard: typeof import('./assets/vue/components/MemoryComponent/MemoryComponentCard.vue')['default']
     MenuComponent: typeof import('./assets/vue/components/MenuComponent/MenuComponent.vue')['default']
     ModalComponent: typeof import('./assets/vue/components/ModalComponent/ModalComponent.vue')['default']
     NotificationComponent: typeof import('./assets/vue/components/NotificationComponent/NotificationComponent.vue')['default']

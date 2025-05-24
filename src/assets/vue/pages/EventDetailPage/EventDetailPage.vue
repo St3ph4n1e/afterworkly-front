@@ -2,13 +2,20 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { formatDate } from '@/utils/date'
-import { getEventById, toggleParticipantStatus, deleteEvent, updateEvent, sendInviataionEmail, generateJoinLink } from '@/axios/api'
-import type { Event } from '@/assets/vue/types/types'
+import { getEventById, toggleParticipantStatus, deleteEvent, updateEvent, sendInviataionEmail, generateJoinLink, getEventMemories } from '@/axios/api'
+import type { Event, Memory } from '@/assets/vue/types/types'
 import { showError, currentNotification } from '../../../../utils/errors.ts'
 import axios from 'axios'
 import dayjs from 'dayjs'
 import 'dayjs/locale/fr'
-import { getSocket, setupSocket } from '@/utils/socket.ts'
+import { setupSocket } from '@/utils/socket.ts'
+import { Swiper, SwiperSlide } from 'swiper/vue';
+import type { Swiper as SwiperType } from 'swiper';
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
+
+
 
 dayjs.locale('fr')
 
@@ -32,6 +39,11 @@ const notification = ref<{ message: string; type: 'success' | 'error'; visible: 
 })
 
 const showMemory = ref<boolean>(false)
+const swiperInstance = ref<SwiperType | null>(null)
+const isBeginning = ref(true)
+const isEnd = ref(false)
+const memories = ref<Memory[]>([])
+const isLoadingMemories = ref(false)
 
 const formData = ref({
   eventName: '',
@@ -68,12 +80,36 @@ const editEventMode = ref(false)
 
 let socket: any = null
 
+// Add socket event interfaces
+interface EventUpdateData {
+  eventId: string;
+  redirect?: string;
+  eventIsPublic?: string;
+  eventTitle?: string;
+  eventLocation?: string;
+  eventDescription?: string;
+  eventImage?: string;
+  eventColor?: string;
+  eventDate?: string;
+  eventTime?: string;
+}
+
+interface EventParticipantJoinData {
+  eventId: string;
+  participants: string;
+}
+
+interface EventDeleteData {
+  eventId: string;
+  redirectMessage: string;
+}
+
 onMounted(async () => {
   const eventId = route.params.id as string
 
   socket = setupSocket()
 
-  socket.on('event-update', (updatedEventData) => {
+  socket.on('event-update', (updatedEventData: EventUpdateData) => {
     if (updatedEventData) {
       if (updatedEventData.eventId === eventId) {
         if (updatedEventData.redirect === 'true') {
@@ -81,20 +117,20 @@ onMounted(async () => {
         }
 
         event.value!.isPublic = updatedEventData.eventIsPublic === 'true'
-        event.value!.title = updatedEventData.eventTitle
-        event.value!.location = updatedEventData.eventLocation
-        event.value!.description = updatedEventData.eventDescription
-        event.value!.image = updatedEventData.eventImage
-        event.value!.color = updatedEventData.eventColor
-        event.value!.date = updatedEventData.eventDate
-        event.value!.time = updatedEventData.eventTime
-        formData.value.eventColor = updatedEventData.eventColor
-        event.value!.title = updatedEventData.eventTitle
+        event.value!.title = updatedEventData.eventTitle || event.value!.title
+        event.value!.location = updatedEventData.eventLocation || event.value!.location
+        event.value!.description = updatedEventData.eventDescription || event.value!.description
+        event.value!.image = updatedEventData.eventImage || event.value!.image
+        event.value!.color = updatedEventData.eventColor || event.value!.color
+        event.value!.date = updatedEventData.eventDate || event.value!.date
+        event.value!.time = updatedEventData.eventTime || event.value!.time
+        formData.value.eventColor = updatedEventData.eventColor || formData.value.eventColor
+        event.value!.title = updatedEventData.eventTitle || event.value!.title
       }
     }
   })
 
-  socket.on('event-participant-join', (eventData: any) => {
+  socket.on('event-participant-join', (eventData: EventParticipantJoinData) => {
     if (eventData) {
       if (eventData.eventId === eventId) {
         if (event.value) {
@@ -105,7 +141,7 @@ onMounted(async () => {
     }
   })
 
-  socket.on('event-delete', (eventDeletedData: any) => {
+  socket.on('event-delete', (eventDeletedData: EventDeleteData) => {
     if (eventDeletedData) {
       if (eventDeletedData.eventId === eventId) {
         showNotification(eventDeletedData.redirectMessage, 'error')
@@ -135,6 +171,9 @@ onMounted(async () => {
       ...fetchedEvent,
       id: fetchedEvent._id,
     }
+
+    // Load memories for this event
+    await fetchEventMemories(event.value?.memoryId || '')
 
     // Remplir formData
     formData.value.eventName = fetchedEvent.title
@@ -369,7 +408,7 @@ async function triggerDeleteEvent() {
 function copyInviteLink() {
   if (inviteLink.value) {
     navigator.clipboard.writeText(inviteLink.value).then(() => {
-      showNotification('Lien d’invitation copié dans le presse-papiers.', 'success')
+      showNotification("Lien d'invitation copié dans le presse-papiers.", 'success')
     })
   }
 }
@@ -389,8 +428,8 @@ async function sendInviteEmail(email: string) {
     }
 
   } catch (error) {
-    console.error('Erreur lors de l’envoi de l’invitation :', error)
-    showNotification('Échec de l’envoi de l’invitation.', 'error')
+    console.error("Erreur lors de l'envoi de l'invitation :", error)
+    showNotification("Échec de l'envoi de l'invitation.", 'error')
   }
 }
 
@@ -492,6 +531,54 @@ async function handleRemoveParticipant(userId: string, event: Event, username: s
   }
 }
 
+function onSwiper(swiper: SwiperType) {
+  swiperInstance.value = swiper;
+  updateNavigationState();
+}
+
+function onSlideChange() {
+  updateNavigationState();
+}
+
+function updateNavigationState() {
+  if (swiperInstance.value) {
+    isBeginning.value = swiperInstance.value.isBeginning;
+    isEnd.value = swiperInstance.value.isEnd;
+  }
+}
+
+function slidePrev() {
+  if (swiperInstance.value) {
+    swiperInstance.value.slidePrev();
+  }
+}
+
+function slideNext() {
+  if (swiperInstance.value) {
+    swiperInstance.value.slideNext();
+  }
+}
+
+async function fetchEventMemories(memoryId: string) {
+  try {
+    isLoadingMemories.value = true
+    if (memoryId && memoryId !== '') {
+      const fetchedMemories = await getEventMemories(memoryId)
+      memories.value = fetchedMemories
+      console.log(memories.value)
+    } else {
+      console.error("Erreur lors de la récupération des souvenirs : Memory ID is empty or null")
+      memories.value = []
+    }
+  } catch (error) {
+    console.error("Erreur lors de la récupération des souvenirs :", error)
+    console.log(error)
+    showNotification("Impossible de charger les souvenirs", 'error')
+  } finally {
+    isLoadingMemories.value = false
+  }
+}
+
 </script>
 
 <template>
@@ -505,9 +592,6 @@ async function handleRemoveParticipant(userId: string, event: Event, username: s
     <HeaderComponent />
 
     <main class="container-card h-screen overflow-auto mx-auto max-w-4xl p-4">
-      <!--      <div v-if="isLoading" class="text-center">
-        <p class="text-gray-500">Chargement...</p>
-      </div>-->
       <div v-if="isLoading" class="flex flex-col items-center justify-center py-20">
         <svg
           class="animate-spin h-10 w-10 text-blue-500 mb-4"
@@ -588,10 +672,11 @@ async function handleRemoveParticipant(userId: string, event: Event, username: s
             </button>
             <button
               @click="toggleMemory()"
-              class="absolute top-4 right-4 text-gray-700 hover:text-gray-900 transition"
+              class="absolute top-14 right-4 text-gray-700 hover:text-gray-900 transition"
               title=""
             >
-              <i class="fa-solid fa-image"></i>
+
+              <i class="fa-solid fa-image text-2xl"></i>
             </button>
           </div>
         </div>
@@ -648,7 +733,6 @@ async function handleRemoveParticipant(userId: string, event: Event, username: s
           <div v-if="event.participants && event.participants.length > 0">
             <h3 class="font-semibold text-gray-800">Participants</h3>
             <div style="width: 100%; overflow: hidden; position: relative">
-              <!-- Sliding Container -->
               <div
                 ref="scrollContainer"
                 class="space-y-2 scroll-div"
@@ -681,7 +765,6 @@ async function handleRemoveParticipant(userId: string, event: Event, username: s
                 </div>
               </div>
 
-              <!-- Left Button -->
               <button
                 @click="scrollLeft"
                 style="
@@ -700,7 +783,6 @@ async function handleRemoveParticipant(userId: string, event: Event, username: s
                 ⟨
               </button>
 
-              <!-- Right Button -->
               <button
                 @click="scrollRight"
                 style="
@@ -803,20 +885,58 @@ async function handleRemoveParticipant(userId: string, event: Event, username: s
       </div>
 
       <div v-else-if="showMemory">
-        <div class="relative flex items-center justify-center h-72 sm:h-96" :style="themeStyle">
+        <div class="relative flex items-center justify-center h-[32rem] sm:h-[40rem] p-6" :style="themeStyle">
           <button
             @click="toggleMemory()"
             class="absolute top-4 right-4 text-gray-700 hover:text-gray-900 transition"
             title=""
           >
-            <i class="fa-solid fa-circle-info"></i>
+            <i class="fa-solid fa-circle-info text-2xl"></i>
           </button>
 
-          test memory
+          <!-- Left Arrow -->
+          <button
+            @click="slidePrev"
+            class="absolute left-2 top-1/2 transform -translate-y-1/2 z-10 bg-white/80 hover:bg-white rounded-full p-3 shadow-md transition-all duration-200 hover:scale-110"
+            :disabled="isBeginning"
+            :class="{ 'opacity-50 cursor-not-allowed': isBeginning }"
+          >
+            <i class="fa-solid fa-chevron-left text-gray-700"></i>
+          </button>
+
+          <!-- Right Arrow -->
+          <button
+            @click="slideNext"
+            class="absolute right-2 top-1/2 transform -translate-y-1/2 z-10 bg-white/80 hover:bg-white rounded-full p-3 shadow-md transition-all duration-200 hover:scale-110"
+            :disabled="isEnd"
+            :class="{ 'opacity-50 cursor-not-allowed': isEnd }"
+          >
+            <i class="fa-solid fa-chevron-right text-gray-700"></i>
+          </button>
+
+          <swiper
+            :slides-per-view="2"
+            :space-between="30"
+            :auto-height="true"
+            :height="300"
+            @swiper="onSwiper"
+            @slideChange="onSlideChange"
+            class="w-full h-full"
+          >
+            <swiper-slide v-for="memory in memories" :key="memory._id" class="h-auto py-4">
+              <MemoryComponentCard :text="memory.text" :image="memory.image" />
+            </swiper-slide>
+
+            <div v-if="isLoadingMemories" class="flex justify-center items-center w-full h-32">
+              <div class="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+            </div>
+
+            <div v-if="!isLoadingMemories && memories.length === 0" class="flex justify-center items-center w-full h-32 text-gray-500">
+              Aucun souvenir pour cet événement
+            </div>
+          </swiper>
         </div>
-
       </div>
-
       <!-- Modal d'invitation aux événements  -->
       <ModalComponent
         v-if="showInviteModal"

@@ -31,6 +31,8 @@ const notification = ref<{ message: string; type: 'success' | 'error'; visible: 
   visible: false,
 })
 
+const showMemory = ref<boolean>(false)
+
 const formData = ref({
   eventName: '',
   eventDate: '',
@@ -406,6 +408,10 @@ function uploadImage() {
 
 const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY'))
 
+function toggleMemory() {
+  showMemory.value = !showMemory.value
+}
+
 onUnmounted(() => {
   if (socket) {
     socket.off('event-update')
@@ -526,7 +532,7 @@ async function handleRemoveParticipant(userId: string, event: Event, username: s
         <p class="text-gray-500">Chargement...</p>
       </div>
 
-      <div v-else-if="event" class="w-full max-w-4xl bg-white shadow-lg rounded-lg overflow-hidden">
+      <div v-else-if="event && !showMemory" class="w-full max-w-4xl bg-white shadow-lg rounded-lg overflow-hidden">
         <div class="relative flex items-center justify-center h-72 sm:h-96" :style="themeStyle">
           <img
             :src="
@@ -579,6 +585,13 @@ async function handleRemoveParticipant(userId: string, event: Event, username: s
               title="Envoyer une invitation"
             >
               <i class="fas fa-envelope text-2xl"></i>
+            </button>
+            <button
+              @click="toggleMemory()"
+              class="absolute top-4 right-4 text-gray-700 hover:text-gray-900 transition"
+              title=""
+            >
+              <i class="fa-solid fa-image"></i>
             </button>
           </div>
         </div>
@@ -787,6 +800,21 @@ async function handleRemoveParticipant(userId: string, event: Event, username: s
             </button>
           </div>
         </div>
+      </div>
+
+      <div v-else-if="showMemory">
+        <div class="relative flex items-center justify-center h-72 sm:h-96" :style="themeStyle">
+          <button
+            @click="toggleMemory()"
+            class="absolute top-4 right-4 text-gray-700 hover:text-gray-900 transition"
+            title=""
+          >
+            <i class="fa-solid fa-circle-info"></i>
+          </button>
+
+          test memory
+        </div>
+
       </div>
 
       <!-- Modal d'invitation aux événements  -->

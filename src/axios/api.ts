@@ -248,3 +248,8 @@ export async function createEventMemory(eventId: string, memoryData: FormData) {
   });
   return response.data;
 }
+
+export async function deleteMemory(memoryId: string) {
+  const response = await apiClient.delete(`/memories/${memoryId}`);
+  return response.data;
+}

@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { formatDate } from '@/utils/date'
-import { getEventById, toggleParticipantStatus, deleteEvent, updateEvent, sendInviataionEmail, generateJoinLink, getEventMemories, createEventMemory } from '@/axios/api'
+import { getEventById, toggleParticipantStatus, deleteEvent, updateEvent, sendInviataionEmail, generateJoinLink, getEventMemories, createEventMemory, deleteMemory } from '@/axios/api'
 import type { Event, Memory } from '@/assets/vue/types/types'
 import { showError, currentNotification } from '../../../../utils/errors.ts'
 import axios from 'axios'
@@ -584,6 +584,10 @@ const newMemoryImage = ref<File | null>(null)
 const newMemoryImagePreview = ref<string | null>(null)
 const isSubmittingMemory = ref(false)
 
+// Delete memory state
+const showDeleteMemoryModal = ref(false)
+const memoryToDelete = ref<string | null>(null)
+
 function handleNewMemoryImageUpload(e: any) {
   const input = e.target as HTMLInputElement
   if (input && input.files && input.files.length > 0) {
@@ -628,6 +632,32 @@ async function submitNewMemory() {
   } finally {
     isSubmittingMemory.value = false
   }
+}
+
+function handleDeleteMemoryRequest(memoryId: string) {
+  memoryToDelete.value = memoryId
+  showDeleteMemoryModal.value = true
+}
+
+async function confirmDeleteMemory() {
+  if (!memoryToDelete.value) return
+
+  try {
+    await deleteMemory(memoryToDelete.value)
+    await fetchEventMemories(route.params.id as string)
+    showNotification("Souvenir supprimé avec succès", 'success')
+  } catch (error) {
+    console.error("Erreur lors de la suppression du souvenir:", error)
+    showNotification("Impossible de supprimer le souvenir", 'error')
+  } finally {
+    showDeleteMemoryModal.value = false
+    memoryToDelete.value = null
+  }
+}
+
+function cancelDeleteMemory() {
+  showDeleteMemoryModal.value = false
+  memoryToDelete.value = null
 }
 
 </script>
@@ -1049,8 +1079,17 @@ async function submitNewMemory() {
             </swiper-slide>
 
             <swiper-slide v-for="memory in memories" :key="memory._id" class="h-auto py-4">
-              <MemoryComponentCard :text="memory.text" :image="memory.image" />
+              <MemoryComponentCard
+                :text="memory.text"
+                :image="memory.image"
+                :memoryId="memory._id"
+                :issuedBy="memory.issuedBy"
+                :currentUserId="currentUserId || ''"
+                @deleteMemory="handleDeleteMemoryRequest"
+              />
             </swiper-slide>
+
+            {{ memories }}
 
             <div v-if="isLoadingMemories" class="flex justify-center items-center w-full h-32">
               <div class="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
@@ -1149,6 +1188,25 @@ async function submitNewMemory() {
             text: 'Non',
             action: () => (showDeleteModal = false),
             class: 'bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 mt-2',
+          },
+        ]"
+      >
+      </ModalComponent>
+
+      <ModalComponent
+        v-if="showDeleteMemoryModal"
+        :isVisible="showDeleteMemoryModal"
+        title="Êtes-vous sûr de vouloir retirer le souvenir ?"
+        :buttons="[
+          {
+            text: 'Oui',
+            action: confirmDeleteMemory,
+            class: 'bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 mt-2',
+          },
+          {
+            text: 'Non',
+            action: cancelDeleteMemory,
+            class: 'bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 mt-2',
           },
         ]"
       >

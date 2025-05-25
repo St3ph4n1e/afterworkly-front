@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { formatDate } from '@/utils/date'
-import { getEventById, toggleParticipantStatus, deleteEvent, updateEvent, sendInviataionEmail, generateJoinLink, getEventMemories } from '@/axios/api'
+import { getEventById, toggleParticipantStatus, deleteEvent, updateEvent, sendInviataionEmail, generateJoinLink, getEventMemories, createEventMemory } from '@/axios/api'
 import type { Event, Memory } from '@/assets/vue/types/types'
 import { showError, currentNotification } from '../../../../utils/errors.ts'
 import axios from 'axios'
@@ -172,8 +172,8 @@ onMounted(async () => {
       id: fetchedEvent._id,
     }
 
-    // Load memories for this event
-    await fetchEventMemories(event.value?.memoryId || '')
+    // Charge les memsories de l'événement
+    await fetchEventMemories(eventId || '')
 
     // Remplir formData
     formData.value.eventName = fetchedEvent.title
@@ -559,11 +559,11 @@ function slideNext() {
   }
 }
 
-async function fetchEventMemories(memoryId: string) {
+async function fetchEventMemories(eventId: string) {
   try {
     isLoadingMemories.value = true
-    if (memoryId && memoryId !== '') {
-      const fetchedMemories = await getEventMemories(memoryId)
+    if (eventId && eventId !== '') {
+      const fetchedMemories = await getEventMemories(eventId)
       memories.value = fetchedMemories
       console.log(memories.value)
     } else {
@@ -576,6 +576,57 @@ async function fetchEventMemories(memoryId: string) {
     showNotification("Impossible de charger les souvenirs", 'error')
   } finally {
     isLoadingMemories.value = false
+  }
+}
+
+const newMemoryText = ref('')
+const newMemoryImage = ref<File | null>(null)
+const newMemoryImagePreview = ref<string | null>(null)
+const isSubmittingMemory = ref(false)
+
+function handleNewMemoryImageUpload(e: any) {
+  const input = e.target as HTMLInputElement
+  if (input && input.files && input.files.length > 0) {
+    const file = input.files[0]
+    newMemoryImage.value = file
+    newMemoryImagePreview.value = URL.createObjectURL(file)
+  }
+}
+
+function resetMemoryForm() {
+  newMemoryText.value = ''
+  newMemoryImage.value = null
+
+  if (newMemoryImagePreview.value) {
+    URL.revokeObjectURL(newMemoryImagePreview.value)
+    newMemoryImagePreview.value = null
+  }
+}
+
+async function submitNewMemory() {
+  if (!event.value?.memoryId || !newMemoryText.value || !newMemoryImage.value) {
+    showNotification("L'image et le texte sont requis", 'error')
+    return
+  }
+
+  try {
+    isSubmittingMemory.value = true
+
+    const formData = new FormData()
+    formData.append('text', newMemoryText.value)
+    formData.append('image', newMemoryImage.value)
+
+    await createEventMemory(route.params.id as string, formData)
+
+    await fetchEventMemories(route.params.id as string)
+
+    showNotification("Souvenir ajouté avec succès", 'success')
+    resetMemoryForm()
+  } catch (error) {
+    console.error("Erreur lors de l'ajout du souvenir:", error)
+    showNotification("Impossible d'ajouter le souvenir", 'error')
+  } finally {
+    isSubmittingMemory.value = false
   }
 }
 
@@ -923,6 +974,80 @@ async function fetchEventMemories(memoryId: string) {
             @slideChange="onSlideChange"
             class="w-full h-full"
           >
+            <!-- Fix the entire memory card layout -->
+            <swiper-slide class="h-auto py-4">
+              <div class="memory-card w-full h-auto min-h-[400px] flex flex-col p-4 bg-white rounded-lg shadow-md">
+                <h3 class="text-lg font-semibold text-gray-800 mb-3">Ajouter un souvenir</h3>
+
+                <div class="flex-1 space-y-4">
+                  <div>
+                    <label class="block text-gray-700 font-medium mb-2">Description</label>
+                    <textarea
+                      v-model="newMemoryText"
+                      class="w-full border rounded-lg p-2 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
+                      placeholder="Décrivez ce souvenir..."
+                      rows="3"
+                      style="max-height: 100px; overflow-y: auto;"
+                    ></textarea>
+                  </div>
+
+                  <div>
+                    <label class="block text-gray-700 font-medium mb-2">Image</label>
+
+                    <!-- Image upload section when no image -->
+                    <div v-if="!newMemoryImagePreview">
+                      <label
+                        class="block w-full border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 transition-colors min-h-[120px]"
+                        for="memory-image-upload"
+                      >
+                        <i class="fas fa-camera text-2xl text-gray-400 mb-2"></i>
+                        <p class="text-gray-500 text-sm text-center">Cliquez pour ajouter une image</p>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          class="hidden"
+                          @change="handleNewMemoryImageUpload"
+                          id="memory-image-upload"
+                        />
+                      </label>
+                    </div>
+
+                    <!-- Image preview section when image is selected -->
+                    <div v-else class="space-y-3">
+                      <div class="relative">
+                        <img
+                          :src="newMemoryImagePreview"
+                          class="w-full h-32 object-cover rounded-lg border border-gray-200"
+                          alt="Aperçu de l'image"
+                        />
+                        <button
+                          @click="resetMemoryForm()"
+                          class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md hover:bg-red-600 transition-colors text-xs"
+                          title="Supprimer l'image"
+                        >
+                          <i class="fas fa-times"></i>
+                        </button>
+                      </div>
+                      <p class="text-xs text-gray-500 text-center">Image sélectionnée</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-gray-100">
+                  <button
+                    @click="submitNewMemory"
+                    class="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    :disabled="isSubmittingMemory || !newMemoryText || !newMemoryImage"
+                  >
+                    <span v-if="isSubmittingMemory">
+                      <i class="fas fa-spinner fa-spin mr-1"></i> Envoi...
+                    </span>
+                    <span v-else>Enregistrer</span>
+                  </button>
+                </div>
+              </div>
+            </swiper-slide>
+
             <swiper-slide v-for="memory in memories" :key="memory._id" class="h-auto py-4">
               <MemoryComponentCard :text="memory.text" :image="memory.image" />
             </swiper-slide>

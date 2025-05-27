@@ -246,6 +246,18 @@ const themeStyle = computed(() => {
   return {}
 })
 
+const isCurrentUserParticipant = computed(() => {
+  if (!currentUserId.value || !event.value?.participants) return false
+  return event.value.participants.some((participant: any) =>
+    (participant.userId === currentUserId.value && participant.status === 'confirmed')
+  )
+})
+
+const canAddMemories = computed(() => {
+  if (!currentUserId.value || !event.value) return false
+  return isCurrentUserParticipant.value || currentUserId.value === event.value.creator
+})
+
 // Fonction pour afficher la notification
 function showNotification(message: string, type: 'success' | 'error') {
   notification.value = { message, type, visible: true }
@@ -1022,8 +1034,7 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
             @slideChange="onSlideChange"
             class="w-full h-full"
           >
-            <!-- Fix the entire memory card layout -->
-            <swiper-slide class="h-auto py-4">
+            <swiper-slide v-if="canAddMemories" class="h-auto py-4">
               <div class="memory-card w-full h-auto min-h-[400px] flex flex-col p-4 bg-white rounded-lg shadow-md">
                 <h3 class="text-lg font-semibold text-gray-800 mb-3">Ajouter un souvenir</h3>
 

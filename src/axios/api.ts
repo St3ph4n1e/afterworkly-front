@@ -253,3 +253,12 @@ export async function deleteMemory(memoryId: string) {
   const response = await apiClient.delete(`/memories/${memoryId}`);
   return response.data;
 }
+
+export async function updateMemory(memoryId: string, memoryData: FormData) {
+  const response = await apiClient.put(`/memories/${memoryId}`, memoryData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+}

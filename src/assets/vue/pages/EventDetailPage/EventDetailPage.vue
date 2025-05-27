@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { formatDate } from '@/utils/date'
-import { getEventById, toggleParticipantStatus, deleteEvent, updateEvent, sendInviataionEmail, generateJoinLink, getEventMemories, createEventMemory, deleteMemory } from '@/axios/api'
+import { getEventById, toggleParticipantStatus, deleteEvent, updateEvent, sendInviataionEmail, generateJoinLink, getEventMemories, createEventMemory, deleteMemory, updateMemory } from '@/axios/api'
 import type { Event, Memory } from '@/assets/vue/types/types'
 import { showError, currentNotification } from '../../../../utils/errors.ts'
 import axios from 'axios'
@@ -660,6 +660,24 @@ function cancelDeleteMemory() {
   memoryToDelete.value = null
 }
 
+async function handleEditMemory(memoryId: string, text: string, image: File | null) {
+  try {
+    const formData = new FormData()
+    formData.append('text', text)
+
+    if (image) {
+      formData.append('image', image)
+    }
+
+    await updateMemory(memoryId, formData)
+    await fetchEventMemories(route.params.id as string)
+    showNotification("Souvenir modifié avec succès", 'success')
+  } catch (error) {
+    console.error("Erreur lors de la modification du souvenir:", error)
+    showNotification("Impossible de modifier le souvenir", 'error')
+  }
+}
+
 </script>
 
 <template>
@@ -1086,6 +1104,7 @@ function cancelDeleteMemory() {
                 :issuedBy="memory.issuedBy"
                 :currentUserId="currentUserId || ''"
                 @deleteMemory="handleDeleteMemoryRequest"
+                @editMemory="handleEditMemory"
               />
             </swiper-slide>
 

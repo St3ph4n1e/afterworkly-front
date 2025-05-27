@@ -6,6 +6,7 @@ const props = defineProps({
   image: { type: String, required: false },
   memoryId: { type: String, required: true },
   issuedBy: { type: String, required: true },
+  issuedByUsername: { type: String, required: false },
   currentUserId: { type: String, required: false }
 })
 
@@ -62,9 +63,9 @@ function removeNewImage() {
   }
 }
 
-onMounted(() => {
-  console.log(props.issuedBy)
-})
+  onMounted(() => {
+    console.log(props.issuedBy)
+  })
 </script>
 
 <template>
@@ -94,6 +95,10 @@ onMounted(() => {
 
     <p v-if="!isEditMode" class="text-gray-600 text-center">
       <span class="font-medium">{{ text }}</span>
+    </p>
+
+    <p v-if="!isEditMode" class="text-gray-600 text-center">
+      <span class="font-medium">Ajouté par {{ issuedByUsername }}</span>
     </p>
 
     <div v-if="isEditMode" class="w-full space-y-4">

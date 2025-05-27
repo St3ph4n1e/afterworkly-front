@@ -1112,14 +1112,13 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
                 :text="memory.text"
                 :image="memory.image"
                 :memoryId="memory._id"
-                :issuedBy="memory.issuedBy"
+                :issuedBy="memory.issuedBy.userId"
+                :issuedByUsername="memory.issuedBy.username"
                 :currentUserId="currentUserId || ''"
                 @deleteMemory="handleDeleteMemoryRequest"
                 @editMemory="handleEditMemory"
               />
             </swiper-slide>
-
-            {{ memories }}
 
             <div v-if="isLoadingMemories" class="flex justify-center items-center w-full h-32">
               <div class="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>

@@ -1071,14 +1071,16 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
                       </label>
                     </div>
 
-                    <!-- Image preview section when image is selected -->
+                    <!-- Section d'aperçu de l'image lorsqu'une image est sélectionnée -->
                     <div v-else class="space-y-3">
-                      <div class="relative">
-                        <img
-                          :src="newMemoryImagePreview"
-                          class="w-full h-32 object-cover rounded-lg border border-gray-200"
-                          alt="Aperçu de l'image"
-                        />
+                      <div class="relative w-full">
+                        <div class="w-full h-40 bg-gray-100 rounded-lg border border-gray-200 overflow-hidden">
+                          <img
+                            :src="newMemoryImagePreview"
+                            class="w-full h-full object-cover relative memory-preview"
+                            alt="Aperçu de l'image"
+                          />
+                        </div>
                         <button
                           @click="resetMemoryForm()"
                           class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md hover:bg-red-600 transition-colors text-xs"
@@ -1279,3 +1281,5 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
   </div>
 </template>
 <style src="./EventDetailPage.css" scoped></style>
+
+<!-- todo : fix preview image -->

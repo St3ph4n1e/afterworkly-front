@@ -166,7 +166,7 @@ function toggleDay(day: string) {
       <!-- Contenu principal -->
       <div v-else>
         <!-- Onglets -->
-        <div class="flex justify-center space-x-4 mb-6">
+        <div class="flex justify-center space-x-4">
           <button
             @click="activeTab = 'profile'"
             :class="[
@@ -190,7 +190,7 @@ function toggleDay(day: string) {
         <!-- Profil -->
         <div v-if="activeTab === 'profile'" class="bg-white shadow-lg rounded-lg overflow-hidden">
           <!-- Banner Section -->
-          <div class="profile-banner relative h-40 bg-gradient-to-r from-blue-500 to-purple-600">
+          <div class="profile-banner relative h-48 bg-gradient-to-r from-blue-500 to-purple-600">
             <img
               :src="user.banner || 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/billy-huynh-W8KTS-mhFUE-unsplash.jpg'"
               alt="Profile Banner"

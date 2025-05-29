@@ -636,7 +636,7 @@ async function submitNewMemory() {
 
     await fetchEventMemories(route.params.id as string)
 
-    showNotification("Souvenir ajouté avec succès", 'success')
+    showNotification("Souvenir ajouté avec succès ! 📸", 'success')
     resetMemoryForm()
   } catch (error) {
     console.error("Erreur lors de l'ajout du souvenir:", error)
@@ -702,7 +702,7 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
     />
     <HeaderComponent />
 
-    <main class="container-card h-screen overflow-auto mx-auto max-w-4xl p-4">
+    <main class="flex-1 mx-auto w-full max-w-4xl px-2 sm:px-4 py-4">
       <div v-if="isLoading" class="flex flex-col items-center justify-center py-20">
         <svg
           class="animate-spin h-10 w-10 text-blue-500 mb-4"
@@ -727,7 +727,7 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
         <p class="text-gray-500">Chargement...</p>
       </div>
 
-      <div v-else-if="event && !showMemory" class="w-full max-w-4xl bg-white shadow-lg rounded-lg overflow-hidden">
+      <div v-else-if="event && !showMemory" class="w-full bg-white shadow-lg rounded-lg overflow-hidden">
         <div class="relative flex items-center justify-center h-72 sm:h-96" :style="themeStyle">
           <img
             :src="
@@ -784,10 +784,14 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
             <button
               @click="toggleMemory()"
               class="absolute top-14 right-4 text-gray-700 hover:text-gray-900 transition"
-              title=""
+              title="Voir les souvenirs de l'événement"
             >
-
-              <i class="fa-solid fa-image text-2xl"></i>
+              <div class="relative">
+                <i class="fa-solid fa-images text-2xl"></i>
+                <span v-if="memories.length > 0" class="absolute -top-2 -right-2 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {{ memories.length > 9 ? '9+' : memories.length }}
+                </span>
+              </div>
             </button>
           </div>
         </div>
@@ -1000,7 +1004,7 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
           <button
             @click="toggleMemory()"
             class="absolute top-4 right-4 text-gray-700 hover:text-gray-900 transition"
-            title=""
+            title="Retour aux détails de l'événement"
           >
             <i class="fa-solid fa-circle-info text-2xl"></i>
           </button>
@@ -1026,10 +1030,24 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
           </button>
 
           <swiper
-            :slides-per-view="2"
-            :space-between="30"
+            :slides-per-view="1"
+            :space-between="20"
             :auto-height="true"
             :height="300"
+            :breakpoints="{
+              640: {
+                slidesPerView: 1,
+                spaceBetween: 20,
+              },
+              768: {
+                slidesPerView: 2,
+                spaceBetween: 30,
+              },
+              1024: {
+                slidesPerView: 2,
+                spaceBetween: 30,
+              }
+            }"
             @swiper="onSwiper"
             @slideChange="onSlideChange"
             class="w-full h-full"
@@ -1117,17 +1135,29 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
                 :issuedBy="memory.issuedBy.userId"
                 :issuedByUsername="memory.issuedBy.username"
                 :currentUserId="currentUserId || ''"
+                :createdAt="memory.createdAt"
                 @deleteMemory="handleDeleteMemoryRequest"
                 @editMemory="handleEditMemory"
               />
             </swiper-slide>
 
+            <swiper-slide v-if="!isLoadingMemories && memories.length === 0 && !canAddMemories" class="h-auto py-4">
+              <div class="memory-card w-full h-auto min-h-[400px] flex flex-col items-center justify-center p-8 bg-white rounded-lg shadow-md text-center">
+                <div class="mb-6">
+                  <i class="fas fa-camera text-6xl text-gray-300 mb-4"></i>
+                  <h3 class="text-xl font-semibold text-gray-600 mb-2">Aucun souvenir pour le moment</h3>
+                  <p class="text-gray-500 text-sm max-w-sm">
+                    Les souvenirs de cet événement apparaîtront ici une fois que les participants commenceront à les partager.
+                  </p>
+                </div>
+                <div class="text-xs text-gray-400 bg-gray-50 px-4 py-2 rounded-lg">
+                  💡 Seuls les participants confirmés peuvent ajouter des souvenirs
+                </div>
+              </div>
+            </swiper-slide>
+
             <div v-if="isLoadingMemories" class="flex justify-center items-center w-full h-32">
               <div class="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
-            </div>
-
-            <div v-if="!isLoadingMemories && memories.length === 0" class="flex justify-center items-center w-full h-32 text-gray-500">
-              Aucun souvenir pour cet événement
             </div>
           </swiper>
         </div>

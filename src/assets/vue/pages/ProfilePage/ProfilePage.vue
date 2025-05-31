@@ -14,6 +14,7 @@ import 'swiper/css/pagination';
 // État global
 const isEditing = ref(false);
 const isAvatarUploading = ref(false);
+const isBannerUploading = ref(false);
 const activeTab = ref('profile');
 const activeEventTab = ref('created');
 const loading = ref(true);
@@ -26,6 +27,7 @@ const user = ref({
   email: '',
   bio: '',
   photo: '',
+  banner: '',
   availability: [] as string[],
   preferences: [] as { label: string; value: string }[],
   notifications: true,
@@ -36,7 +38,7 @@ const eventsParticipating = ref<Event[]>([]);
 const allDays = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'];
 const allPreferences = [
   { label: 'Végan', value: 'vegan' },
-  { label: 'Consomme de l’alcool', value: 'alcool' },
+  { label: 'Consomme de l\'alcool', value: 'alcool' },
   { label: 'Halal', value: 'halal' },
   { label: 'Viandard', value: 'viandard' },
 ];
@@ -86,9 +88,9 @@ async function updateProfile() {
     Object.assign(user.value, updatedUser);
     showSuccess('Votre profil a été mis à jour avec succès !');
     isEditing.value = false; // Fermer le formulaire
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erreur lors de la mise à jour du profil :', error);
-    showError(error?.message || 'Une erreur s’est produite. Veuillez réessayer.');
+    showError(error?.message || 'Une erreur s\'est produite. Veuillez réessayer.');
   }
 }
 
@@ -104,18 +106,34 @@ async function handleAvatarUpload(event: globalThis.Event) {
       user.value.photo = response.photo;
       showSuccess('Avatar mis à jour avec succès !');
     } catch (error) {
-      console.error("Erreur lors de l'upload de l'avatar :", error);
-      showError("Erreur lors de l'upload. Veuillez réessayer.");
+      console.error('Erreur lors de l\'upload de l\'avatar :', error);
+      showError('Erreur lors de l\'upload. Veuillez réessayer.');
     } finally {
       isAvatarUploading.value = false;
     }
   }
 }
 
+async function handleBannerUpload(event: globalThis.Event) {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
 
-
-
-
+  if (file) {
+    isBannerUploading.value = true;
+    try {
+      const response = await updateUserAvatar(file, 'banner');
+      user.value.banner = response.banner;
+      showSuccess('Bannière mise à jour avec succès !');
+    } catch (error) {
+      console.error('Erreur lors de l\'upload de la bannière :', error);
+      showError('Erreur lors de l\'upload. Veuillez réessayer.');
+    } finally {
+      isBannerUploading.value = false;
+    }
+  } else {
+    console.log('No file selected');
+  }
+}
 
 // Gestion des jours de disponibilité
 function toggleDay(day: string) {
@@ -148,7 +166,7 @@ function toggleDay(day: string) {
       <!-- Contenu principal -->
       <div v-else>
         <!-- Onglets -->
-        <div class="flex justify-center space-x-4 mb-6">
+        <div class="flex justify-center space-x-4">
           <button
             @click="activeTab = 'profile'"
             :class="[
@@ -170,101 +188,127 @@ function toggleDay(day: string) {
         </div>
 
         <!-- Profil -->
-        <div v-if="activeTab === 'profile'" class="bg-white shadow-lg rounded-lg p-6">
-          <div class="flex flex-col items-center text-center relative">
-            <!-- Avatar et appareil photo -->
-            <div class="relative">
-              <img
-                :src="user.photo"
-                alt="Photo de profil"
-                class="w-32 h-32 rounded-full shadow-md object-cover"
-              />
-              <label
-                for="avatar-upload"
-                class="absolute bottom-0 right-0 bg-blue-500 p-2 rounded-full cursor-pointer hover:bg-blue-600 transition"
-                title="Modifier l'avatar"
-              >
-                <i class="fas fa-camera text-white"></i>
-                <input
-                  id="avatar-upload"
-                  type="file"
-                  accept="image/*"
-                  class="hidden"
-                  @change="handleAvatarUpload"
-                />
-              </label>
-            </div>
-
-            <!-- Crayon pour mode édition -->
-            <button
-              @click="isEditing = !isEditing"
-              class="absolute top-4 right-4 bg-transparent p-2 rounded-full"
-              title="Modifier le profil"
+        <div v-if="activeTab === 'profile'" class="bg-white shadow-lg rounded-lg overflow-hidden">
+          <!-- Banner Section -->
+          <div class="profile-banner relative h-48 bg-gradient-to-r from-blue-500 to-purple-600">
+            <img
+              :src="user.banner || 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/billy-huynh-W8KTS-mhFUE-unsplash.jpg'"
+              alt="Profile Banner"
+              class="w-full h-full object-cover"
+            />
+            <div class="absolute inset-0 bg-black bg-opacity-20"></div>
+            <!-- Banner edit button -->
+            <label
+              for="banner-upload"
+              class="absolute top-4 right-4 bg-white bg-opacity-20 backdrop-blur-sm p-2 rounded-full hover:bg-opacity-30 transition-all duration-200 cursor-pointer z-50"
+              title="Modifier la bannière"
             >
-              <i class="fas fa-pencil-alt text-blue-500 hover:text-green-700"></i>
-            </button>
+              <i class="fas fa-camera text-white" :class="{ 'fa-spin': isBannerUploading }"></i>
+              <input
+                id="banner-upload"
+                type="file"
+                accept="image/*"
+                class="hidden"
+                @change="handleBannerUpload"
+              />
+            </label>
+          </div>
 
-            <!-- Affichage des données -->
-            <div v-if="!isEditing" class="mt-4">
-              <h2 class="text-2xl font-bold text-gray-800">{{ user.username }}</h2>
-              <p class="text-gray-600 mt-2">{{ user.bio }}</p>
-              <div class="mt-4">
-                <h3 class="text-lg font-semibold">Disponibilités :</h3>
-                <p>{{ user.availability.join(', ') || 'Non renseigné' }}</p>
-              </div>
-              <div class="mt-4">
-                <h3 class="text-lg font-semibold">Préférences alimentaires :</h3>
-                <p>
-                  <span
-                    v-for="pref in user.preferences"
-                    :key="pref.value"
-                    class="inline-block bg-blue-100 text-blue-700 px-2 py-1 rounded-md mr-2"
-                  >
-                    {{ pref.label }}
-                  </span>
-                  <span v-if="user.preferences.length === 0">Non renseigné</span>
-                </p>
-              </div>
-            </div>
-
-            <!-- Formulaire de modification -->
-            <form v-else @submit.prevent="updateProfile" class="w-full max-w-md mt-6 space-y-4">
-              <input v-model="user.username" type="text" class="w-full border rounded p-2" placeholder="Nom" />
-              <textarea v-model="user.bio" class="w-full border rounded p-2" placeholder="Bio"></textarea>
-              <div>
-                <label class="block text-gray-800 font-medium mb-2">Jours de disponibilité :</label>
-                <div class="flex flex-wrap gap-2">
-                  <TagComponent
-                    v-for="day in allDays"
-                    :key="day"
-                    :label="day"
-                    :selected="user.availability.includes(day)"
-                    @click="toggleDay(day)"
-                  />
-                </div>
-              </div>
-              <div>
-                <label class="block text-gray-800 font-medium mb-2">Préférences alimentaires :</label>
-                <Multiselect
-                  v-model="user.preferences"
-                  :options="allPreferences"
-                  label="label"
-                  track-by="value"
-                  :multiple="true"
+          <div class="p-6">
+            <div class="flex flex-col items-center text-center relative -mt-16">
+              <!-- Avatar et appareil photo -->
+              <div class="relative">
+                <img
+                  :src="user.photo"
+                  alt="Photo de profil"
+                  class="w-32 h-32 rounded-full shadow-lg object-cover border-4 border-white"
                 />
-              </div>
-              <div>
-                <label class="flex items-center">
-                  <input type="checkbox" v-model="user.notifications" class="mr-2" />
-                  Recevoir des notifications
+                <label
+                  for="avatar-upload"
+                  class="absolute bottom-0 right-0 bg-blue-500 p-2 rounded-full cursor-pointer hover:bg-blue-600 transition"
+                  title="Modifier l'avatar"
+                >
+                  <i class="fas fa-camera text-white"></i>
+                  <input
+                    id="avatar-upload"
+                    type="file"
+                    accept="image/*"
+                    class="hidden"
+                    @change="handleAvatarUpload"
+                  />
                 </label>
               </div>
-              <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded-lg">Enregistrer</button>
-            </form>
+
+              <!-- Crayon pour mode édition -->
+              <button
+                @click="isEditing = !isEditing"
+                class="absolute top-4 right-4 bg-transparent p-2 rounded-full"
+                title="Modifier le profil"
+              >
+                <i class="fas fa-pencil-alt text-blue-500 hover:text-green-700"></i>
+              </button>
+
+              <!-- Affichage des données -->
+              <div v-if="!isEditing" class="mt-4">
+                <h2 class="text-2xl font-bold text-gray-800">{{ user.username }}</h2>
+                <p class="text-gray-600 mt-2">{{ user.bio }}</p>
+                <div class="mt-4">
+                  <h3 class="text-lg font-semibold">Disponibilités :</h3>
+                  <p>{{ user.availability.join(', ') || 'Non renseigné' }}</p>
+                </div>
+                <div class="mt-4">
+                  <h3 class="text-lg font-semibold">Préférences alimentaires :</h3>
+                  <p>
+                    <span
+                      v-for="pref in user.preferences"
+                      :key="pref.value"
+                      class="inline-block bg-blue-100 text-blue-700 px-2 py-1 rounded-md mr-2"
+                    >
+                      {{ pref.label }}
+                    </span>
+                    <span v-if="user.preferences.length === 0">Non renseigné</span>
+                  </p>
+                </div>
+              </div>
+
+              <!-- Formulaire de modification -->
+              <form v-else @submit.prevent="updateProfile" class="w-full max-w-md mt-6 space-y-4">
+                <input v-model="user.username" type="text" class="w-full border rounded p-2" placeholder="Nom" />
+                <textarea v-model="user.bio" class="w-full border rounded p-2" placeholder="Bio"></textarea>
+                <div>
+                  <label class="block text-gray-800 font-medium mb-2">Jours de disponibilité :</label>
+                  <div class="flex flex-wrap gap-2">
+                    <TagComponent
+                      v-for="day in allDays"
+                      :key="day"
+                      :label="day"
+                      :selected="user.availability.includes(day)"
+                      @click="toggleDay(day)"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-gray-800 font-medium mb-2">Préférences alimentaires :</label>
+                  <Multiselect
+                    v-model="user.preferences"
+                    :options="allPreferences"
+                    label="label"
+                    track-by="value"
+                    :multiple="true"
+                  />
+                </div>
+                <div>
+                  <label class="flex items-center">
+                    <input type="checkbox" v-model="user.notifications" class="mr-2" />
+                    Recevoir des notifications
+                  </label>
+                </div>
+                <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded-lg">Enregistrer</button>
+              </form>
+            </div>
           </div>
         </div>
 
-        <!-- Événements -->
         <!-- Événements -->
         <div v-if="activeTab === 'events'" class="bg-white shadow-lg rounded-lg p-6">
           <div class="flex justify-center space-x-4 mb-6">
@@ -334,9 +378,5 @@ function toggleDay(day: string) {
   </div>
 </template>
 
-
-
-
-
-<style src="./ProfilePage.css" scoped></style>`;
+<style src="./ProfilePage.css" scoped></style>
 

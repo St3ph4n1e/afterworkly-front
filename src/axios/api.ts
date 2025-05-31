@@ -229,3 +229,36 @@ export async function removeParticipant(eventId: string, params: { userId?: stri
   const response = await apiClient.post(`/events/${eventId}/remove-participant`, params);
   return response.data;
 }
+
+// Memories
+export async function getEventMemories(eventId: string) {
+  console.log(eventId)
+  const response = await apiClient.get(`/memories/event/${eventId}`);
+  return response.data;
+}
+
+export async function createEventMemory(eventId: string, memoryData: FormData) {
+  console.log(eventId, memoryData)
+  memoryData.append('eventId', eventId);
+
+  const response = await apiClient.post(`/memories`, memoryData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+}
+
+export async function deleteMemory(memoryId: string) {
+  const response = await apiClient.delete(`/memories/${memoryId}`);
+  return response.data;
+}
+
+export async function updateMemory(memoryId: string, memoryData: FormData) {
+  const response = await apiClient.put(`/memories/${memoryId}`, memoryData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+}

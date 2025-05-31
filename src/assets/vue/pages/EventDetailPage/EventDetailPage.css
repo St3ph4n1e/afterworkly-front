@@ -4,16 +4,13 @@
   width: 800px
 }
 
-/* .shadow-lg {
-  min-height: 400px;
-  text-align: center;
-} */
 
 .h-64 {
   height: 16rem;
 }
 
-.relative img {
+/* Main event image styling - more specific selector */
+.event-detail .relative img:not(.memory-preview) {
   padding-top: 1rem;
   position: absolute;
   max-width: 100%;

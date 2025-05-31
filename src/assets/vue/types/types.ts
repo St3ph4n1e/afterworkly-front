@@ -20,6 +20,7 @@ export interface Event {
   participants: EventParticipant[]; // Liste des participants
   isPublic: boolean; // Visibilité de l'événement
   code: string; // Code de l'événement
+  memoryId: string; // Identifiant unique du souvenir
 }
 
 export interface User {
@@ -29,4 +30,19 @@ export interface User {
   last_name: string;
   email: string;
   roles?: string[]; // Optional property
+}
+
+// Interface pour un souvenir lié à un événement
+export interface Memory {
+  _id: string;
+  eventId: string; // Événement associé
+  issuedBy: {
+    userId: string;
+    username: string;
+  }; // Identifiant de l'utilisateur qui a ajouté le souvenir
+  text: string; // Texte descriptif du souvenir
+  image: string; // URL de l'image du souvenir
+  createdAt: string; // Date de création
+  username?: string; // Nom de l'utilisateur qui a créé le souvenir (optionnel)
+  userPhoto?: string; // Photo de l'utilisateur (optionnel)
 }

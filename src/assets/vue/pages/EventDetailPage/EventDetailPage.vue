@@ -2,13 +2,20 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { formatDate } from '@/utils/date'
-import { getEventById, toggleParticipantStatus, deleteEvent, updateEvent, sendInviataionEmail, generateJoinLink } from '@/axios/api'
-import type { Event } from '@/assets/vue/types/types'
+import { getEventById, toggleParticipantStatus, deleteEvent, updateEvent, sendInviataionEmail, generateJoinLink, getEventMemories, createEventMemory, deleteMemory, updateMemory } from '@/axios/api'
+import type { Event, Memory } from '@/assets/vue/types/types'
 import { showError, currentNotification } from '../../../../utils/errors.ts'
 import axios from 'axios'
 import dayjs from 'dayjs'
 import 'dayjs/locale/fr'
-import { getSocket, setupSocket } from '@/utils/socket.ts'
+import { setupSocket } from '@/utils/socket.ts'
+import { Swiper, SwiperSlide } from 'swiper/vue';
+import type { Swiper as SwiperType } from 'swiper';
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
+
+
 
 dayjs.locale('fr')
 
@@ -30,6 +37,13 @@ const notification = ref<{ message: string; type: 'success' | 'error'; visible: 
   type: 'success',
   visible: false,
 })
+
+const showMemory = ref<boolean>(false)
+const swiperInstance = ref<SwiperType | null>(null)
+const isBeginning = ref(true)
+const isEnd = ref(false)
+const memories = ref<Memory[]>([])
+const isLoadingMemories = ref(false)
 
 const formData = ref({
   eventName: '',
@@ -66,12 +80,36 @@ const editEventMode = ref(false)
 
 let socket: any = null
 
+// Add socket event interfaces
+interface EventUpdateData {
+  eventId: string;
+  redirect?: string;
+  eventIsPublic?: string;
+  eventTitle?: string;
+  eventLocation?: string;
+  eventDescription?: string;
+  eventImage?: string;
+  eventColor?: string;
+  eventDate?: string;
+  eventTime?: string;
+}
+
+interface EventParticipantJoinData {
+  eventId: string;
+  participants: string;
+}
+
+interface EventDeleteData {
+  eventId: string;
+  redirectMessage: string;
+}
+
 onMounted(async () => {
   const eventId = route.params.id as string
 
   socket = setupSocket()
 
-  socket.on('event-update', (updatedEventData) => {
+  socket.on('event-update', (updatedEventData: EventUpdateData) => {
     if (updatedEventData) {
       if (updatedEventData.eventId === eventId) {
         if (updatedEventData.redirect === 'true') {
@@ -79,20 +117,20 @@ onMounted(async () => {
         }
 
         event.value!.isPublic = updatedEventData.eventIsPublic === 'true'
-        event.value!.title = updatedEventData.eventTitle
-        event.value!.location = updatedEventData.eventLocation
-        event.value!.description = updatedEventData.eventDescription
-        event.value!.image = updatedEventData.eventImage
-        event.value!.color = updatedEventData.eventColor
-        event.value!.date = updatedEventData.eventDate
-        event.value!.time = updatedEventData.eventTime
-        formData.value.eventColor = updatedEventData.eventColor
-        event.value!.title = updatedEventData.eventTitle
+        event.value!.title = updatedEventData.eventTitle || event.value!.title
+        event.value!.location = updatedEventData.eventLocation || event.value!.location
+        event.value!.description = updatedEventData.eventDescription || event.value!.description
+        event.value!.image = updatedEventData.eventImage || event.value!.image
+        event.value!.color = updatedEventData.eventColor || event.value!.color
+        event.value!.date = updatedEventData.eventDate || event.value!.date
+        event.value!.time = updatedEventData.eventTime || event.value!.time
+        formData.value.eventColor = updatedEventData.eventColor || formData.value.eventColor
+        event.value!.title = updatedEventData.eventTitle || event.value!.title
       }
     }
   })
 
-  socket.on('event-participant-join', (eventData: any) => {
+  socket.on('event-participant-join', (eventData: EventParticipantJoinData) => {
     if (eventData) {
       if (eventData.eventId === eventId) {
         if (event.value) {
@@ -103,7 +141,7 @@ onMounted(async () => {
     }
   })
 
-  socket.on('event-delete', (eventDeletedData: any) => {
+  socket.on('event-delete', (eventDeletedData: EventDeleteData) => {
     if (eventDeletedData) {
       if (eventDeletedData.eventId === eventId) {
         showNotification(eventDeletedData.redirectMessage, 'error')
@@ -133,6 +171,9 @@ onMounted(async () => {
       ...fetchedEvent,
       id: fetchedEvent._id,
     }
+
+    // Charge les memsories de l'événement
+    await fetchEventMemories(eventId || '')
 
     // Remplir formData
     formData.value.eventName = fetchedEvent.title
@@ -203,6 +244,18 @@ const themeStyle = computed(() => {
     }
   }
   return {}
+})
+
+const isCurrentUserParticipant = computed(() => {
+  if (!currentUserId.value || !event.value?.participants) return false
+  return event.value.participants.some((participant: any) =>
+    (participant.userId === currentUserId.value && participant.status === 'confirmed')
+  )
+})
+
+const canAddMemories = computed(() => {
+  if (!currentUserId.value || !event.value) return false
+  return isCurrentUserParticipant.value || currentUserId.value === event.value.creator
 })
 
 // Fonction pour afficher la notification
@@ -367,7 +420,7 @@ async function triggerDeleteEvent() {
 function copyInviteLink() {
   if (inviteLink.value) {
     navigator.clipboard.writeText(inviteLink.value).then(() => {
-      showNotification('Lien d’invitation copié dans le presse-papiers.', 'success')
+      showNotification("Lien d'invitation copié dans le presse-papiers.", 'success')
     })
   }
 }
@@ -387,8 +440,8 @@ async function sendInviteEmail(email: string) {
     }
 
   } catch (error) {
-    console.error('Erreur lors de l’envoi de l’invitation :', error)
-    showNotification('Échec de l’envoi de l’invitation.', 'error')
+    console.error("Erreur lors de l'envoi de l'invitation :", error)
+    showNotification("Échec de l'envoi de l'invitation.", 'error')
   }
 }
 
@@ -405,6 +458,10 @@ function uploadImage() {
 }
 
 const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY'))
+
+function toggleMemory() {
+  showMemory.value = !showMemory.value
+}
 
 onUnmounted(() => {
   if (socket) {
@@ -486,6 +543,153 @@ async function handleRemoveParticipant(userId: string, event: Event, username: s
   }
 }
 
+function onSwiper(swiper: SwiperType) {
+  swiperInstance.value = swiper;
+  updateNavigationState();
+}
+
+function onSlideChange() {
+  updateNavigationState();
+}
+
+function updateNavigationState() {
+  if (swiperInstance.value) {
+    isBeginning.value = swiperInstance.value.isBeginning;
+    isEnd.value = swiperInstance.value.isEnd;
+  }
+}
+
+function slidePrev() {
+  if (swiperInstance.value) {
+    swiperInstance.value.slidePrev();
+  }
+}
+
+function slideNext() {
+  if (swiperInstance.value) {
+    swiperInstance.value.slideNext();
+  }
+}
+
+async function fetchEventMemories(eventId: string) {
+  try {
+    isLoadingMemories.value = true
+    if (eventId && eventId !== '') {
+      const fetchedMemories = await getEventMemories(eventId)
+      memories.value = fetchedMemories
+      console.log(memories.value)
+    } else {
+      console.error("Erreur lors de la récupération des souvenirs : Memory ID is empty or null")
+      memories.value = []
+    }
+  } catch (error) {
+    console.error("Erreur lors de la récupération des souvenirs :", error)
+    console.log(error)
+    showNotification("Impossible de charger les souvenirs", 'error')
+  } finally {
+    isLoadingMemories.value = false
+  }
+}
+
+const newMemoryText = ref('')
+const newMemoryImage = ref<File | null>(null)
+const newMemoryImagePreview = ref<string | null>(null)
+const isSubmittingMemory = ref(false)
+
+// Delete memory state
+const showDeleteMemoryModal = ref(false)
+const memoryToDelete = ref<string | null>(null)
+
+function handleNewMemoryImageUpload(e: any) {
+  const input = e.target as HTMLInputElement
+  if (input && input.files && input.files.length > 0) {
+    const file = input.files[0]
+    newMemoryImage.value = file
+    newMemoryImagePreview.value = URL.createObjectURL(file)
+  }
+}
+
+function resetMemoryForm() {
+  newMemoryText.value = ''
+  newMemoryImage.value = null
+
+  if (newMemoryImagePreview.value) {
+    URL.revokeObjectURL(newMemoryImagePreview.value)
+    newMemoryImagePreview.value = null
+  }
+}
+
+async function submitNewMemory() {
+  if (!event.value?.memoryId || !newMemoryText.value || !newMemoryImage.value) {
+    showNotification("L'image et le texte sont requis", 'error')
+    return
+  }
+
+  try {
+    isSubmittingMemory.value = true
+
+    const formData = new FormData()
+    formData.append('text', newMemoryText.value)
+    formData.append('image', newMemoryImage.value)
+
+    await createEventMemory(route.params.id as string, formData)
+
+    await fetchEventMemories(route.params.id as string)
+
+    showNotification("Souvenir ajouté avec succès ! 📸", 'success')
+    resetMemoryForm()
+  } catch (error) {
+    console.error("Erreur lors de l'ajout du souvenir:", error)
+    showNotification("Impossible d'ajouter le souvenir", 'error')
+  } finally {
+    isSubmittingMemory.value = false
+  }
+}
+
+function handleDeleteMemoryRequest(memoryId: string) {
+  memoryToDelete.value = memoryId
+  showDeleteMemoryModal.value = true
+}
+
+async function confirmDeleteMemory() {
+  if (!memoryToDelete.value) return
+
+  try {
+    await deleteMemory(memoryToDelete.value)
+    await fetchEventMemories(route.params.id as string)
+    showNotification("Souvenir supprimé avec succès", 'success')
+  } catch (error) {
+    console.error("Erreur lors de la suppression du souvenir:", error)
+    showNotification("Impossible de supprimer le souvenir", 'error')
+  } finally {
+    showDeleteMemoryModal.value = false
+    memoryToDelete.value = null
+  }
+}
+
+function cancelDeleteMemory() {
+  showDeleteMemoryModal.value = false
+  memoryToDelete.value = null
+}
+
+async function handleEditMemory(memoryId: string, text: string, image: File | null) {
+  try {
+    const formData = new FormData()
+    formData.append('text', text)
+
+    if (image) {
+      formData.append('image', image)
+    }
+
+    await updateMemory(memoryId, formData)
+    await fetchEventMemories(route.params.id as string)
+    showNotification("Souvenir modifié avec succès", 'success')
+  } catch (error) {
+    console.error("Erreur lors de la modification du souvenir:", error)
+    showNotification("Impossible de modifier le souvenir", 'error')
+  }
+}
+
 </script>
 
 <template>
@@ -498,10 +702,7 @@ async function handleRemoveParticipant(userId: string, event: Event, username: s
     />
     <HeaderComponent />
 
-    <main class="container-card h-screen overflow-auto mx-auto max-w-4xl p-4">
-      <!--      <div v-if="isLoading" class="text-center">
-        <p class="text-gray-500">Chargement...</p>
-      </div>-->
+    <main class="flex-1 mx-auto w-full max-w-4xl px-2 sm:px-4 py-4">
       <div v-if="isLoading" class="flex flex-col items-center justify-center py-20">
         <svg
           class="animate-spin h-10 w-10 text-blue-500 mb-4"
@@ -526,7 +727,7 @@ async function handleRemoveParticipant(userId: string, event: Event, username: s
         <p class="text-gray-500">Chargement...</p>
       </div>
 
-      <div v-else-if="event" class="w-full max-w-4xl bg-white shadow-lg rounded-lg overflow-hidden">
+      <div v-else-if="event && !showMemory" class="w-full bg-white shadow-lg rounded-lg overflow-hidden">
         <div class="relative flex items-center justify-center h-72 sm:h-96" :style="themeStyle">
           <img
             :src="
@@ -579,6 +780,18 @@ async function handleRemoveParticipant(userId: string, event: Event, username: s
               title="Envoyer une invitation"
             >
               <i class="fas fa-envelope text-2xl"></i>
+            </button>
+            <button
+              @click="toggleMemory()"
+              class="absolute top-14 right-4 text-gray-700 hover:text-gray-900 transition"
+              title="Voir les souvenirs de l'événement"
+            >
+              <div class="relative">
+                <i class="fa-solid fa-images text-2xl"></i>
+                <span v-if="memories.length > 0" class="absolute -top-2 -right-2 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {{ memories.length > 9 ? '9+' : memories.length }}
+                </span>
+              </div>
             </button>
           </div>
         </div>
@@ -635,7 +848,6 @@ async function handleRemoveParticipant(userId: string, event: Event, username: s
           <div v-if="event.participants && event.participants.length > 0">
             <h3 class="font-semibold text-gray-800">Participants</h3>
             <div style="width: 100%; overflow: hidden; position: relative">
-              <!-- Sliding Container -->
               <div
                 ref="scrollContainer"
                 class="space-y-2 scroll-div"
@@ -668,7 +880,6 @@ async function handleRemoveParticipant(userId: string, event: Event, username: s
                 </div>
               </div>
 
-              <!-- Left Button -->
               <button
                 @click="scrollLeft"
                 style="
@@ -687,7 +898,6 @@ async function handleRemoveParticipant(userId: string, event: Event, username: s
                 ⟨
               </button>
 
-              <!-- Right Button -->
               <button
                 @click="scrollRight"
                 style="
@@ -789,6 +999,169 @@ async function handleRemoveParticipant(userId: string, event: Event, username: s
         </div>
       </div>
 
+      <div v-else-if="showMemory">
+        <div class="relative flex items-center justify-center h-[32rem] sm:h-[40rem] p-6" :style="themeStyle">
+          <button
+            @click="toggleMemory()"
+            class="absolute top-4 right-4 text-gray-700 hover:text-gray-900 transition"
+            title="Retour aux détails de l'événement"
+          >
+            <i class="fa-solid fa-circle-info text-2xl"></i>
+          </button>
+
+          <!-- Left Arrow -->
+          <button
+            @click="slidePrev"
+            class="absolute left-2 top-1/2 transform -translate-y-1/2 z-10 bg-white/80 hover:bg-white rounded-full p-3 shadow-md transition-all duration-200 hover:scale-110"
+            :disabled="isBeginning"
+            :class="{ 'opacity-50 cursor-not-allowed': isBeginning }"
+          >
+            <i class="fa-solid fa-chevron-left text-gray-700"></i>
+          </button>
+
+          <!-- Right Arrow -->
+          <button
+            @click="slideNext"
+            class="absolute right-2 top-1/2 transform -translate-y-1/2 z-10 bg-white/80 hover:bg-white rounded-full p-3 shadow-md transition-all duration-200 hover:scale-110"
+            :disabled="isEnd"
+            :class="{ 'opacity-50 cursor-not-allowed': isEnd }"
+          >
+            <i class="fa-solid fa-chevron-right text-gray-700"></i>
+          </button>
+
+          <swiper
+            :slides-per-view="1"
+            :space-between="20"
+            :auto-height="true"
+            :height="300"
+            :breakpoints="{
+              640: {
+                slidesPerView: 1,
+                spaceBetween: 20,
+              },
+              768: {
+                slidesPerView: 2,
+                spaceBetween: 30,
+              },
+              1024: {
+                slidesPerView: 2,
+                spaceBetween: 30,
+              }
+            }"
+            @swiper="onSwiper"
+            @slideChange="onSlideChange"
+            class="w-full h-full"
+          >
+            <swiper-slide v-if="canAddMemories" class="h-auto py-4">
+              <div class="memory-card w-full h-auto min-h-[400px] flex flex-col p-4 bg-white rounded-lg shadow-md">
+                <h3 class="text-lg font-semibold text-gray-800 mb-3">Ajouter un souvenir</h3>
+
+                <div class="flex-1 space-y-4">
+                  <div>
+                    <label class="block text-gray-700 font-medium mb-2">Description</label>
+                    <textarea
+                      v-model="newMemoryText"
+                      class="w-full border rounded-lg p-2 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
+                      placeholder="Décrivez ce souvenir..."
+                      rows="3"
+                      style="max-height: 100px; overflow-y: auto;"
+                    ></textarea>
+                  </div>
+
+                  <div>
+                    <label class="block text-gray-700 font-medium mb-2">Image</label>
+
+                    <!-- Image upload section when no image -->
+                    <div v-if="!newMemoryImagePreview">
+                      <label
+                        class="block w-full border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 transition-colors min-h-[120px]"
+                        for="memory-image-upload"
+                      >
+                        <i class="fas fa-camera text-2xl text-gray-400 mb-2"></i>
+                        <p class="text-gray-500 text-sm text-center">Cliquez pour ajouter une image</p>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          class="hidden"
+                          @change="handleNewMemoryImageUpload"
+                          id="memory-image-upload"
+                        />
+                      </label>
+                    </div>
+
+                    <!-- Section d'aperçu de l'image lorsqu'une image est sélectionnée -->
+                    <div v-else class="space-y-3">
+                      <div class="relative w-full">
+                        <div class="w-full h-40 bg-gray-100 rounded-lg border border-gray-200 overflow-hidden">
+                          <img
+                            :src="newMemoryImagePreview"
+                            class="w-full h-full object-cover relative memory-preview"
+                            alt="Aperçu de l'image"
+                          />
+                        </div>
+                        <button
+                          @click="resetMemoryForm()"
+                          class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md hover:bg-red-600 transition-colors text-xs"
+                          title="Supprimer l'image"
+                        >
+                          <i class="fas fa-times"></i>
+                        </button>
+                      </div>
+                      <p class="text-xs text-gray-500 text-center">Image sélectionnée</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-gray-100">
+                  <button
+                    @click="submitNewMemory"
+                    class="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    :disabled="isSubmittingMemory || !newMemoryText || !newMemoryImage"
+                  >
+                    <span v-if="isSubmittingMemory">
+                      <i class="fas fa-spinner fa-spin mr-1"></i> Envoi...
+                    </span>
+                    <span v-else>Enregistrer</span>
+                  </button>
+                </div>
+              </div>
+            </swiper-slide>
+
+            <swiper-slide v-for="memory in memories" :key="memory._id" class="h-auto py-4">
+              <MemoryComponentCard
+                :text="memory.text"
+                :image="memory.image"
+                :memoryId="memory._id"
+                :issuedBy="memory.issuedBy.userId"
+                :issuedByUsername="memory.issuedBy.username"
+                :currentUserId="currentUserId || ''"
+                :createdAt="memory.createdAt"
+                @deleteMemory="handleDeleteMemoryRequest"
+                @editMemory="handleEditMemory"
+              />
+            </swiper-slide>
+
+            <swiper-slide v-if="!isLoadingMemories && memories.length === 0 && !canAddMemories" class="h-auto py-4">
+              <div class="memory-card w-full h-auto min-h-[400px] flex flex-col items-center justify-center p-8 bg-white rounded-lg shadow-md text-center">
+                <div class="mb-6">
+                  <i class="fas fa-camera text-6xl text-gray-300 mb-4"></i>
+                  <h3 class="text-xl font-semibold text-gray-600 mb-2">Aucun souvenir pour le moment</h3>
+                  <p class="text-gray-500 text-sm max-w-sm">
+                    Les souvenirs de cet événement apparaîtront ici une fois que les participants commenceront à les partager.
+                  </p>
+                </div>
+                <div class="text-xs text-gray-400 bg-gray-50 px-4 py-2 rounded-lg">
+                  💡 Seuls les participants confirmés peuvent ajouter des souvenirs
+                </div>
+              </div>
+            </swiper-slide>
+
+            <div v-if="isLoadingMemories" class="flex justify-center items-center w-full h-32">
+              <div class="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+            </div>
+          </swiper>
+        </div>
+      </div>
       <!-- Modal d'invitation aux événements  -->
       <ModalComponent
         v-if="showInviteModal"
@@ -881,6 +1254,25 @@ async function handleRemoveParticipant(userId: string, event: Event, username: s
       >
       </ModalComponent>
 
+      <ModalComponent
+        v-if="showDeleteMemoryModal"
+        :isVisible="showDeleteMemoryModal"
+        title="Êtes-vous sûr de vouloir retirer le souvenir ?"
+        :buttons="[
+          {
+            text: 'Oui',
+            action: confirmDeleteMemory,
+            class: 'bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 mt-2',
+          },
+          {
+            text: 'Non',
+            action: cancelDeleteMemory,
+            class: 'bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 mt-2',
+          },
+        ]"
+      >
+      </ModalComponent>
+
       <div
         v-if="showImageModal"
         class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
@@ -919,3 +1311,5 @@ async function handleRemoveParticipant(userId: string, event: Event, username: s
   </div>
 </template>
 <style src="./EventDetailPage.css" scoped></style>
+
+<!-- todo : fix preview image -->

@@ -15,8 +15,8 @@ export function setupSocket(): Socket<ServerToClientEvents, ClientToServerEvents
 
   if (socket) return socket; // prevent re-init
 
-  const token = sessionStorage.getItem('access_token') || '';
-  const user = sessionStorage.getItem('user') ? JSON.parse(sessionStorage.getItem('user')) : null;
+  const token = localStorage.getItem('access_token') || '';
+  const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
 
   socket = io('http://localhost:3002', {
     auth: {

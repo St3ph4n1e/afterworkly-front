@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { formatDate } from '@/utils/date'
-import { getEventById, toggleParticipantStatus, deleteEvent, updateEvent } from '@/axios/api'
+import { getEventById, toggleParticipantStatus, deleteEvent, updateEvent, sendInviataionEmail, generateJoinLink } from '@/axios/api'
 import type { Event } from '@/assets/vue/types/types'
 import { showError, currentNotification } from '../../../../utils/errors.ts'
 import axios from 'axios'
@@ -17,11 +17,13 @@ const router = useRouter()
 const event = ref<Event | null>(null)
 const isLoading = ref(true)
 const currentUserId = ref<string | null>(null)
-const attendanceConfirmed = ref(false)
+const attendanceConfirmed = ref<'confirmed' | 'pending' | 'not_joined' >('not_joined')
 const showEditButtons = ref(false)
 const showInviteModal = ref(false)
 const showImageModal = ref(false)
 const inviteLink = ref<string | null>(null)
+const inviteLinkExpiry = ref<Date | null>(null)
+const isGeneratingLink = ref(false)
 const emailToSend = ref<string>('')
 const notification = ref<{ message: string; type: 'success' | 'error'; visible: boolean }>({
   message: '',
@@ -38,7 +40,9 @@ const formData = ref({
   eventColor: '#f9f9f9',
   eventIsPublic: true,
   eventDescription: '',
+  code: ''
 })
+
 const imagePreviewUrl = ref<string | null>(null)
 
 const scrollContainer = ref<HTMLDivElement | null>(null)
@@ -55,108 +59,6 @@ function scrollRight() {
   }
 }
 
-const mockParticipants = [
-  {
-    userId: 1,
-    username: 'User 1',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 2,
-    username: 'User 2',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 3',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-  {
-    userId: 3,
-    username: 'User 4',
-    photo: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/profil_photo.jpg',
-  },
-]
 // Variables pour la pop-up de suppréssion
 const showDeleteModal = ref(false)
 // Variables pour l'édition d'un event
@@ -194,6 +96,7 @@ onMounted(async () => {
     if (eventData) {
       if (eventData.eventId === eventId) {
         if (event.value) {
+          console.log(eventData.participants)
           event.value!.participants = JSON.parse(eventData.participants)
         }
       }
@@ -210,7 +113,7 @@ onMounted(async () => {
   })
 
   // Récupérer l'utilisateur connecté depuis le localStorage
-  const storedUser = sessionStorage.getItem('user')
+  const storedUser = localStorage.getItem('user')
   if (storedUser) {
     const user = JSON.parse(storedUser)
     currentUserId.value = user._id
@@ -239,17 +142,29 @@ onMounted(async () => {
     formData.value.eventDescription = fetchedEvent.description
     formData.value.eventColor = fetchedEvent.color || '#f9f9f9'
     formData.value.eventIsPublic = fetchedEvent.isPublic
+    formData.value.code = fetchedEvent.code
 
     // Gérer l'image
     formData.value.eventImage = fetchedEvent.image ?? null
 
-    // Initialisation de l'état de participation
-    attendanceConfirmed.value =
-      event.value?.participants.some((participant) => participant.userId === currentUserId.value) ??
-      false
+    const participant = event.value?.participants.find(
+      (p) => p.userId === currentUserId.value
+    )
 
-    // Lien d'invitation
-    inviteLink.value = `${window.location.origin}/event-detail/${eventId}?invitation=true`
+    // Initialisation de l'état de participation
+    if (participant) {
+      if (participant.status === 'confirmed') {
+        attendanceConfirmed.value = 'confirmed'
+      } else if (participant.status === 'pending') {
+        attendanceConfirmed.value = 'pending'
+      } else {
+        attendanceConfirmed.value = 'not_joined'
+      }
+    } else {
+      attendanceConfirmed.value = 'not_joined'
+    }
+
+
   } catch (error) {
     console.error("Erreur lors de la récupération de l'événement :", error)
     if (axios.isAxiosError(error)) {
@@ -267,6 +182,16 @@ onMounted(async () => {
     }
   } finally {
     isLoading.value = false
+  }
+})
+
+const participationButtonStyle = computed(() => {
+  if (attendanceConfirmed.value === 'confirmed') {
+    return 'bg-red-500 text-white hover:bg-red-600'
+  } else if (attendanceConfirmed.value === 'pending') {
+    return 'bg-blue-500 text-white hover:bg-blue-600'
+  } else {
+    return 'bg-green-500 text-white hover:bg-green-600'
   }
 })
 
@@ -293,15 +218,21 @@ async function toggleParticipation() {
   isLoading.value = true
 
   const wasParticipant = event.value.participants.some((p) => p.userId === currentUserId.value)
+  const wasParticipantInPending = event.value.participants.some((p) => p.userId === currentUserId.value && p.status === "pending")
 
   try {
-    const responseToggleParticipation = await toggleParticipantStatus(event.value.id, {
-      isJoining: !wasParticipant,
-    })
+    if (!wasParticipant) {
+      // User wants to join
+      await toggleParticipantStatus(event.value.id, { isJoining: true, status: 'confirmed' });
+    } else if (wasParticipantInPending) {
+      // User confirms participation
+      await toggleParticipantStatus(event.value.id, { isJoining: undefined, status: 'confirmed' });
+    } else {
+      // User quits
+      await toggleParticipantStatus(event.value.id, { isJoining: false });
+    }
 
-    if (!responseToggleParticipation) throw new Error('Échec de la mise à jour de la participation')
-
-    if (wasParticipant && event.value.creator !== currentUserId.value && !event.value.isPublic) {
+    if (wasParticipant && !wasParticipantInPending && event.value.creator !== currentUserId.value && !event.value.isPublic) {
       router.push('/')
       return
     }
@@ -313,9 +244,34 @@ async function toggleParticipation() {
       id: updatedEvent._id,
     }
 
-    attendanceConfirmed.value = !wasParticipant
+    // Update attendanceConfirmed state based on new event data
+    const participant = updatedEvent.participants.find(
+      (p) => p.userId === currentUserId.value
+    )
+    if (participant) {
+      if (participant.status === 'confirmed') {
+        attendanceConfirmed.value = 'confirmed'
+      } else if (participant.status === 'pending') {
+        attendanceConfirmed.value = 'pending'
+      } else {
+        attendanceConfirmed.value = 'not_joined'
+      }
+    } else {
+      attendanceConfirmed.value = 'not_joined'
+    }
 
-    showNotification(`Vous avez ${!wasParticipant ? 'rejoint' : 'quitté'} l'événement.`, 'success')
+
+    let notifMessage = ""
+
+    if (wasParticipantInPending) {
+      notifMessage = 'Vous avez confirmer votre présence'
+    } else if (wasParticipant) {
+      notifMessage = 'Vous avez quitté l\'événement.'
+    } else {
+      notifMessage = 'Vous avez rejoint l\'événement.'
+    }
+
+    showNotification(notifMessage, 'success')
   } catch (error) {
     console.error('Erreur lors de la mise à jour de la participation :', error)
     showNotification(error?.message || 'Une erreur est survenue. Veuillez réessayer.', 'error')
@@ -348,6 +304,7 @@ async function triggerSaveEvent() {
   updatedEventData.append('location', formData.value.eventLocation)
   updatedEventData.append('color', formData.value.eventColor)
   updatedEventData.append('isPublic', formData.value.eventIsPublic.toString())
+  updatedEventData.append('code', formData.value.code)
 
   if (formData.value.eventImage) {
     updatedEventData.append('image', formData.value.eventImage)
@@ -366,7 +323,6 @@ async function triggerSaveEvent() {
     event.value.time = formData.value.eventTime
     event.value.description = formData.value.eventDescription
     event.value.location = formData.value.eventLocation
-
     event.value.isPublic = formData.value.eventIsPublic
     event.value.color = formData.value.eventColor
 
@@ -419,8 +375,17 @@ function copyInviteLink() {
 // Fonction pour envoyer un email d'invitation
 async function sendInviteEmail(email: string) {
   try {
-    await new Promise((resolve) => setTimeout(resolve, 1000)) // Simule un délai
-    showNotification(`Invitation envoyée à ${email}.`, 'success')
+    console.log("current event")
+    console.log(event.value)
+    console.log("current event")
+    if (event.value?.id) {
+      await sendInviataionEmail(email, event.value.id).then(
+        () => {
+          showNotification(`Invitation envoyée à ${email}.`, 'success')
+        }
+      )
+    }
+
   } catch (error) {
     console.error('Erreur lors de l’envoi de l’invitation :', error)
     showNotification('Échec de l’envoi de l’invitation.', 'error')
@@ -448,6 +413,79 @@ onUnmounted(() => {
     socket.off('event-delete')
   }
 })
+
+async function quitFromPending() {
+  if (!event.value || !currentUserId.value) return
+
+  isLoading.value = true
+
+  try {
+    await toggleParticipantStatus(event.value.id, { isJoining: false });
+
+    // Re-fetch event to get fresh data
+    const updatedEvent = await getEventById(event.value.id)
+    event.value = {
+      ...updatedEvent,
+      id: updatedEvent._id,
+    }
+
+    // Update attendanceConfirmed state based on new event data
+    const participant = updatedEvent.participants.find(
+      (p) => p.userId === currentUserId.value
+    )
+    if (participant) {
+      if (participant.status === 'confirmed') {
+        attendanceConfirmed.value = 'confirmed'
+      } else if (participant.status === 'pending') {
+        attendanceConfirmed.value = 'pending'
+      } else {
+        attendanceConfirmed.value = 'not_joined'
+      }
+    } else {
+      attendanceConfirmed.value = 'not_joined'
+    }
+
+    showNotification('Vous avez quitté l\'événement.', 'success')
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de la participation :', error)
+    showNotification(error?.message || 'Une erreur est survenue. Veuillez réessayer.', 'error')
+  } finally {
+    isLoading.value = false
+  }
+}
+
+function generateRandomCode(length = 6) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+async function generateNewJoinLink() {
+  if (!event.value?.id) return
+
+  isGeneratingLink.value = true
+  try {
+    const response = await generateJoinLink(event.value.id)
+    inviteLink.value = response.link
+    inviteLinkExpiry.value = new Date(response.expiresAt)
+    showNotification('Lien généré avec succès !', 'success')
+  } catch (error) {
+    console.error('Erreur lors de la génération du lien :', error)
+    showNotification('Échec de la génération du lien.', 'error')
+  } finally {
+    isGeneratingLink.value = false
+  }
+}
+
+async function handleRemoveParticipant(userId: string, event: Event, username: string) {
+  if (event) {
+    event.participants =  event.participants.filter(p => p.userId !== userId && p.username !== username)
+  }
+}
+
 </script>
 
 <template>
@@ -569,20 +607,32 @@ onUnmounted(() => {
 
           <div class="text-center mt-6">
             <button
-              v-if="currentUserId !== event.creator"
-              @click="toggleParticipation"
+              :class="`px-4 py-2 rounded-lg font-semibold transition ${participationButtonStyle}`"
               :disabled="isLoading"
-              :class="[
-                'px-6 py-2 rounded-lg transition font-medium',
-                attendanceConfirmed
-                  ? 'bg-red-500 text-white hover:bg-red-600'
-                  : 'bg-blue-500 text-white hover:bg-blue-600',
-              ]"
+              @click="toggleParticipation"
+              v-if="currentUserId !== event.creator && attendanceConfirmed !== 'pending'"
             >
-              {{ attendanceConfirmed ? 'Quitter' : 'Rejoindre' }} l'événement
+              <template v-if="attendanceConfirmed === 'confirmed'">Quitter</template>
+              <template v-else>Rejoindre</template>
             </button>
+            <div v-if="currentUserId !== event.creator && attendanceConfirmed === 'pending'" class="space-x-4">
+              <button
+                class="px-4 py-2 rounded-lg font-semibold transition bg-green-500 text-white hover:bg-green-600"
+                :disabled="isLoading"
+                @click="toggleParticipation"
+              >
+                Confirmer ma présence
+              </button>
+              <button
+                class="px-4 py-2 rounded-lg font-semibold transition bg-red-500 text-white hover:bg-red-600"
+                :disabled="isLoading"
+                @click="quitFromPending"
+              >
+                Quitter
+              </button>
+            </div>
           </div>
-          <div>
+          <div v-if="event.participants && event.participants.length > 0">
             <h3 class="font-semibold text-gray-800">Participants</h3>
             <div style="width: 100%; overflow: hidden; position: relative">
               <!-- Sliding Container -->
@@ -597,18 +647,23 @@ onUnmounted(() => {
                   flex-wrap: nowrap;
                   overflow-x: auto;
                   scroll-behavior: smooth;
+                  padding: 10px 0;
+                  min-height: 90px;
                 "
               >
                 <div
                   v-for="participant in event.participants"
                   :key="participant.userId"
-                  class="flex items-center"
+                  class="flex items-center flex-shrink-0"
+                  style="width: 80px; margin: 0;"
                 >
                   <ParticipantListComponent
-                    style="flex-shrink: 0; width: 80px; margin: 0"
                     :participantInfos="participant"
                     confirmed-class="text-green-600 font-bold"
                     undecided-class="text-yellow-500 italic"
+                    :eventId="event.id"
+                    :isCreator="event.creator === currentUserId"
+                    @participantRemoved="(id) => handleRemoveParticipant(id, event, participant.username)"
                   />
                 </div>
               </div>
@@ -702,6 +757,20 @@ onUnmounted(() => {
               class="border p-2 rounded w-full"
             ></textarea>
           </div>
+          <div v-if="event.creator === currentUserId">
+            <label class="block text-gray-700 font-medium">Code</label>
+            <input disabled
+              v-model="formData.code"
+              class="border p-2 rounded w-full"
+            />
+          </div>
+          <button
+            type="button"
+            class="px-3 py-1 bg-blue-500 text-white rounded"
+            @click="formData.code = generateRandomCode()"
+          >
+            Régénérer le code
+          </button>
 
           <div class="flex justify-end space-x-4">
             <button
@@ -733,34 +802,62 @@ onUnmounted(() => {
           },
         ]"
       >
-        <div>
-          <p class="mb-4">
-            Lien d'invitation : <code class="bg-gray-200 p-1 rounded">{{ inviteLink }}</code>
-          </p>
-          <button
-            @click="copyInviteLink"
-            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
-          >
-            Copier le lien
-          </button>
+        <div class="space-y-6">
+          <!-- Section Generation de lien  -->
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-semibold text-gray-800">Lien d'invitation</h3>
+              <button
+                @click="generateNewJoinLink"
+                :disabled="isGeneratingLink"
+                class="flex items-center space-x-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition disabled:opacity-50"
+              >
+                <i class="fas fa-link"></i>
+                <span>{{ isGeneratingLink ? 'Génération...' : 'Générer un lien' }}</span>
+              </button>
+            </div>
 
-          <div class="mt-4">
-            <label for="email" class="block text-gray-700 mb-2"
-              >Envoyer une invitation par email :</label
-            >
-            <input
-              id="email"
-              type="email"
-              v-model="emailToSend"
-              class="border p-2 rounded w-full"
-              placeholder="Saisissez une adresse email"
-            />
-            <button
-              @click="sendInviteEmail(emailToSend)"
-              class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mt-2"
-            >
-              Envoyer
-            </button>
+            <div v-if="inviteLink" class="space-y-2">
+              <div class="flex items-center space-x-2 bg-white p-2 rounded border">
+                <code class="flex-1 text-sm break-all">{{ inviteLink }}</code>
+                <button
+                  @click="copyInviteLink"
+                  class="text-blue-500 hover:text-blue-600 transition"
+                  title="Copier le lien"
+                >
+                  <i class="fas fa-copy"></i>
+                </button>
+              </div>
+              <p v-if="inviteLinkExpiry" class="text-sm text-gray-500">
+                Expire le {{ new Date(inviteLinkExpiry).toLocaleString() }}
+              </p>
+            </div>
+            <p v-else class="text-gray-500 text-sm">
+              Cliquez sur "Générer un lien" pour créer un lien d'invitation
+            </p>
+          </div>
+
+          <!-- Section Invitation Email -->
+          <div class="border-t pt-4">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Inviter par email</h3>
+            <div class="space-y-4">
+              <div>
+                <label for="email" class="block text-gray-700 mb-2">Adresse email :</label>
+                <input
+                  id="email"
+                  type="email"
+                  v-model="emailToSend"
+                  class="border p-2 rounded w-full"
+                  placeholder="Saisissez une adresse email"
+                />
+              </div>
+              <button
+                @click="sendInviteEmail(emailToSend)"
+                class="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition"
+              >
+                Envoyer l'invitation
+              </button>
+            </div>
           </div>
         </div>
       </ModalComponent>

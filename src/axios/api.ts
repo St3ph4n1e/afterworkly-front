@@ -22,7 +22,7 @@ async function refreshAccessToken() {
     });
 
     // Stockage des nouveaux tokens
-    sessionStorage.setItem("access_token", response.data.access_token);
+    localStorage.setItem("access_token", response.data.access_token);
     localStorage.setItem("refresh_token", response.data.refresh_token);
 
     return response.data.access_token;
@@ -35,7 +35,7 @@ async function refreshAccessToken() {
 
 // Intercepteur de requête Axios pour attacher le access token
 apiClient.interceptors.request.use(async (config) => {
-  const token = sessionStorage.getItem("access_token");
+  const token = localStorage.getItem("access_token");
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -136,7 +136,7 @@ export async function updateEvent(eventId: string, updatedData: FormData | Recor
   return response.data;
 }
 
-export async function toggleParticipantStatus(eventId: string, participantData: { isJoining: boolean }) {
+export async function toggleParticipantStatus(eventId: string, participantData: { isJoining?: boolean, status?: string  }) {
   const response = await apiClient.post(`/events/${eventId}/participants`, participantData);
   return response.data;
 }
@@ -146,6 +146,51 @@ export async function deleteEvent(eventId: string) {
   return response.data;
 }
 
+export async function sendInviataionEmail(email: string, eventId: string) {
+  const response = await apiClient.post(`/events-outsider/${eventId}/invite`, { email })
+  return response.data
+}
+
+export async function getEventByIdForOutsider(eventId: string) {
+  const response = await apiClient.get(`/events-outsider/${eventId}`)
+  return response.data
+}
+
+export async function addOutsiderToParticipates(eventId: string, formData: FormData) {
+  const response = await apiClient.post(`/events-outsider/${eventId}/toggle-participation`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
+  return response.data
+}
+
+export async function exitEventForOutsider(username: string, eventId: string) {
+  // todo check username not taken for outsider
+  // todo quit implem
+  console.log(username)
+  const response = await apiClient.post(`/events-outsider/${eventId}/quit`, { username })
+  return response.data
+}
+
+export async function generateJoinLink(eventId: string) {
+  const response = await apiClient.post(`/events-outsider/${eventId}/join-link`);
+  return response.data;
+}
+
+export async function validateJoinLink(eventId: string, token: string) {
+  const response = await apiClient.get(`/events-outsider/${eventId}/join-link/validate`, {
+    params: { token }
+  });
+  return response.data;
+}
+
+export async function markJoinLinkAsUsed(eventId: string, token: string) {
+  const response = await apiClient.post(`/events-outsider/${eventId}/join-link/use`, {
+    token
+  });
+  return response.data;
+}
 
 // Profil utilisateur
 export async function getUserProfile() {
@@ -172,4 +217,15 @@ export async function updateUserAvatar(file: File) {
 export async function getUserInfo(id: string) {
   const response = await apiClient.get('/auth/' + id)
   return response.data
+}
+
+export async function getUsers() {
+  const response = await apiClient.get('/auth')
+  console.log(response.data)
+  return response.data
+}
+
+export async function removeParticipant(eventId: string, params: { userId?: string; username?: string; type: 'member' | 'outsider' }) {
+  const response = await apiClient.post(`/events/${eventId}/remove-participant`, params);
+  return response.data;
 }

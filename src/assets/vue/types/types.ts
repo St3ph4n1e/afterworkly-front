@@ -1,9 +1,9 @@
 // Interface pour un participant à un événement
 export interface EventParticipant {
   userId: string; // Identifiant utilisateur
-  name: string; // Nom du participant
-  status: 'Confirmé' | 'Indécis' | string; // Statut du participant
-  avatar?: string | null; // Avatar optionnel
+  username: string; // Nom du participant
+  status: 'confirmed' | 'pending' | string; // Statut du participant
+  photo?: string | null; // Avatar optionnel
 }
 
 // Interface pour un événement
@@ -19,6 +19,7 @@ export interface Event {
   creator: string; // Identifiant du créateur de l'événement
   participants: EventParticipant[]; // Liste des participants
   isPublic: boolean; // Visibilité de l'événement
+  code: string; // Code de l'événement
 }
 
 export interface User {

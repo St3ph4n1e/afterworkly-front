@@ -49,6 +49,7 @@ const formData = ref({
   eventName: '',
   eventDate: '',
   eventTime: '',
+  deadlineDate: '',
   eventLocation: '',
   eventImage: null as File | null,
   eventColor: '#f9f9f9',
@@ -117,15 +118,18 @@ onMounted(async () => {
         }
 
         event.value!.isPublic = updatedEventData.eventIsPublic === 'true'
-        event.value!.title = updatedEventData.eventTitle || event.value!.title
-        event.value!.location = updatedEventData.eventLocation || event.value!.location
-        event.value!.description = updatedEventData.eventDescription || event.value!.description
-        event.value!.image = updatedEventData.eventImage || event.value!.image
-        event.value!.color = updatedEventData.eventColor || event.value!.color
-        event.value!.date = updatedEventData.eventDate || event.value!.date
-        event.value!.time = updatedEventData.eventTime || event.value!.time
-        formData.value.eventColor = updatedEventData.eventColor || formData.value.eventColor
-        event.value!.title = updatedEventData.eventTitle || event.value!.title
+        event.value!.title = updatedEventData.eventTitle
+        event.value!.location = updatedEventData.eventLocation
+        event.value!.description = updatedEventData.eventDescription
+        event.value!.image = updatedEventData.eventImage
+        event.value!.color = updatedEventData.eventColor
+        event.value!.date = updatedEventData.eventDate
+        event.value!.time = updatedEventData.eventTime
+        if (updatedEventData.deadlineDate) {
+          event.value!.deadlineDate = updatedEventData.deadlineDate
+        }
+        formData.value.eventColor = updatedEventData.eventColor
+        event.value!.title = updatedEventData.eventTitle
       }
     }
   })
@@ -179,6 +183,7 @@ onMounted(async () => {
     formData.value.eventName = fetchedEvent.title
     formData.value.eventDate = fetchedEvent.date
     formData.value.eventTime = fetchedEvent.time
+    formData.value.deadlineDate = fetchedEvent.deadlineDate || ''
     formData.value.eventLocation = fetchedEvent.location
     formData.value.eventDescription = fetchedEvent.description
     formData.value.eventColor = fetchedEvent.color || '#f9f9f9'
@@ -346,6 +351,27 @@ function quitEditEventMode() {
 async function triggerSaveEvent() {
   if (!event.value) return
 
+  // Validation de la date limite d'inscription
+  if (formData.value.deadlineDate && formData.value.deadlineDate !== '') {
+    const today = new Date().toISOString().split('T')[0]
+    const deadlineDate = formData.value.deadlineDate
+    const eventDate = formData.value.eventDate
+
+    console.log(deadlineDate, today, eventDate)
+
+    // Vérifier que la deadline n'est pas dans le passé
+    if (deadlineDate < today) {
+      showNotification('La date limite d\'inscription ne peut pas être dans le passé.', 'error')
+      return
+    }
+
+    // Vérifier que la deadline n'est pas après la date de l'événement
+    if (deadlineDate > eventDate) {
+      showNotification('La date limite d\'inscription ne peut pas être postérieure à la date de l\'événement.', 'error')
+      return
+    }
+  }
+
   isLoading.value = true
 
   const updatedEventData = new FormData()
@@ -353,6 +379,11 @@ async function triggerSaveEvent() {
   updatedEventData.append('title', formData.value.eventName)
   updatedEventData.append('date', formData.value.eventDate)
   updatedEventData.append('time', formData.value.eventTime)
+  if (formData.value.deadlineDate && formData.value.deadlineDate !== '') {
+    updatedEventData.append('deadlineDate', formData.value.deadlineDate)
+  } else {
+    updatedEventData.append('deadlineDate', formData.value.eventDate)
+  }
   updatedEventData.append('description', formData.value.eventDescription)
   updatedEventData.append('location', formData.value.eventLocation)
   updatedEventData.append('color', formData.value.eventColor)
@@ -374,6 +405,7 @@ async function triggerSaveEvent() {
     event.value.title = formData.value.eventName
     event.value.date = formData.value.eventDate
     event.value.time = formData.value.eventTime
+    event.value.deadlineDate = formData.value.deadlineDate || undefined
     event.value.description = formData.value.eventDescription
     event.value.location = formData.value.eventLocation
     event.value.isPublic = formData.value.eventIsPublic
@@ -814,6 +846,10 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
                 <i class="fas fa-clock"></i>
                 <span class="font-medium">{{ event.time }}</span>
               </p>
+              <p v-if="event.deadlineDate" class="flex items-center space-x-2">
+                <i class="fas fa-hourglass-half"></i>
+                <span class="font-medium">Inscription jusqu'au {{ formatDate(event.deadlineDate, 'DD/MM/YYYY') }}</span>
+              </p>
             </div>
             <p class="text-gray-700 mt-4">{{ event.description }}</p>
           </div>
@@ -959,6 +995,14 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
                 class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
+          </div>
+          <div>
+            <label class="block text-gray-700 font-medium">Date limite d'inscription</label>
+            <input
+              type="date"
+              v-model="formData.deadlineDate"
+              class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            />
           </div>
           <div>
             <label class="block text-gray-700 font-medium">Description</label>

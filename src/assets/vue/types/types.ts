@@ -12,6 +12,7 @@ export interface Event {
   title: string; // Titre de l'événement
   date: string; // Date de l'événement
   time: string; // Heure de l'événement
+  deadlineDate?: string; // Date limite d'inscription (optionnelle)
   description?: string; // Description de l'événement (optionnelle)
   location: string; // Lieu de l'événement
   image?: string | null; // Image de l'événement (optionnelle)

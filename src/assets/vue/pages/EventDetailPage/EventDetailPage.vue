@@ -94,6 +94,7 @@ interface EventUpdateData {
   eventColor?: string;
   eventDate?: string;
   eventTime?: string;
+  deadline?: string;
 }
 
 interface EventParticipantJoinData {
@@ -119,18 +120,25 @@ onMounted(async () => {
         }
 
         event.value!.isPublic = updatedEventData.eventIsPublic === 'true'
-        event.value!.title = updatedEventData.eventTitle
-        event.value!.location = updatedEventData.eventLocation
-        event.value!.description = updatedEventData.eventDescription
-        event.value!.image = updatedEventData.eventImage
-        event.value!.color = updatedEventData.eventColor
-        event.value!.date = updatedEventData.eventDate
-        event.value!.time = updatedEventData.eventTime
-        if (updatedEventData.deadlineDate) {
-          event.value!.deadlineDate = updatedEventData.deadlineDate
+        event.value!.title = updatedEventData.eventTitle || event.value!.title
+        event.value!.location = updatedEventData.eventLocation || event.value!.location
+        event.value!.description = updatedEventData.eventDescription || event.value!.description
+        event.value!.image = updatedEventData.eventImage || event.value!.image
+        event.value!.color = updatedEventData.eventColor || event.value!.color
+        event.value!.date = updatedEventData.eventDate || event.value!.date
+        event.value!.time = updatedEventData.eventTime || event.value!.time
+
+        // Gestion de la deadline
+        if (updatedEventData.deadline) {
+          event.value!.deadline = updatedEventData.deadline
+          // Parse et met à jour le form data
+          const deadlineDateTime = new Date(updatedEventData.deadline)
+          formData.value.deadlineDate = deadlineDateTime.toISOString().split('T')[0]
+          formData.value.deadlineTime = deadlineDateTime.toTimeString().substring(0, 5)
         }
-        formData.value.eventColor = updatedEventData.eventColor
-        event.value!.title = updatedEventData.eventTitle
+
+        formData.value.eventColor = updatedEventData.eventColor || event.value!.color
+        event.value!.title = updatedEventData.eventTitle || event.value!.title
       }
     }
   })
@@ -351,7 +359,18 @@ async function toggleParticipation() {
     showNotification(notifMessage, 'success')
   } catch (error) {
     console.error('Erreur lors de la mise à jour de la participation :', error)
-    showNotification(error?.message || 'Une erreur est survenue. Veuillez réessayer.', 'error')
+
+    // Gestion de l'erreur de deadline
+    if (axios.isAxiosError(error) && error.response?.data?.message) {
+      const errorMessage = error.response.data.message
+      if (errorMessage.includes('La date limite pour rejoindre cet événement est dépassée')) {
+        showNotification('La période d\'inscription pour cet événement est terminée.', 'error')
+        return
+      }
+      showNotification(errorMessage, 'error')
+    } else {
+      showNotification('Une erreur est survenue. Veuillez réessayer.', 'error')
+    }
   } finally {
     isLoading.value = false
   }

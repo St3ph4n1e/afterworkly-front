@@ -50,6 +50,7 @@ const formData = ref({
   eventDate: '',
   eventTime: '',
   deadlineDate: '',
+  deadlineTime: '',
   eventLocation: '',
   eventImage: null as File | null,
   eventColor: '#f9f9f9',
@@ -183,7 +184,17 @@ onMounted(async () => {
     formData.value.eventName = fetchedEvent.title
     formData.value.eventDate = fetchedEvent.date
     formData.value.eventTime = fetchedEvent.time
-    formData.value.deadlineDate = fetchedEvent.deadlineDate || ''
+
+    // Parse deadline datetime (format: "2027-01-04T12:00")
+    if (fetchedEvent.deadline) {
+      const deadlineDateTime = new Date(fetchedEvent.deadline)
+      formData.value.deadlineDate = deadlineDateTime.toISOString().split('T')[0]
+      formData.value.deadlineTime = deadlineDateTime.toTimeString().substring(0, 5)
+    } else {
+      formData.value.deadlineDate = ''
+      formData.value.deadlineTime = ''
+    }
+
     formData.value.eventLocation = fetchedEvent.location
     formData.value.eventDescription = fetchedEvent.description
     formData.value.eventColor = fetchedEvent.color || '#f9f9f9'
@@ -261,6 +272,14 @@ const isCurrentUserParticipant = computed(() => {
 const canAddMemories = computed(() => {
   if (!currentUserId.value || !event.value) return false
   return isCurrentUserParticipant.value || currentUserId.value === event.value.creator
+})
+
+const isRegistrationOpen = computed(() => {
+  if (!event.value?.deadline) return true
+
+  const now = new Date()
+  const deadlineDateTime = new Date(event.value.deadline)
+  return deadlineDateTime >= now
 })
 
 // Fonction pour afficher la notification
@@ -353,20 +372,23 @@ async function triggerSaveEvent() {
 
   // Validation de la date limite d'inscription
   if (formData.value.deadlineDate && formData.value.deadlineDate !== '') {
-    const today = new Date().toISOString().split('T')[0]
-    const deadlineDate = formData.value.deadlineDate
-    const eventDate = formData.value.eventDate
+    const today = new Date()
+    const eventDateTime = new Date(`${formData.value.eventDate}T${formData.value.eventTime}`)
 
-    console.log(deadlineDate, today, eventDate)
+    // Combine deadline date and time
+    const deadlineTime = formData.value.deadlineTime || formData.value.eventTime
+    const deadlineDateTime = new Date(`${formData.value.deadlineDate}T${deadlineTime}`)
+
+    console.log(deadlineDateTime, today, eventDateTime)
 
     // Vérifier que la deadline n'est pas dans le passé
-    if (deadlineDate < today) {
+    if (deadlineDateTime < today) {
       showNotification('La date limite d\'inscription ne peut pas être dans le passé.', 'error')
       return
     }
 
     // Vérifier que la deadline n'est pas après la date de l'événement
-    if (deadlineDate > eventDate) {
+    if (deadlineDateTime > eventDateTime) {
       showNotification('La date limite d\'inscription ne peut pas être postérieure à la date de l\'événement.', 'error')
       return
     }
@@ -379,11 +401,17 @@ async function triggerSaveEvent() {
   updatedEventData.append('title', formData.value.eventName)
   updatedEventData.append('date', formData.value.eventDate)
   updatedEventData.append('time', formData.value.eventTime)
+
+  // Send combined deadline datetime
   if (formData.value.deadlineDate && formData.value.deadlineDate !== '') {
-    updatedEventData.append('deadlineDate', formData.value.deadlineDate)
+    const deadlineTime = formData.value.deadlineTime || formData.value.eventTime
+    const deadline = `${formData.value.deadlineDate}T${deadlineTime}`
+    updatedEventData.append('deadline', deadline)
   } else {
-    updatedEventData.append('deadlineDate', formData.value.eventDate)
+    const deadline = `${formData.value.eventDate}T${formData.value.eventTime}`
+    updatedEventData.append('deadline', deadline)
   }
+
   updatedEventData.append('description', formData.value.eventDescription)
   updatedEventData.append('location', formData.value.eventLocation)
   updatedEventData.append('color', formData.value.eventColor)
@@ -405,7 +433,14 @@ async function triggerSaveEvent() {
     event.value.title = formData.value.eventName
     event.value.date = formData.value.eventDate
     event.value.time = formData.value.eventTime
-    event.value.deadlineDate = formData.value.deadlineDate || undefined
+
+    if (formData.value.deadlineDate) {
+      const deadlineTime = formData.value.deadlineTime || formData.value.eventTime
+      event.value.deadline = `${formData.value.deadlineDate}T${deadlineTime}`
+    } else {
+      event.value.deadline = undefined
+    }
+
     event.value.description = formData.value.eventDescription
     event.value.location = formData.value.eventLocation
     event.value.isPublic = formData.value.eventIsPublic
@@ -846,9 +881,9 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
                 <i class="fas fa-clock"></i>
                 <span class="font-medium">{{ event.time }}</span>
               </p>
-              <p v-if="event.deadlineDate" class="flex items-center space-x-2">
+              <p v-if="event.deadline" class="flex items-center space-x-2">
                 <i class="fas fa-hourglass-half"></i>
-                <span class="font-medium">Inscription jusqu'au {{ formatDate(event.deadlineDate, 'DD/MM/YYYY') }}</span>
+                <span class="font-medium">Inscription jusqu'au {{ formatDate(event.deadline.split('T')[0], 'DD/MM/YYYY') }} à {{ event.deadline.split('T')[1] }}</span>
               </p>
             </div>
             <p class="text-gray-700 mt-4">{{ event.description }}</p>
@@ -859,7 +894,7 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
               :class="`px-4 py-2 rounded-lg font-semibold transition ${participationButtonStyle}`"
               :disabled="isLoading"
               @click="toggleParticipation"
-              v-if="currentUserId !== event.creator && attendanceConfirmed !== 'pending'"
+              v-if="currentUserId !== event.creator && attendanceConfirmed !== 'pending' && isRegistrationOpen"
             >
               <template v-if="attendanceConfirmed === 'confirmed'">Quitter</template>
               <template v-else>Rejoindre</template>
@@ -869,6 +904,7 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
                 class="px-4 py-2 rounded-lg font-semibold transition bg-green-500 text-white hover:bg-green-600"
                 :disabled="isLoading"
                 @click="toggleParticipation"
+                v-if="isRegistrationOpen"
               >
                 Confirmer ma présence
               </button>
@@ -879,6 +915,10 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
               >
                 Quitter
               </button>
+            </div>
+            <div v-if="currentUserId !== event.creator && !isRegistrationOpen && attendanceConfirmed === 'not_joined'" class="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded-lg">
+              <i class="fas fa-exclamation-triangle mr-2"></i>
+              La période d'inscription est terminée
             </div>
           </div>
           <div v-if="event.participants && event.participants.length > 0">
@@ -1001,6 +1041,14 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
             <input
               type="date"
               v-model="formData.deadlineDate"
+              class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label class="block text-gray-700 font-medium">Heure limite d'inscription</label>
+            <input
+              type="time"
+              v-model="formData.deadlineTime"
               class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
           </div>
@@ -1355,5 +1403,3 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
   </div>
 </template>
 <style src="./EventDetailPage.css" scoped></style>
-
-<!-- todo : fix preview image -->

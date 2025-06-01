@@ -131,10 +131,10 @@ onMounted(async () => {
         // Gestion de la deadline
         if (updatedEventData.deadline) {
           event.value!.deadline = updatedEventData.deadline
-          // Parse et met à jour le form data
-          const deadlineDateTime = new Date(updatedEventData.deadline)
-          formData.value.deadlineDate = deadlineDateTime.toISOString().split('T')[0]
-          formData.value.deadlineTime = deadlineDateTime.toTimeString().substring(0, 5)
+          // Parse et met à jour le form data - avoid timezone conversion
+          const [datePart, timePart] = updatedEventData.deadline.replace('Z', '').split('T')
+          formData.value.deadlineDate = datePart
+          formData.value.deadlineTime = timePart.substring(0, 5) // Extract HH:MM from HH:MM:SS.000Z
         }
 
         formData.value.eventColor = updatedEventData.eventColor || event.value!.color
@@ -193,11 +193,10 @@ onMounted(async () => {
     formData.value.eventDate = fetchedEvent.date
     formData.value.eventTime = fetchedEvent.time
 
-    // Parse deadline datetime (format: "2027-01-04T12:00")
     if (fetchedEvent.deadline) {
-      const deadlineDateTime = new Date(fetchedEvent.deadline)
-      formData.value.deadlineDate = deadlineDateTime.toISOString().split('T')[0]
-      formData.value.deadlineTime = deadlineDateTime.toTimeString().substring(0, 5)
+      const [datePart, timePart] = fetchedEvent.deadline.split('T')
+      formData.value.deadlineDate = datePart
+      formData.value.deadlineTime = timePart.substring(0, 5) // Pour extract HH:MM
     } else {
       formData.value.deadlineDate = ''
       formData.value.deadlineTime = ''
@@ -514,9 +513,6 @@ function copyInviteLink() {
 // Fonction pour envoyer un email d'invitation
 async function sendInviteEmail(email: string) {
   try {
-    console.log("current event")
-    console.log(event.value)
-    console.log("current event")
     if (event.value?.id) {
       await sendInviataionEmail(email, event.value.id).then(
         () => {

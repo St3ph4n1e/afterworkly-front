@@ -400,8 +400,6 @@ async function triggerSaveEvent() {
     const deadlineTime = formData.value.deadlineTime || formData.value.eventTime
     const deadlineDateTime = new Date(`${formData.value.deadlineDate}T${deadlineTime}`)
 
-    console.log(deadlineDateTime, today, eventDateTime)
-
     // Vérifier que la deadline n'est pas dans le passé
     if (deadlineDateTime < today) {
       showNotification('La date limite d\'inscription ne peut pas être dans le passé.', 'error')
@@ -672,7 +670,6 @@ async function fetchEventMemories(eventId: string) {
     if (eventId && eventId !== '') {
       const fetchedMemories = await getEventMemories(eventId)
       memories.value = fetchedMemories
-      console.log(memories.value)
     } else {
       console.error("Erreur lors de la récupération des souvenirs : Memory ID is empty or null")
       memories.value = []

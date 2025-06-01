@@ -702,7 +702,7 @@ function resetMemoryForm() {
 }
 
 async function submitNewMemory() {
-  if (!event.value?.memoryId || !newMemoryText.value || !newMemoryImage.value) {
+  if (!newMemoryText.value || !newMemoryImage.value) {
     showNotification("L'image et le texte sont requis", 'error')
     return
   }

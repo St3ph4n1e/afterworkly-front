@@ -150,7 +150,6 @@ onMounted(async () => {
     if (eventData) {
       if (eventData.eventId === eventId) {
         if (event.value) {
-          console.log(eventData.participants)
           event.value!.participants = JSON.parse(eventData.participants)
         }
       }

@@ -348,6 +348,7 @@ function toggleDay(day: string) {
                 :location="event.location"
                 :date="event.date"
                 :time="event.time"
+                :deadline="event.deadline || ''"
                 :image="event.image ?? undefined"
               />
             </SwiperSlide>
@@ -368,6 +369,7 @@ function toggleDay(day: string) {
                 :location="event.location"
                 :date="event.date"
                 :time="event.time"
+                :deadline="event.deadline || ''"
                 :image="event.image ?? undefined"
               />
             </SwiperSlide>

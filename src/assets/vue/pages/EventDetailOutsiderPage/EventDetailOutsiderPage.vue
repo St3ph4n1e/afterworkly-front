@@ -317,6 +317,10 @@ async function quitEvent() {
                 <i class="fas fa-clock"></i>
                 <span class="font-medium">{{ event.time }}</span>
               </p>
+              <p v-if="event.deadline" class="flex items-center space-x-2">
+                <i class="fas fa-hourglass-half"></i>
+                <span class="font-medium">Inscription jusqu'au {{ formatDate(event.deadline.split('T')[0], 'DD/MM/YYYY') }} à {{ event.deadline.split('T')[1] }}</span>
+              </p>
             </div>
             <p class="text-gray-700 mt-4">{{ event.description }}</p>
           </div>

@@ -186,6 +186,7 @@ onUnmounted(() => {
             :location="event.location"
             :date="event.date"
             :time="event.time"
+            :deadline="event.deadline || ''"
             :image="event.image ?? undefined"
           />
         </template>
@@ -201,6 +202,7 @@ onUnmounted(() => {
             :location="event.location"
             :date="event.date"
             :time="event.time"
+            :deadline="event.deadline || ''"
             :image="event.image ?? undefined"
           />
           <p v-if="upcomingEvents.length === 0" class="text-center text-gray-500 col-span-full">
@@ -219,6 +221,7 @@ onUnmounted(() => {
             :location="event.location"
             :date="event.date"
             :time="event.time"
+            :deadline="event.deadline || ''"
             :image="event.image ?? undefined"
           />
           <p v-if="pastEvents.length === 0" class="text-center text-gray-500 col-span-full">
@@ -237,6 +240,7 @@ onUnmounted(() => {
             :location="event.location"
             :date="event.date"
             :time="event.time"
+            :deadline="event.deadline || ''"
             :image="event.image ?? undefined"
           />
           <p v-if="myEvents.length === 0" class="text-center text-gray-500 col-span-full">

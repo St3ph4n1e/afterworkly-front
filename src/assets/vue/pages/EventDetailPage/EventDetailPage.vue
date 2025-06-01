@@ -1051,21 +1051,23 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
               />
             </div>
           </div>
-          <div>
-            <label class="block text-gray-700 font-medium">Date limite d'inscription</label>
-            <input
-              type="date"
-              v-model="formData.deadlineDate"
-              class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            />
-          </div>
-          <div>
-            <label class="block text-gray-700 font-medium">Heure limite d'inscription</label>
-            <input
-              type="time"
-              v-model="formData.deadlineTime"
-              class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            />
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-gray-700 font-medium">Date limite d'inscription</label>
+              <input
+                type="date"
+                v-model="formData.deadlineDate"
+                class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label class="block text-gray-700 font-medium">Heure limite d'inscription</label>
+              <input
+                type="time"
+                v-model="formData.deadlineTime"
+                class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              />
+            </div>
           </div>
           <div>
             <label class="block text-gray-700 font-medium">Description</label>

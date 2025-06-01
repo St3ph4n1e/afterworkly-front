@@ -17,6 +17,7 @@ declare module 'vue' {
     ModalComponent: typeof import('./assets/vue/components/ModalComponent/ModalComponent.vue')['default']
     NotificationComponent: typeof import('./assets/vue/components/NotificationComponent/NotificationComponent.vue')['default']
     ParticipantListComponent: typeof import('./assets/vue/components/ParticipantListComponent/ParticipantListComponent.vue')['default']
+    ParticipantProfileModal: typeof import('./assets/vue/components/ParticipantProfileModal/ParticipantProfileModal.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     TagComponent: typeof import('./assets/vue/components/TagComponent/TagComponent.vue')['default']

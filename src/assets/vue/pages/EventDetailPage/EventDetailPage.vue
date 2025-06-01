@@ -45,6 +45,9 @@ const isEnd = ref(false)
 const memories = ref<Memory[]>([])
 const isLoadingMemories = ref(false)
 
+const showParticipantModal = ref(false)
+const selectedParticipant = ref(null)
+
 const formData = ref({
   eventName: '',
   eventDate: '',
@@ -625,6 +628,16 @@ async function handleRemoveParticipant(userId: string, event: Event, username: s
   }
 }
 
+function handleParticipantClick(participant: any) {
+  selectedParticipant.value = participant
+  showParticipantModal.value = true
+}
+
+function closeParticipantModal() {
+  showParticipantModal.value = false
+  selectedParticipant.value = null
+}
+
 function onSwiper(swiper: SwiperType) {
   swiperInstance.value = swiper;
   updateNavigationState();
@@ -967,6 +980,7 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
                     :eventId="event.id"
                     :isCreator="event.creator === currentUserId"
                     @participantRemoved="(id) => handleRemoveParticipant(id, event, participant.username)"
+                    @participantClicked="handleParticipantClick"
                   />
                 </div>
               </div>
@@ -1413,6 +1427,12 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
         v-if="notification.visible"
         :message="notification.message"
         :type="notification.type"
+      />
+
+      <ParticipantProfileModal
+        :isVisible="showParticipantModal"
+        :participant="selectedParticipant"
+        @close="closeParticipantModal"
       />
     </main>
 

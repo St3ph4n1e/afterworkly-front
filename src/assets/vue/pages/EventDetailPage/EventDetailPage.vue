@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { formatDate } from '@/utils/date'
 import { getEventById, toggleParticipantStatus, deleteEvent, updateEvent, sendInviataionEmail, generateJoinLink, getEventMemories, createEventMemory, deleteMemory, updateMemory } from '@/axios/api'
@@ -162,6 +162,50 @@ onMounted(async () => {
         showNotification(eventDeletedData.redirectMessage, 'error')
         setTimeout(() => router.push('/'), 3000)
       }
+    }
+  })
+
+  socket.on('memory-created', (memoryData: { eventId: string, memories: Memory[] }) => {
+    if (memoryData && memoryData.eventId && memoryData.memories) {
+      if (memoryData.eventId === eventId) {
+
+        // Force la réactivité en utilisant nextTick et en recréant le tableau
+        nextTick(() => {
+          memories.value = [...memoryData.memories]
+          console.log('✅ Nouveau nombre de souvenirs:', memories.value.length)
+
+          // Force la mise à jour du swiper après le changement des données
+          updateSwiperAfterDataChange()
+        })
+      } else {
+        console.log('EventId ne correspond pas')
+      }
+    } else {
+      console.log('Données invalides reçues:', memoryData)
+    }
+  })
+
+  // Gestionnaire pour la mise à jour des souvenirs
+  socket.on('memory-updated', (memoryData: { eventId: string, memories: Memory[] }) => {
+    console.log('🔄 Socket memory-updated reçu:', memoryData)
+    if (memoryData && memoryData.eventId && memoryData.memories && memoryData.eventId === eventId) {
+      nextTick(() => {
+        memories.value = [...memoryData.memories]
+        console.log('✅ Souvenirs mis à jour:', memories.value.length)
+        updateSwiperAfterDataChange()
+      })
+    }
+  })
+
+  // Gestionnaire pour la suppression des souvenirs
+  socket.on('memory-deleted', (memoryData: { eventId: string, memories: Memory[] }) => {
+    console.log('🔄 Socket memory-deleted reçu:', memoryData)
+    if (memoryData && memoryData.eventId && memoryData.memories && memoryData.eventId === eventId) {
+      nextTick(() => {
+        memories.value = [...memoryData.memories]
+        console.log('✅ Souvenir supprimé, nouveau total:', memories.value.length)
+        updateSwiperAfterDataChange()
+      })
     }
   })
 
@@ -550,6 +594,9 @@ onUnmounted(() => {
     socket.off('event-update')
     socket.off('event-participant-join')
     socket.off('event-delete')
+    socket.off('memory-created')
+    socket.off('memory-updated')
+    socket.off('memory-deleted')
   }
 })
 
@@ -778,6 +825,22 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
   } catch (error) {
     console.error("Erreur lors de la modification du souvenir:", error)
     showNotification("Impossible de modifier le souvenir", 'error')
+  }
+}
+
+function updateSwiperAfterDataChange() {
+  // Force la mise à jour du swiper après changement des données
+  if (swiperInstance.value) {
+    // Utilise nextTick pour attendre que Vue mette à jour le DOM
+    nextTick(() => {
+      // Force la mise à jour du swiper
+      swiperInstance.value?.update()
+
+      // Met à jour l'état des boutons de navigation du swiper (précédent/suivant)
+      updateNavigationState()
+
+      console.log('🔄 Swiper mis à jour après changement des données')
+    })
   }
 }
 

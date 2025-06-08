@@ -30,8 +30,8 @@ onMounted(async () => {
     isLoading.value = true;
 
     await getEvents().then(
-      eventsRespons => {
-        events.value = eventsRespons
+      eventsResponse => {
+        events.value = eventsResponse
       }
     )
 
@@ -44,8 +44,12 @@ onMounted(async () => {
 
   socket = setupSocket();
 
-  socket.on('event-update-all-events', (updatedEventData) =>  {
-    events.value = updatedEventData
+  socket.on('event-update-all-events', async () =>  {
+    await getEvents().then(
+      eventsResponse => {
+        events.value = eventsResponse
+      }
+    )
   })
 
 });

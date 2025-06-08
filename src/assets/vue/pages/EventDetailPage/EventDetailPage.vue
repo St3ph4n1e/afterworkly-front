@@ -211,7 +211,6 @@ onMounted(async () => {
   })
 
   socket.on('user-profile-update', (userData: UserProfileUpdateData) => {
-    console.log('userData', userData)
     if (userData && userData.eventId === eventId && userData.updatedUserData) {
       if (event.value && event.value.participants) {
         const updatedParticipants = event.value.participants.map(participant => {

@@ -45,8 +45,20 @@ const isEnd = ref(false)
 const memories = ref<Memory[]>([])
 const isLoadingMemories = ref(false)
 
+interface ExtendedParticipant {
+  userId: string;
+  username: string;
+  status: 'confirmed' | 'pending' | string;
+  photo?: string | null;
+  bio?: string;
+  availability?: string[];
+  preferences?: any[];
+  banner?: string;
+  type : 'member' | 'outsider' | string;
+}
+
 const showParticipantModal = ref(false)
-const selectedParticipant = ref(null)
+const selectedParticipant = ref<ExtendedParticipant | null>(null)
 
 const formData = ref({
   eventName: '',
@@ -110,6 +122,19 @@ interface EventDeleteData {
   redirectMessage: string;
 }
 
+interface UserProfileUpdateData {
+  eventId: string;
+  updatedUserData: {
+    userId: string;
+    username: string;
+    photo: string;
+    bio: string;
+    availability: string[];
+    preferences: any[];
+    banner?: string;
+  };
+}
+
 onMounted(async () => {
   const eventId = route.params.id as string
 
@@ -165,7 +190,7 @@ onMounted(async () => {
     }
   })
 
-  socket.on('memory-created', (memoryData: { eventId: string, memories: Memory[] }) => {
+  socket.on('memory-changed', (memoryData: { eventId: string, memories: Memory[] }) => {
     if (memoryData && memoryData.eventId && memoryData.memories) {
       if (memoryData.eventId === eventId) {
 
@@ -185,29 +210,39 @@ onMounted(async () => {
     }
   })
 
-  // Gestionnaire pour la mise à jour des souvenirs
-  socket.on('memory-updated', (memoryData: { eventId: string, memories: Memory[] }) => {
-    console.log('🔄 Socket memory-updated reçu:', memoryData)
-    if (memoryData && memoryData.eventId && memoryData.memories && memoryData.eventId === eventId) {
-      nextTick(() => {
-        memories.value = [...memoryData.memories]
-        console.log('✅ Souvenirs mis à jour:', memories.value.length)
-        updateSwiperAfterDataChange()
-      })
-    }
-  })
+  socket.on('user-profile-update', (userData: UserProfileUpdateData) => {
+    if (userData && userData.eventId === eventId && userData.updatedUserData) {
+      if (event.value && event.value.participants) {
+        const updatedParticipants = event.value.participants.map(participant => {
+          if (participant.userId === userData.updatedUserData.userId) {
+            const updatedParticipant = {
+              ...participant,
+              username: userData.updatedUserData.username,
+              photo: userData.updatedUserData.photo,
+              bio: userData.updatedUserData.bio,
+              availability: userData.updatedUserData.availability,
+              preferences: userData.updatedUserData.preferences
+            }
 
-  // Gestionnaire pour la suppression des souvenirs
-  socket.on('memory-deleted', (memoryData: { eventId: string, memories: Memory[] }) => {
-    console.log('🔄 Socket memory-deleted reçu:', memoryData)
-    if (memoryData && memoryData.eventId && memoryData.memories && memoryData.eventId === eventId) {
-      nextTick(() => {
-        memories.value = [...memoryData.memories]
-        console.log('✅ Souvenir supprimé, nouveau total:', memories.value.length)
-        updateSwiperAfterDataChange()
-      })
+            // Mis a jour pour la dialog avec les infos du user
+            if (selectedParticipant.value && selectedParticipant.value.userId === userData.updatedUserData.userId) {
+              selectedParticipant.value = updatedParticipant as ExtendedParticipant
+            }
+
+            return updatedParticipant
+          }
+          // Retourne le participant original si l'id ne correspond pas
+          return participant
+        })
+
+        // Update tout l'objet event pour forcer la réactivité
+        event.value = {
+          ...event.value,
+          participants: updatedParticipants
+        }
+      }
     }
-  })
+})
 
   // Récupérer l'utilisateur connecté depuis le localStorage
   const storedUser = localStorage.getItem('user')
@@ -526,7 +561,7 @@ async function triggerDeleteEvent() {
   //Essaie de suppression d'event
   try {
     // Appel de l'api de suppression de l'event
-    await deleteEvent(route.params.id).then(() => {
+    await deleteEvent(route.params.id as string).then(() => {
       notification.value = {
         message: 'Événement supprimé avec succès !',
         type: 'success',
@@ -594,7 +629,7 @@ onUnmounted(() => {
     socket.off('event-update')
     socket.off('event-participant-join')
     socket.off('event-delete')
-    socket.off('memory-created')
+    socket.off('memory-changed')
     socket.off('memory-updated')
     socket.off('memory-deleted')
   }

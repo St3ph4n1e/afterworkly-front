@@ -172,13 +172,34 @@ onMounted(async () => {
   })
 
   socket.on('event-participant-join', (eventData: EventParticipantJoinData) => {
-    if (eventData) {
-      if (eventData.eventId === eventId) {
-        if (event.value) {
-          event.value!.participants = JSON.parse(eventData.participants)
+
+    if (eventData && eventData.eventId === eventId) {
+      if (event.value) {
+        event.value!.participants = JSON.parse(eventData.participants)
+
+        const participant = JSON.parse(eventData.participants).find(
+          (p) => p.userId === currentUserId.value
+        )
+
+        // Initialisation de l'état de participation
+        if (participant) {
+          if (participant.status === 'confirmed') {
+            attendanceConfirmed.value = 'confirmed'
+            console.log("confirmed");
+          } else if (participant.status === 'pending') {
+            attendanceConfirmed.value = 'pending'
+            console.log("pending");
+          } else {
+            attendanceConfirmed.value = 'not_joined'
+            console.log("not_joined");
+          }
+        } else {
+          attendanceConfirmed.value = 'not_joined'
+          console.log("not_joined");
         }
       }
     }
+
   })
 
   socket.on('event-delete', (eventDeletedData: EventDeleteData) => {
@@ -820,6 +841,9 @@ async function submitNewMemory() {
 
     await fetchEventMemories(route.params.id as string)
 
+    // Forcer la mise à jour du Swiper après l'ajout d'un souvenir
+    updateSwiperAfterDataChange()
+
     showNotification("Souvenir ajouté avec succès ! 📸", 'success')
     resetMemoryForm()
   } catch (error) {
@@ -841,6 +865,10 @@ async function confirmDeleteMemory() {
   try {
     await deleteMemory(memoryToDelete.value)
     await fetchEventMemories(route.params.id as string)
+
+    // Forcer la mise à jour du Swiper après la suppression d'un souvenir
+    updateSwiperAfterDataChange()
+
     showNotification("Souvenir supprimé avec succès", 'success')
   } catch (error) {
     console.error("Erreur lors de la suppression du souvenir:", error)
@@ -867,6 +895,10 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
 
     await updateMemory(memoryId, formData)
     await fetchEventMemories(route.params.id as string)
+
+    // Forcer la mise à jour du Swiper après la modification d'un souvenir
+    updateSwiperAfterDataChange()
+
     showNotification("Souvenir modifié avec succès", 'success')
   } catch (error) {
     console.error("Erreur lors de la modification du souvenir:", error)

@@ -40,9 +40,9 @@ onMounted(async () => {
 
   socket = setupSocket();
 
-  socket.on('event-update-dashboard', async () => {
-      const response = await getEvents({ page: 1, limit: 3 });
-      events.value = response;
+  socket.on('event-update', async () => {
+    const response = await getEvents({ page: 1, limit: 3 });
+    events.value = response;
   })
 
 });
@@ -58,7 +58,7 @@ function createEvent() {
 
 onUnmounted(() => {
   if (socket) {
-    socket.off('event-update-dashboard')
+    socket.off('event-update')
   }
 })
 </script>

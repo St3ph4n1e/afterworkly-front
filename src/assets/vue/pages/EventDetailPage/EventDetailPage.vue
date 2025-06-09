@@ -642,32 +642,42 @@ async function quitFromPending() {
   isLoading.value = true
 
   try {
-    await toggleParticipantStatus(event.value.id, { isJoining: false });
+    await toggleParticipantStatus(event.value.id, { isJoining: false }).then(
+      async (response) => {
+        if (response.redirect) {
+          router.push('/')
+          return
+        } else {
 
-    // Re-fetch event to get fresh data
-    const updatedEvent = await getEventById(event.value.id)
-    event.value = {
-      ...updatedEvent,
-      id: updatedEvent._id,
-    }
+          if (!event.value?.id) return
+          // Re-fetch event to get fresh data
+          const updatedEvent = await getEventById(event.value.id)
+            event.value = {
+            ...updatedEvent,
+            id:  updatedEvent._id,
+          }
 
-    // Update attendanceConfirmed state based on new event data
-    const participant = updatedEvent.participants.find(
-      (p) => p.userId === currentUserId.value
-    )
-    if (participant) {
-      if (participant.status === 'confirmed') {
-        attendanceConfirmed.value = 'confirmed'
-      } else if (participant.status === 'pending') {
-        attendanceConfirmed.value = 'pending'
-      } else {
-        attendanceConfirmed.value = 'not_joined'
+          // Update attendanceConfirmed state based on new event data
+          const participant = updatedEvent.participants.find(
+            (p) => p.userId === currentUserId.value
+          )
+          if (participant) {
+            if (participant.status === 'confirmed') {
+              attendanceConfirmed.value = 'confirmed'
+            } else if (participant.status === 'pending') {
+              attendanceConfirmed.value = 'pending'
+            } else {
+              attendanceConfirmed.value = 'not_joined'
+            }
+          } else {
+            attendanceConfirmed.value = 'not_joined'
+          }
+          showNotification('Vous avez quitté l\'événement.', 'success')
+        }
       }
-    } else {
-      attendanceConfirmed.value = 'not_joined'
-    }
+    )
 
-    showNotification('Vous avez quitté l\'événement.', 'success')
+
   } catch (error) {
     console.error('Erreur lors de la mise à jour de la participation :', error)
     showNotification(error?.message || 'Une erreur est survenue. Veuillez réessayer.', 'error')

@@ -29,6 +29,9 @@ const notification = ref<{ message: string; type: 'success' | 'error'; visible: 
 })
 const showQuitModal = ref(false)
 
+const showParticipantModal = ref(false)
+const selectedParticipant = ref(null)
+
 const formData = ref({
   eventName: '',
   eventDate: '',
@@ -204,7 +207,6 @@ const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY')
 async function quitEvent() {
   if (!event.value) return
 
-
   const user = localStorage.getItem('outsider')
 
   if (user !== null) {
@@ -219,8 +221,6 @@ async function quitEvent() {
     )
   }
 
-
-
   try{
 
   } catch (error) {
@@ -229,6 +229,16 @@ async function quitEvent() {
   } finally {
     isLoading.value = false
   }
+}
+
+function handleParticipantClick(participant: any) {
+  selectedParticipant.value = participant
+  showParticipantModal.value = true
+}
+
+function closeParticipantModal() {
+  showParticipantModal.value = false
+  selectedParticipant.value = null
 }
 
 </script>
@@ -317,6 +327,10 @@ async function quitEvent() {
                 <i class="fas fa-clock"></i>
                 <span class="font-medium">{{ event.time }}</span>
               </p>
+              <p v-if="event.deadline" class="flex items-center space-x-2">
+                <i class="fas fa-hourglass-half"></i>
+                <span class="font-medium">Inscription jusqu'au {{ formatDate(event.deadline.split('T')[0], 'DD/MM/YYYY') }} à {{ event.deadline.split('T')[1] }}</span>
+              </p>
             </div>
             <p class="text-gray-700 mt-4">{{ event.description }}</p>
           </div>
@@ -363,6 +377,7 @@ async function quitEvent() {
                     undecided-class="text-yellow-500 italic"
                     :eventId="eventId"
                     :isCreator="false"
+                    @participantClicked="handleParticipantClick"
                   />
                 </div>
               </div>
@@ -443,6 +458,12 @@ async function quitEvent() {
         <p class="text-gray-700">Cette action est irréversible.</p>
       </div>
     </ModalComponent>
+
+    <ParticipantProfileModal
+      :isVisible="showParticipantModal"
+      :participant="selectedParticipant"
+      @close="closeParticipantModal"
+    />
   </div>
 </template>
 

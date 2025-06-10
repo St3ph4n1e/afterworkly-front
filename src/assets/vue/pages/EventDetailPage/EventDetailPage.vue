@@ -45,10 +45,15 @@ const isEnd = ref(false)
 const memories = ref<Memory[]>([])
 const isLoadingMemories = ref(false)
 
+const showParticipantModal = ref(false)
+const selectedParticipant = ref(null)
+
 const formData = ref({
   eventName: '',
   eventDate: '',
   eventTime: '',
+  deadlineDate: '',
+  deadlineTime: '',
   eventLocation: '',
   eventImage: null as File | null,
   eventColor: '#f9f9f9',
@@ -92,6 +97,7 @@ interface EventUpdateData {
   eventColor?: string;
   eventDate?: string;
   eventTime?: string;
+  deadline?: string;
 }
 
 interface EventParticipantJoinData {
@@ -124,7 +130,17 @@ onMounted(async () => {
         event.value!.color = updatedEventData.eventColor || event.value!.color
         event.value!.date = updatedEventData.eventDate || event.value!.date
         event.value!.time = updatedEventData.eventTime || event.value!.time
-        formData.value.eventColor = updatedEventData.eventColor || formData.value.eventColor
+
+        // Gestion de la deadline
+        if (updatedEventData.deadline) {
+          event.value!.deadline = updatedEventData.deadline
+          // Parse et met à jour le form data - avoid timezone conversion
+          const [datePart, timePart] = updatedEventData.deadline.replace('Z', '').split('T')
+          formData.value.deadlineDate = datePart
+          formData.value.deadlineTime = timePart.substring(0, 5) // Extract HH:MM from HH:MM:SS.000Z
+        }
+
+        formData.value.eventColor = updatedEventData.eventColor || event.value!.color
         event.value!.title = updatedEventData.eventTitle || event.value!.title
       }
     }
@@ -134,7 +150,6 @@ onMounted(async () => {
     if (eventData) {
       if (eventData.eventId === eventId) {
         if (event.value) {
-          console.log(eventData.participants)
           event.value!.participants = JSON.parse(eventData.participants)
         }
       }
@@ -179,6 +194,16 @@ onMounted(async () => {
     formData.value.eventName = fetchedEvent.title
     formData.value.eventDate = fetchedEvent.date
     formData.value.eventTime = fetchedEvent.time
+
+    if (fetchedEvent.deadline) {
+      const [datePart, timePart] = fetchedEvent.deadline.split('T')
+      formData.value.deadlineDate = datePart
+      formData.value.deadlineTime = timePart.substring(0, 5) // Pour extract HH:MM
+    } else {
+      formData.value.deadlineDate = ''
+      formData.value.deadlineTime = ''
+    }
+
     formData.value.eventLocation = fetchedEvent.location
     formData.value.eventDescription = fetchedEvent.description
     formData.value.eventColor = fetchedEvent.color || '#f9f9f9'
@@ -258,6 +283,14 @@ const canAddMemories = computed(() => {
   return isCurrentUserParticipant.value || currentUserId.value === event.value.creator
 })
 
+const isRegistrationOpen = computed(() => {
+  if (!event.value?.deadline) return true
+
+  const now = new Date()
+  const deadlineDateTime = new Date(event.value.deadline)
+  return deadlineDateTime >= now
+})
+
 // Fonction pour afficher la notification
 function showNotification(message: string, type: 'success' | 'error') {
   notification.value = { message, type, visible: true }
@@ -327,7 +360,18 @@ async function toggleParticipation() {
     showNotification(notifMessage, 'success')
   } catch (error) {
     console.error('Erreur lors de la mise à jour de la participation :', error)
-    showNotification(error?.message || 'Une erreur est survenue. Veuillez réessayer.', 'error')
+
+    // Gestion de l'erreur de deadline
+    if (axios.isAxiosError(error) && error.response?.data?.message) {
+      const errorMessage = error.response.data.message
+      if (errorMessage.includes('La date limite pour rejoindre cet événement est dépassée')) {
+        showNotification('La période d\'inscription pour cet événement est terminée.', 'error')
+        return
+      }
+      showNotification(errorMessage, 'error')
+    } else {
+      showNotification('Une erreur est survenue. Veuillez réessayer.', 'error')
+    }
   } finally {
     isLoading.value = false
   }
@@ -346,6 +390,28 @@ function quitEditEventMode() {
 async function triggerSaveEvent() {
   if (!event.value) return
 
+  // Validation de la date limite d'inscription
+  if (formData.value.deadlineDate && formData.value.deadlineDate !== '') {
+    const today = new Date()
+    const eventDateTime = new Date(`${formData.value.eventDate}T${formData.value.eventTime}`)
+
+    // Combine deadline date and time
+    const deadlineTime = formData.value.deadlineTime || formData.value.eventTime
+    const deadlineDateTime = new Date(`${formData.value.deadlineDate}T${deadlineTime}`)
+
+    // Vérifier que la deadline n'est pas dans le passé
+    if (deadlineDateTime < today) {
+      showNotification('La date limite d\'inscription ne peut pas être dans le passé.', 'error')
+      return
+    }
+
+    // Vérifier que la deadline n'est pas après la date de l'événement
+    if (deadlineDateTime > eventDateTime) {
+      showNotification('La date limite d\'inscription ne peut pas être postérieure à la date de l\'événement.', 'error')
+      return
+    }
+  }
+
   isLoading.value = true
 
   const updatedEventData = new FormData()
@@ -353,6 +419,17 @@ async function triggerSaveEvent() {
   updatedEventData.append('title', formData.value.eventName)
   updatedEventData.append('date', formData.value.eventDate)
   updatedEventData.append('time', formData.value.eventTime)
+
+  // Send combined deadline datetime
+  if (formData.value.deadlineDate && formData.value.deadlineDate !== '') {
+    const deadlineTime = formData.value.deadlineTime || formData.value.eventTime
+    const deadline = `${formData.value.deadlineDate}T${deadlineTime}`
+    updatedEventData.append('deadline', deadline)
+  } else {
+    const deadline = `${formData.value.eventDate}T${formData.value.eventTime}`
+    updatedEventData.append('deadline', deadline)
+  }
+
   updatedEventData.append('description', formData.value.eventDescription)
   updatedEventData.append('location', formData.value.eventLocation)
   updatedEventData.append('color', formData.value.eventColor)
@@ -374,6 +451,14 @@ async function triggerSaveEvent() {
     event.value.title = formData.value.eventName
     event.value.date = formData.value.eventDate
     event.value.time = formData.value.eventTime
+
+    if (formData.value.deadlineDate) {
+      const deadlineTime = formData.value.deadlineTime || formData.value.eventTime
+      event.value.deadline = `${formData.value.deadlineDate}T${deadlineTime}`
+    } else {
+      event.value.deadline = undefined
+    }
+
     event.value.description = formData.value.eventDescription
     event.value.location = formData.value.eventLocation
     event.value.isPublic = formData.value.eventIsPublic
@@ -428,9 +513,6 @@ function copyInviteLink() {
 // Fonction pour envoyer un email d'invitation
 async function sendInviteEmail(email: string) {
   try {
-    console.log("current event")
-    console.log(event.value)
-    console.log("current event")
     if (event.value?.id) {
       await sendInviataionEmail(email, event.value.id).then(
         () => {
@@ -543,6 +625,16 @@ async function handleRemoveParticipant(userId: string, event: Event, username: s
   }
 }
 
+function handleParticipantClick(participant: any) {
+  selectedParticipant.value = participant
+  showParticipantModal.value = true
+}
+
+function closeParticipantModal() {
+  showParticipantModal.value = false
+  selectedParticipant.value = null
+}
+
 function onSwiper(swiper: SwiperType) {
   swiperInstance.value = swiper;
   updateNavigationState();
@@ -577,7 +669,6 @@ async function fetchEventMemories(eventId: string) {
     if (eventId && eventId !== '') {
       const fetchedMemories = await getEventMemories(eventId)
       memories.value = fetchedMemories
-      console.log(memories.value)
     } else {
       console.error("Erreur lors de la récupération des souvenirs : Memory ID is empty or null")
       memories.value = []
@@ -620,7 +711,7 @@ function resetMemoryForm() {
 }
 
 async function submitNewMemory() {
-  if (!event.value?.memoryId || !newMemoryText.value || !newMemoryImage.value) {
+  if (!newMemoryText.value || !newMemoryImage.value) {
     showNotification("L'image et le texte sont requis", 'error')
     return
   }
@@ -814,6 +905,10 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
                 <i class="fas fa-clock"></i>
                 <span class="font-medium">{{ event.time }}</span>
               </p>
+              <p v-if="event.deadline" class="flex items-center space-x-2">
+                <i class="fas fa-hourglass-half"></i>
+                <span class="font-medium">Inscription jusqu'au {{ formatDate(event.deadline.split('T')[0], 'DD/MM/YYYY') }} à {{ event.deadline.split('T')[1] }}</span>
+              </p>
             </div>
             <p class="text-gray-700 mt-4">{{ event.description }}</p>
           </div>
@@ -823,7 +918,7 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
               :class="`px-4 py-2 rounded-lg font-semibold transition ${participationButtonStyle}`"
               :disabled="isLoading"
               @click="toggleParticipation"
-              v-if="currentUserId !== event.creator && attendanceConfirmed !== 'pending'"
+              v-if="currentUserId !== event.creator && attendanceConfirmed !== 'pending' && isRegistrationOpen"
             >
               <template v-if="attendanceConfirmed === 'confirmed'">Quitter</template>
               <template v-else>Rejoindre</template>
@@ -833,6 +928,7 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
                 class="px-4 py-2 rounded-lg font-semibold transition bg-green-500 text-white hover:bg-green-600"
                 :disabled="isLoading"
                 @click="toggleParticipation"
+                v-if="isRegistrationOpen"
               >
                 Confirmer ma présence
               </button>
@@ -843,6 +939,10 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
               >
                 Quitter
               </button>
+            </div>
+            <div v-if="currentUserId !== event.creator && !isRegistrationOpen && attendanceConfirmed === 'not_joined'" class="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded-lg">
+              <i class="fas fa-exclamation-triangle mr-2"></i>
+              La période d'inscription est terminée
             </div>
           </div>
           <div v-if="event.participants && event.participants.length > 0">
@@ -876,6 +976,7 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
                     :eventId="event.id"
                     :isCreator="event.creator === currentUserId"
                     @participantRemoved="(id) => handleRemoveParticipant(id, event, participant.username)"
+                    @participantClicked="handleParticipantClick"
                   />
                 </div>
               </div>
@@ -956,6 +1057,24 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
               <input
                 type="time"
                 v-model="formData.eventTime"
+                class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              />
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-gray-700 font-medium">Date limite d'inscription</label>
+              <input
+                type="date"
+                v-model="formData.deadlineDate"
+                class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label class="block text-gray-700 font-medium">Heure limite d'inscription</label>
+              <input
+                type="time"
+                v-model="formData.deadlineTime"
                 class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
@@ -1305,11 +1424,15 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
         :message="notification.message"
         :type="notification.type"
       />
+
+      <ParticipantProfileModal
+        :isVisible="showParticipantModal"
+        :participant="selectedParticipant"
+        @close="closeParticipantModal"
+      />
     </main>
 
     <FooterComponent />
   </div>
 </template>
 <style src="./EventDetailPage.css" scoped></style>
-
-<!-- todo : fix preview image -->

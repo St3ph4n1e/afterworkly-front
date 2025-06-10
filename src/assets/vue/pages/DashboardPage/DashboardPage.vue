@@ -125,6 +125,7 @@ onUnmounted(() => {
           :location="event.location || 'Lieu indisponible'"
           :date="event.date"
           :time="event.time"
+          :deadline="event.deadline || ''"
           :image="event.image || 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/logo-afterworkly.png'"
         />
 

@@ -166,9 +166,6 @@ export async function addOutsiderToParticipates(eventId: string, formData: FormD
 }
 
 export async function exitEventForOutsider(username: string, eventId: string) {
-  // todo check username not taken for outsider
-  // todo quit implem
-  console.log(username)
   const response = await apiClient.post(`/events-outsider/${eventId}/quit`, { username })
   return response.data
 }

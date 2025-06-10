@@ -14,6 +14,7 @@ const props = defineProps({
   location: { type: String, default: 'Lieu indisponible' },
   date: { type: String, required: true },
   time: { type: String, required: true },
+  deadline: { type: String, default: '' },
   image: { type: String, default: 'https://afterworkly-media.s3.eu-north-1.amazonaws.com/logo-afterworkly.png' },
 });
 
@@ -29,6 +30,20 @@ const formattedDate = computed(() => {
     : 'Date invalide';
 });
 
+// Computed pour formater la deadline
+const formattedDeadline = computed(() => {
+  if (!props.deadline) return null;
+  const [datePart, timePart] = props.deadline.split('T');
+  const deadlineDate = dayjs(datePart).format('DD/MM/YYYY');
+  const deadlineTime = timePart ? timePart.substring(0, 5) : '';
+  return `${deadlineDate} à ${deadlineTime}`;
+});
+
+// Computed pour vérifier si la deadline est dépassée
+const isDeadlinePassed = computed(() => {
+  if (!props.deadline) return false;
+  return new Date(props.deadline) < new Date();
+});
 // Méthode pour naviguer vers la page de détail de l'événement
 function viewEvent(eventId: string) {
   router.push(`/event-detail/${eventId}`);
@@ -78,6 +93,13 @@ function openGoogleMaps(location: string) {
     </p>
     <p class="text-gray-600 text-center">
       🕒 <span class="font-medium">{{ time }}</span>
+    </p>
+
+    <!-- Deadline -->
+    <p v-if="formattedDeadline" class="text-gray-600 text-center">
+       <span v-if="!isDeadlinePassed">
+         ⏳ <span class="font-medium">Inscription jusqu'au {{ formattedDeadline }}</span>
+       </span>
     </p>
 
     <!-- Bouton -->

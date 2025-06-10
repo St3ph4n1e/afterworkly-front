@@ -37,6 +37,8 @@ const formData = ref({
   eventName: '',
   eventDate: '',
   eventTime: '',
+  deadlineDate: '',
+  deadlineTime: '',
   eventLocation: '',
   eventImage: null as File | null,
   eventColor: '#ffffff',
@@ -136,10 +138,45 @@ async function handleSubmit() {
     return;
   }
 
+   // Validation de la date limite d'inscription
+   if (formData.value.deadlineDate && formData.value.deadlineDate !== '') {
+    const today = new Date()
+    const eventDateTime = new Date(`${formData.value.eventDate}T${formData.value.eventTime}`)
+
+    // Combine deadline date and time
+    const deadlineTime = formData.value.deadlineTime || formData.value.eventTime
+    const deadlineDateTime = new Date(`${formData.value.deadlineDate}T${deadlineTime}`)
+
+    console.log(deadlineDateTime, today, eventDateTime)
+
+    // Vérifier que la deadline n'est pas dans le passé
+    if (deadlineDateTime < today) {
+      showError('La date limite d\'inscription ne peut pas être dans le passé.')
+      return
+    }
+
+    // Vérifier que la deadline n'est pas après la date de l'événement
+    if (deadlineDateTime > eventDateTime) {
+      showError('La date limite d\'inscription ne peut pas être postérieure à la date de l\'événement.')
+      return
+    }
+  }
+
   const eventData = new FormData();
   eventData.append('title', formData.value.eventName);
   eventData.append('date', formData.value.eventDate);
   eventData.append('time', formData.value.eventTime);
+
+  // Send combined deadline datetime
+  if(formData.value.deadlineDate && formData.value.deadlineDate !== '') {
+    const deadlineTime = formData.value.deadlineTime || formData.value.eventTime
+    const deadline = `${formData.value.deadlineDate}T${deadlineTime}`
+    eventData.append('deadline', deadline);
+  } else {
+    const deadline = `${formData.value.eventDate}T${formData.value.eventTime}`
+    eventData.append('deadline', deadline);
+  }
+
   eventData.append('location', formData.value.eventLocation);
   eventData.append('color', formData.value.eventColor);
   eventData.append('isPublic', formData.value.isPublic.toString());
@@ -182,6 +219,8 @@ function resetForm() {
     eventName: '',
     eventDate: '',
     eventTime: '',
+    deadlineDate: '',
+    deadlineTime: '',
     eventLocation: '',
     eventImage: null,
     eventColor: '#ffffff',
@@ -275,6 +314,26 @@ onMounted(async () => {
               type="time"
               class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               required
+            />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="deadlineDate" class="block font-medium text-gray-700">Date limite d'inscription</label>
+            <input
+              v-model="formData.deadlineDate"
+              id="deadlineDate"
+              type="date"
+              class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label for="deadlineTime" class="block font-medium text-gray-700">Heure limite d'inscription</label>
+            <input
+              v-model="formData.deadlineTime"
+              id="deadlineTime"
+              type="time"
+              class="w-full border rounded-lg p-3 mt-1 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
           </div>
         </div>

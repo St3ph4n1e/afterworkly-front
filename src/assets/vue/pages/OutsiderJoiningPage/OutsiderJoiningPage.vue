@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Event } from '@/assets/vue/types/types';
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import {
   addOutsiderToParticipates,
   getEventByIdForOutsider,
@@ -108,7 +108,7 @@ function handleFileUpload(event: globalThis.Event) {
 }
 
 async function joinEvent() {
-  
+
   // Check si outsider existe déjà dans localStorage
   const outsiderData = localStorage.getItem('outsider')
   if (outsiderData) {
@@ -152,6 +152,14 @@ async function joinEvent() {
     showNotification(error.message || 'Erreur lors de la tentative de rejoindre l\'événement', 'error')
   }
 }
+
+const isRegistrationOpen = computed(() => {
+  if (!event.value?.deadline) return true
+
+  const today = new Date().toISOString()
+  return event.value.deadline >= today
+})
+
 </script>
 
 <template>
@@ -222,9 +230,14 @@ async function joinEvent() {
         <button
           @click="joinEvent"
           class="w-full bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition"
+          v-if="isRegistrationOpen"
         >
           Rejoindre l'événement
         </button>
+        <div v-else class="text-center text-gray-600">
+          <i class="fas fa-hourglass-half text-4xl"></i>
+          <p class="mt-2">La période d'inscription est terminée</p>
+        </div>
       </div>
     </div>
   </div>

@@ -135,6 +135,10 @@ interface UserProfileUpdateData {
   };
 }
 
+interface EventOutsiderJoinData {
+  eventId: string;
+}
+
 onMounted(async () => {
   const eventId = route.params.id as string
 
@@ -265,6 +269,116 @@ onMounted(async () => {
       }
     }
 })
+
+  socket.on('event-outsider-join', async (eventOutsiderJoinData: EventOutsiderJoinData) => {
+    if (eventOutsiderJoinData && eventOutsiderJoinData.eventId === eventId) {
+      const updatedEvent = await getEventById(eventId)
+      if (updatedEvent) {
+        event.value = {
+          ...updatedEvent,
+          id: updatedEvent._id || updatedEvent.id
+        }
+
+        formData.value.eventName = updatedEvent.title
+        formData.value.eventDate = updatedEvent.date
+        formData.value.eventTime = updatedEvent.time
+        formData.value.eventLocation = updatedEvent.location
+        formData.value.eventDescription = updatedEvent.description
+        formData.value.eventColor = updatedEvent.color || '#f9f9f9'
+        formData.value.eventIsPublic = updatedEvent.isPublic
+        formData.value.eventImage = updatedEvent.image ?? null
+
+        // Gestion de la deadline
+        if (updatedEvent.deadline) {
+          const [datePart, timePart] = updatedEvent.deadline.split('T')
+          formData.value.deadlineDate = datePart
+          formData.value.deadlineTime = timePart.substring(0, 5) // Pour extract HH:MM
+        } else {
+          formData.value.deadlineDate = ''
+          formData.value.deadlineTime = ''
+        }
+
+        const participant = updatedEvent.participants.find(
+          (p) => p.type === 'member' ? p.userId === currentUserId.value : null
+        )
+
+        // Initialisation de l'état de participation
+        if (participant) {
+          if (participant.status === 'confirmed') {
+            attendanceConfirmed.value = 'confirmed'
+            console.log("confirmed");
+          } else if (participant.status === 'pending') {
+            attendanceConfirmed.value = 'pending'
+            console.log("pending");
+          } else {
+            attendanceConfirmed.value = 'not_joined'
+            console.log("not_joined");
+          }
+        } else {
+          attendanceConfirmed.value = 'not_joined'
+          console.log("not_joined");
+        }
+      }
+    }
+  })
+
+
+  // todo : when creator kick out an outsider, should redirect him to login page
+
+  // Écouter les événements de départ d'outsiders
+  socket.on('event-outsider-quit', async (eventOutsiderQuitData: EventOutsiderJoinData) => {
+    if (eventOutsiderQuitData && eventOutsiderQuitData.eventId === eventId) {
+      const updatedEvent = await getEventById(eventId)
+      if (updatedEvent) {
+        event.value = {
+          ...updatedEvent,
+          id: updatedEvent._id || updatedEvent.id
+        }
+
+        formData.value.eventName = updatedEvent.title
+        formData.value.eventDate = updatedEvent.date
+        formData.value.eventTime = updatedEvent.time
+        formData.value.eventLocation = updatedEvent.location
+        formData.value.eventDescription = updatedEvent.description
+        formData.value.eventColor = updatedEvent.color || '#f9f9f9'
+        formData.value.eventIsPublic = updatedEvent.isPublic
+        formData.value.eventImage = updatedEvent.image ?? null
+
+        // Gestion de la deadline
+        if (updatedEvent.deadline) {
+          const [datePart, timePart] = updatedEvent.deadline.split('T')
+          formData.value.deadlineDate = datePart
+          formData.value.deadlineTime = timePart.substring(0, 5)
+        } else {
+          formData.value.deadlineDate = ''
+          formData.value.deadlineTime = ''
+        }
+
+        const participant = updatedEvent.participants.find(
+          (p) => p.userId === currentUserId.value
+        )
+
+        if (participant) {
+          if (participant.status === 'confirmed') {
+            attendanceConfirmed.value = 'confirmed'
+          } else if (participant.status === 'pending') {
+            attendanceConfirmed.value = 'pending'
+          } else {
+            attendanceConfirmed.value = 'not_joined'
+          }
+        } else {
+          attendanceConfirmed.value = 'not_joined'
+        }
+      }
+    }
+  })
+
+  // Debug : Écouteur générique pour tous les événements socket
+  socket.onAny((eventName, ...args) => {
+    if (eventName.includes('outsider')) {
+      console.log('🔍 Socket événement reçu:', eventName, args)
+    }
+  })
 
   // Récupérer l'utilisateur connecté depuis le localStorage
   const storedUser = localStorage.getItem('user')
@@ -651,6 +765,8 @@ onUnmounted(() => {
     socket.off('event-update')
     socket.off('event-participant-join')
     socket.off('event-delete')
+    socket.off('event-outsider-join')
+    socket.off('event-outsider-quit')
     socket.off('memory-changed')
     socket.off('memory-updated')
     socket.off('memory-deleted')

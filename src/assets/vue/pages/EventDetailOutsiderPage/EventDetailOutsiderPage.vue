@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { formatDate } from '@/utils/date'
 import {
@@ -11,6 +11,13 @@ import { showError, currentNotification } from '../../../../utils/errors.ts'
 import axios from 'axios'
 import dayjs from 'dayjs'
 import 'dayjs/locale/fr'
+import { setupSocketForOutsider } from '@/utils/socket.ts'
+
+
+interface EventParticipantJoinData {
+  eventId: string;
+  participants: string;
+}
 
 dayjs.locale('fr')
 
@@ -58,13 +65,21 @@ function scrollRight() {
   }
 }
 
+let socket: any = null
+
 
 const eventId = route.params.id as string
+
 onMounted(async () => {
   // Vérifier si l'utilisateur est déjà connecté
   const accessToken = localStorage.getItem('access_token');
   const refreshToken = localStorage.getItem('refresh_token');
   const user = localStorage.getItem('user');
+
+
+
+  // todo add verfi if outsider is in event if not redirect to login page ( for public and private )
+
 
   if (accessToken && refreshToken && user) {
     router.push('/');
@@ -77,11 +92,151 @@ onMounted(async () => {
     return
   }
 
+  socket = setupSocketForOutsider()
 
+  socket.on('event-participant-join' as any, (eventData: EventParticipantJoinData) => {
+    console.log(eventData)
+
+    if (eventData && eventData.eventId === eventId) {
+      if (event.value) {
+        event.value!.participants = JSON.parse(eventData.participants)
+
+        const participant = JSON.parse(eventData.participants).find(
+          (p) => p.userId === currentUserId.value
+        )
+
+        // Initialisation de l'état de participation
+        if (participant) {
+          if (participant.status === 'confirmed') {
+            attendanceConfirmed.value = 'confirmed'
+            console.log("confirmed");
+          } else if (participant.status === 'pending') {
+            attendanceConfirmed.value = 'pending'
+            console.log("pending");
+          } else {
+            attendanceConfirmed.value = 'not_joined'
+            console.log("not_joined");
+          }
+        } else {
+          attendanceConfirmed.value = 'not_joined'
+          console.log("not_joined");
+        }
+      }
+    }
+  })
+
+
+  socket.on('event-update' as any, (updatedEventData: EventUpdateData) => {
+    if (updatedEventData) {
+      if (updatedEventData.eventId === eventId) {
+        if (updatedEventData.redirect === 'true') {
+          router.push('/')
+        }
+
+        event.value!.isPublic = updatedEventData.eventIsPublic === 'true'
+        event.value!.title = updatedEventData.eventTitle || event.value!.title
+        event.value!.location = updatedEventData.eventLocation || event.value!.location
+        event.value!.description = updatedEventData.eventDescription || event.value!.description
+        event.value!.image = updatedEventData.eventImage || event.value!.image
+        event.value!.color = updatedEventData.eventColor || event.value!.color
+        event.value!.date = updatedEventData.eventDate || event.value!.date
+        event.value!.time = updatedEventData.eventTime || event.value!.time
+
+        // Gestion de la deadline
+        if (updatedEventData.deadline) {
+          event.value!.deadline = updatedEventData.deadline
+          // Mise à jour de la deadline dans l'événement uniquement
+          event.value!.deadline = updatedEventData.deadline
+        }
+
+        formData.value.eventColor = updatedEventData.eventColor || event.value!.color
+        event.value!.title = updatedEventData.eventTitle || event.value!.title
+      }
+    }
+  })
+
+  socket.on('event-delete' as any, (eventDeletedData: EventDeleteData) => {
+    if (eventDeletedData) {
+      if (eventDeletedData.eventId === eventId) {
+        showNotification(eventDeletedData.redirectMessage, 'error')
+        setTimeout(() => router.push('/'), 3000)
+      }
+    }
+  })
+
+  socket.on('event-outsider-join' as any, async (eventOutsiderJoinData: EventOutsiderJoinData) => {
+    if (eventOutsiderJoinData && eventOutsiderJoinData.eventId === eventId) {
+      const updatedEvent = await getEventByIdForOutsider(eventId)
+      if (updatedEvent && updatedEvent.event) {
+        event.value = {
+          ...updatedEvent.event,
+          id: updatedEvent.event._id || updatedEvent.event.id
+        }
+
+        formData.value.eventName = updatedEvent.event.title
+        formData.value.eventDate = updatedEvent.event.date
+        formData.value.eventTime = updatedEvent.event.time
+        formData.value.eventLocation = updatedEvent.event.location
+        formData.value.eventDescription = updatedEvent.event.description
+        formData.value.eventColor = updatedEvent.event.color || '#f9f9f9'
+        formData.value.eventIsPublic = updatedEvent.event.isPublic
+        formData.value.eventImage = updatedEvent.event.image ?? null
+      }
+    }
+  })
+
+  // Écouter les événements de départ d'outsiders
+  socket.on('event-outsider-quit' as any, async (eventOutsiderQuitData: EventOutsiderJoinData) => {
+    if (eventOutsiderQuitData && eventOutsiderQuitData.eventId === eventId) {
+      const updatedEvent = await getEventByIdForOutsider(eventId)
+      if (updatedEvent && updatedEvent.event) {
+        event.value = {
+          ...updatedEvent.event,
+          id: updatedEvent.event._id || updatedEvent.event.id
+        }
+
+        formData.value.eventName = updatedEvent.event.title
+        formData.value.eventDate = updatedEvent.event.date
+        formData.value.eventTime = updatedEvent.event.time
+        formData.value.eventLocation = updatedEvent.event.location
+        formData.value.eventDescription = updatedEvent.event.description
+        formData.value.eventColor = updatedEvent.event.color || '#f9f9f9'
+        formData.value.eventIsPublic = updatedEvent.event.isPublic
+        formData.value.eventImage = updatedEvent.event.image ?? null
+      }
+    }
+  })
   try {
     isLoading.value = true
     let fetchedEvent = await getEventByIdForOutsider(eventId)
 
+    console.log(fetchedEvent);
+
+
+    // Vérifier si l'outsider est dans l'événement
+    const outsiderData = localStorage.getItem('outsider')
+
+    /*if (outsiderData) {
+      const outsider = JSON.parse(outsiderData)
+      const eventData = fetchedEvent.event // await getEventById(eventId)
+
+    if (eventData) {
+      const participants = JSON.parse(eventData.participants)
+      const isOutsiderInEvent = participants.some(
+        (p) => p.type === 'outsider' && p.userId === outsider.id
+      )
+
+      // Si l'outsider n'est pas dans l'événement, rediriger vers la page de login
+      if (!isOutsiderInEvent) {
+        router.push('/login')
+        return
+      }
+    } else {
+        // Si l'événement n'existe pas, rediriger vers la page de login
+        router.push('/login')
+        return
+      }
+    }*/
     if (!fetchedEvent) {
       showError('Événement introuvable.')
       router.push('/404')
@@ -89,7 +244,6 @@ onMounted(async () => {
     }
 
     fetchedEvent = fetchedEvent.event
-
 
     event.value = {
       ...fetchedEvent,
@@ -146,61 +300,6 @@ function showNotification(message: string, type: 'success' | 'error') {
   setTimeout(() => (notification.value.visible = false), 3000)
 }
 
-// Fonction pour rejoindre ou quitter un événement
-async function toggleParticipation() {
-  if (!event.value || !currentUserId.value) return
-
-  isLoading.value = true
-
-  const wasParticipant = event.value.participants.some((p) => p.userId === currentUserId.value)
-  const wasParticipantInPending = event.value.participants.some((p) => p.userId === currentUserId.value && p.status === "pending")
-
-  try {
-
-    // Re-fetch event to get fresh data
-    const updatedEvent = await getEventById(event.value.id)
-
-    event.value = {
-      ...updatedEvent,
-      id: updatedEvent._id,
-    }
-
-    // Update attendanceConfirmed state based on new event data
-    const participant = updatedEvent.participants.find(
-      (p) => p.userId === currentUserId.value
-    )
-    if (participant) {
-      if (participant.status === 'confirmed') {
-        attendanceConfirmed.value = 'confirmed'
-      } else if (participant.status === 'pending') {
-        attendanceConfirmed.value = 'pending'
-      } else {
-        attendanceConfirmed.value = 'not_joined'
-      }
-    } else {
-      attendanceConfirmed.value = 'not_joined'
-    }
-
-
-    let notifMessage = ""
-
-    if (wasParticipantInPending) {
-      notifMessage = 'Vous avez confirmer votre présence'
-    } else if (wasParticipant) {
-      notifMessage = 'Vous avez quitté l\'événement.'
-    } else {
-      notifMessage = 'Vous avez rejoint l\'événement.'
-    }
-
-    showNotification(notifMessage, 'success')
-  } catch (error) {
-    console.error('Erreur lors de la mise à jour de la participation :', error)
-    showNotification(error?.message || 'Une erreur est survenue. Veuillez réessayer.', 'error')
-  } finally {
-    isLoading.value = false
-  }
-}
-
 const formattedDate = computed(() => formatDate(event.value?.date, 'DD/MM/YYYY'))
 
 
@@ -240,6 +339,14 @@ function closeParticipantModal() {
   showParticipantModal.value = false
   selectedParticipant.value = null
 }
+
+onUnmounted(() => {
+  socket.off('event-participant-join')
+  socket.off('event-outsider-join')
+  socket.off('event-outsider-quit')
+  socket.off('event-update')
+  socket.off('event-delete')
+})
 
 </script>
 

@@ -20,8 +20,34 @@ export function setupSocket(): Socket<ServerToClientEvents, ClientToServerEvents
 
   socket = io('http://localhost:3002', {
     auth: {
+      type: 'member',
       token,
       userId: user?._id || '',
+    },
+  });
+
+  socket.on('connect', () => {
+    console.log(`✅ Connected to WS server as: ${socket?.id}`);
+  });
+
+  socket.on('connect_error', (err) => {
+    console.error('❌ Socket connection error:', err.message);
+  });
+
+  return socket;
+}
+
+export function setupSocketForOutsider(): Socket<ServerToClientEvents, ClientToServerEvents> {
+
+  if (socket) return socket; // prevent re-init
+
+  const token = localStorage.getItem('access_token') || '';
+  const user = localStorage.getItem('outsider') ? JSON.parse(localStorage.getItem('outsider')) : null;
+
+  socket = io('http://localhost:3002', {
+    auth: {
+      userId: user?._id || '',
+      type: 'outsider'
     },
   });
 

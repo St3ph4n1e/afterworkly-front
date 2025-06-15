@@ -3,7 +3,6 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { formatDate } from '@/utils/date'
 import {
-  getEventById,
   getEventByIdForOutsider, exitEventForOutsider
 } from '@/axios/api'
 import type { Event } from '@/assets/vue/types/types'
@@ -72,24 +71,17 @@ const eventId = route.params.id as string
 
 onMounted(async () => {
   // Vérifier si l'utilisateur est déjà connecté
-  const accessToken = localStorage.getItem('access_token');
-  const refreshToken = localStorage.getItem('refresh_token');
-  const user = localStorage.getItem('user');
 
 
-
-  // todo add verfi if outsider is in event if not redirect to login page ( for public and private )
-
-
-  if (accessToken && refreshToken && user) {
-    router.push('/');
-    return;
-  }
 
   const outsider = localStorage.getItem('outsider')
   if (!outsider) {
+    console.log("outsider not found");
     router.push('/')
     return
+  } else {
+    const outsiderData = JSON.parse(outsider)
+    currentUserId.value = outsiderData._id
   }
 
   socket = setupSocketForOutsider()
@@ -101,30 +93,22 @@ onMounted(async () => {
       if (event.value) {
         event.value!.participants = JSON.parse(eventData.participants)
 
-        const participant = JSON.parse(eventData.participants).find(
-          (p) => p.userId === currentUserId.value
+        const participant = JSON.parse(eventData.participants).some(
+          (p: any) => p.userId == currentUserId.value || p.outsiderId == currentUserId.value
         )
 
-        // Initialisation de l'état de participation
-        if (participant) {
-          if (participant.status === 'confirmed') {
-            attendanceConfirmed.value = 'confirmed'
-            console.log("confirmed");
-          } else if (participant.status === 'pending') {
-            attendanceConfirmed.value = 'pending'
-            console.log("pending");
-          } else {
-            attendanceConfirmed.value = 'not_joined'
-            console.log("not_joined");
-          }
-        } else {
-          attendanceConfirmed.value = 'not_joined'
-          console.log("not_joined");
+
+        if (!participant) {
+          showNotification("Le créateur vous a retiré de l'événement.", 'error')
+
+          setTimeout(() => {
+            router.push('/auth')
+            localStorage.removeItem('outsider')
+          }, 2000)
         }
       }
     }
   })
-
 
   socket.on('event-update' as any, (updatedEventData: EventUpdateData) => {
     if (updatedEventData) {
@@ -159,7 +143,10 @@ onMounted(async () => {
     if (eventDeletedData) {
       if (eventDeletedData.eventId === eventId) {
         showNotification(eventDeletedData.redirectMessage, 'error')
-        setTimeout(() => router.push('/'), 3000)
+        setTimeout(() => {
+          router.push('/')
+          localStorage.removeItem('outsider')
+        }, 3000)
       }
     }
   })
@@ -216,14 +203,15 @@ onMounted(async () => {
     // Vérifier si l'outsider est dans l'événement
     const outsiderData = localStorage.getItem('outsider')
 
-    /*if (outsiderData) {
+    if (outsiderData) {
+
       const outsider = JSON.parse(outsiderData)
-      const eventData = fetchedEvent.event // await getEventById(eventId)
+      const eventData = fetchedEvent.event
 
     if (eventData) {
-      const participants = JSON.parse(eventData.participants)
+      const participants = eventData.participants
       const isOutsiderInEvent = participants.some(
-        (p) => p.type === 'outsider' && p.userId === outsider.id
+        (p) => p.type === 'outsider' && p.outsiderId === outsider.id
       )
 
       // Si l'outsider n'est pas dans l'événement, rediriger vers la page de login
@@ -236,7 +224,7 @@ onMounted(async () => {
         router.push('/login')
         return
       }
-    }*/
+    }
     if (!fetchedEvent) {
       showError('Événement introuvable.')
       router.push('/404')

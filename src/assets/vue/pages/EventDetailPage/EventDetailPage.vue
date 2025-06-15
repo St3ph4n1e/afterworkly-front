@@ -198,6 +198,10 @@ onMounted(async () => {
             console.log("not_joined");
           }
         } else {
+          if (!event.value.isPublic) {
+            router.push('/')
+            return
+          }
           attendanceConfirmed.value = 'not_joined'
           console.log("not_joined");
         }

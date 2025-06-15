@@ -182,7 +182,7 @@ onMounted(async () => {
         event.value!.participants = JSON.parse(eventData.participants)
 
         const participant = JSON.parse(eventData.participants).find(
-          (p) => p.userId === currentUserId.value
+          (p: any) => p.userId == currentUserId.value || p.outsiderId == currentUserId.value
         )
 
         // Initialisation de l'état de participation

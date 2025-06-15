@@ -226,7 +226,6 @@ onMounted(async () => {
         // Force la réactivité en utilisant nextTick et en recréant le tableau
         nextTick(() => {
           memories.value = [...memoryData.memories]
-          console.log('✅ Nouveau nombre de souvenirs:', memories.value.length)
 
           // Force la mise à jour du swiper après le changement des données
           updateSwiperAfterDataChange()
@@ -378,11 +377,11 @@ onMounted(async () => {
   })
 
   // Debug : Écouteur générique pour tous les événements socket
-  socket.onAny((eventName, ...args) => {
-    if (eventName.includes('outsider')) {
-      console.log('🔍 Socket événement reçu:', eventName, args)
-    }
-  })
+  // socket.onAny((eventName, ...args) => {
+  //   if (eventName.includes('outsider')) {
+  //     console.log('🔍 Socket événement reçu:', eventName, args)
+  //   }
+  // })
 
   // Récupérer l'utilisateur connecté depuis le localStorage
   const storedUser = localStorage.getItem('user')
@@ -1036,8 +1035,6 @@ function updateSwiperAfterDataChange() {
 
       // Met à jour l'état des boutons de navigation du swiper (précédent/suivant)
       updateNavigationState()
-
-      console.log('🔄 Swiper mis à jour après changement des données')
     })
   }
 }

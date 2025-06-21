@@ -185,6 +185,10 @@ onMounted(async () => {
           (p: any) => p.userId == currentUserId.value || p.outsiderId == currentUserId.value
         )
 
+
+        const isCreator = event.value?.creator === currentUserId.value
+
+
         // Initialisation de l'état de participation
         if (participant) {
           if (participant.status === 'confirmed') {
@@ -198,7 +202,7 @@ onMounted(async () => {
             console.log("not_joined");
           }
         } else {
-          if (!event.value.isPublic) {
+          if (!event.value.isPublic && !isCreator) {
             router.push('/')
             return
           }

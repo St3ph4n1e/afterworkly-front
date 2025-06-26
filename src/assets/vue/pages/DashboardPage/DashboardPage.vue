@@ -3,7 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router';
 import { getEvents } from '@/axios/api';
 import type { Event } from '@/assets/vue/types/types';
-import { getSocket, setupSocket } from '@/utils/socket.ts'
+import { setupSocket } from '@/utils/socket.ts'
 
 const router = useRouter();
 const userName = ref('');
@@ -40,11 +40,9 @@ onMounted(async () => {
 
   socket = setupSocket();
 
-  socket.on('event-update-dashboard', (updatedEvents) => {
-    if (updatedEvents) {
-      events.value = updatedEvents;
-    }
-
+  socket.on('event-update', async () => {
+    const response = await getEvents({ page: 1, limit: 3 });
+    events.value = response;
   })
 
 });
@@ -60,7 +58,7 @@ function createEvent() {
 
 onUnmounted(() => {
   if (socket) {
-    socket.off('event-update-dashboard')
+    socket.off('event-update')
   }
 })
 </script>

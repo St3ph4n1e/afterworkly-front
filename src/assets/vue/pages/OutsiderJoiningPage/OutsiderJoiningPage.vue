@@ -127,7 +127,9 @@ async function joinEvent() {
 
   try {
     const formDataToSend = new FormData();
+    const outsiderId = generateUniqueId()
     formDataToSend.append('username', formData.value.username);
+    formDataToSend.append('outsiderId', outsiderId);
     if (formData.value.photo) {
       formDataToSend.append('photo', formData.value.photo);
     }
@@ -136,6 +138,7 @@ async function joinEvent() {
     await addOutsiderToParticipates(eventId, formDataToSend).then(
       async () => {
         const user = JSON.stringify({
+          _id: outsiderId,
           username: formData.value.username,
           photo: previewImage.value,
           eventId: eventId
@@ -151,6 +154,17 @@ async function joinEvent() {
   } catch (error: any) {
     showNotification(error.message || 'Erreur lors de la tentative de rejoindre l\'événement', 'error')
   }
+}
+
+const generateUniqueId = () => {
+  const timestamp = Math.floor(Date.now() / 1000).toString(16).padStart(8, '0');
+
+
+  const randomBytes = Array.from({ length: 16 }, () =>
+    Math.floor(Math.random() * 16).toString(16)
+  ).join('');
+
+  return timestamp + randomBytes;
 }
 
 const isRegistrationOpen = computed(() => {

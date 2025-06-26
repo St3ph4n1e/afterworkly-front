@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { formatDate } from '@/utils/date'
 import { getEventById, toggleParticipantStatus, deleteEvent, updateEvent, sendInviataionEmail, generateJoinLink, getEventMemories, createEventMemory, deleteMemory, updateMemory } from '@/axios/api'
@@ -45,8 +45,20 @@ const isEnd = ref(false)
 const memories = ref<Memory[]>([])
 const isLoadingMemories = ref(false)
 
+interface ExtendedParticipant {
+  userId: string;
+  username: string;
+  status: 'confirmed' | 'pending' | string;
+  photo?: string | null;
+  bio?: string;
+  availability?: string[];
+  preferences?: any[];
+  banner?: string;
+  type : 'member' | 'outsider' | string;
+}
+
 const showParticipantModal = ref(false)
-const selectedParticipant = ref(null)
+const selectedParticipant = ref<ExtendedParticipant | null>(null)
 
 const formData = ref({
   eventName: '',
@@ -110,6 +122,23 @@ interface EventDeleteData {
   redirectMessage: string;
 }
 
+interface UserProfileUpdateData {
+  eventId: string;
+  updatedUserData: {
+    userId: string;
+    username: string;
+    photo: string;
+    bio: string;
+    availability: string[];
+    preferences: any[];
+    banner?: string;
+  };
+}
+
+interface EventOutsiderJoinData {
+  eventId: string;
+}
+
 onMounted(async () => {
   const eventId = route.params.id as string
 
@@ -147,13 +176,42 @@ onMounted(async () => {
   })
 
   socket.on('event-participant-join', (eventData: EventParticipantJoinData) => {
-    if (eventData) {
-      if (eventData.eventId === eventId) {
-        if (event.value) {
-          event.value!.participants = JSON.parse(eventData.participants)
+
+    if (eventData && eventData.eventId === eventId) {
+      if (event.value) {
+        event.value!.participants = JSON.parse(eventData.participants)
+
+        const participant = JSON.parse(eventData.participants).find(
+          (p: any) => p.userId == currentUserId.value || p.outsiderId == currentUserId.value
+        )
+
+
+        const isCreator = event.value?.creator === currentUserId.value
+
+
+        // Initialisation de l'état de participation
+        if (participant) {
+          if (participant.status === 'confirmed') {
+            attendanceConfirmed.value = 'confirmed'
+            console.log("confirmed");
+          } else if (participant.status === 'pending') {
+            attendanceConfirmed.value = 'pending'
+            console.log("pending");
+          } else {
+            attendanceConfirmed.value = 'not_joined'
+            console.log("not_joined");
+          }
+        } else {
+          if (!event.value.isPublic && !isCreator) {
+            router.push('/')
+            return
+          }
+          attendanceConfirmed.value = 'not_joined'
+          console.log("not_joined");
         }
       }
     }
+
   })
 
   socket.on('event-delete', (eventDeletedData: EventDeleteData) => {
@@ -164,6 +222,170 @@ onMounted(async () => {
       }
     }
   })
+
+  socket.on('memory-changed', (memoryData: { eventId: string, memories: Memory[] }) => {
+    if (memoryData && memoryData.eventId && memoryData.memories) {
+      if (memoryData.eventId === eventId) {
+
+        // Force la réactivité en utilisant nextTick et en recréant le tableau
+        nextTick(() => {
+          memories.value = [...memoryData.memories]
+
+          // Force la mise à jour du swiper après le changement des données
+          updateSwiperAfterDataChange()
+        })
+      } else {
+        console.log('EventId ne correspond pas')
+      }
+    } else {
+      console.log('Données invalides reçues:', memoryData)
+    }
+  })
+
+  socket.on('user-profile-update', (userData: UserProfileUpdateData) => {
+    if (userData && userData.eventId === eventId && userData.updatedUserData) {
+      if (event.value && event.value.participants) {
+        const updatedParticipants = event.value.participants.map(participant => {
+          if (participant.userId === userData.updatedUserData.userId) {
+            const updatedParticipant = {
+              ...participant,
+              username: userData.updatedUserData.username,
+              banner: userData.updatedUserData.banner,
+              photo: userData.updatedUserData.photo,
+              bio: userData.updatedUserData.bio,
+              availability: userData.updatedUserData.availability,
+              preferences: userData.updatedUserData.preferences
+            }
+
+            // Mis a jour pour la dialog avec les infos du user
+            if (selectedParticipant.value && selectedParticipant.value.userId === userData.updatedUserData.userId) {
+              selectedParticipant.value = updatedParticipant as ExtendedParticipant
+            }
+
+            return updatedParticipant
+          }
+          // Retourne le participant original si l'id ne correspond pas
+          return participant
+        })
+
+        // Update tout l'objet event pour forcer la réactivité
+        event.value = {
+          ...event.value,
+          participants: updatedParticipants
+        }
+      }
+    }
+})
+
+  socket.on('event-outsider-join', async (eventOutsiderJoinData: EventOutsiderJoinData) => {
+    if (eventOutsiderJoinData && eventOutsiderJoinData.eventId === eventId) {
+      const updatedEvent = await getEventById(eventId)
+      if (updatedEvent) {
+        event.value = {
+          ...updatedEvent,
+          id: updatedEvent._id || updatedEvent.id
+        }
+
+        formData.value.eventName = updatedEvent.title
+        formData.value.eventDate = updatedEvent.date
+        formData.value.eventTime = updatedEvent.time
+        formData.value.eventLocation = updatedEvent.location
+        formData.value.eventDescription = updatedEvent.description
+        formData.value.eventColor = updatedEvent.color || '#f9f9f9'
+        formData.value.eventIsPublic = updatedEvent.isPublic
+        formData.value.eventImage = updatedEvent.image ?? null
+
+        // Gestion de la deadline
+        if (updatedEvent.deadline) {
+          const [datePart, timePart] = updatedEvent.deadline.split('T')
+          formData.value.deadlineDate = datePart
+          formData.value.deadlineTime = timePart.substring(0, 5) // Pour extract HH:MM
+        } else {
+          formData.value.deadlineDate = ''
+          formData.value.deadlineTime = ''
+        }
+
+        const participant = updatedEvent.participants.find(
+          (p) => p.type === 'member' ? p.userId === currentUserId.value : null
+        )
+
+        // Initialisation de l'état de participation
+        if (participant) {
+          if (participant.status === 'confirmed') {
+            attendanceConfirmed.value = 'confirmed'
+            console.log("confirmed");
+          } else if (participant.status === 'pending') {
+            attendanceConfirmed.value = 'pending'
+            console.log("pending");
+          } else {
+            attendanceConfirmed.value = 'not_joined'
+            console.log("not_joined");
+          }
+        } else {
+          attendanceConfirmed.value = 'not_joined'
+          console.log("not_joined");
+        }
+      }
+    }
+  })
+
+
+  // todo : when creator kick out an outsider, should redirect him to login page
+
+  // Écouter les événements de départ d'outsiders
+  socket.on('event-outsider-quit', async (eventOutsiderQuitData: EventOutsiderJoinData) => {
+    if (eventOutsiderQuitData && eventOutsiderQuitData.eventId === eventId) {
+      const updatedEvent = await getEventById(eventId)
+      if (updatedEvent) {
+        event.value = {
+          ...updatedEvent,
+          id: updatedEvent._id || updatedEvent.id
+        }
+
+        formData.value.eventName = updatedEvent.title
+        formData.value.eventDate = updatedEvent.date
+        formData.value.eventTime = updatedEvent.time
+        formData.value.eventLocation = updatedEvent.location
+        formData.value.eventDescription = updatedEvent.description
+        formData.value.eventColor = updatedEvent.color || '#f9f9f9'
+        formData.value.eventIsPublic = updatedEvent.isPublic
+        formData.value.eventImage = updatedEvent.image ?? null
+
+        // Gestion de la deadline
+        if (updatedEvent.deadline) {
+          const [datePart, timePart] = updatedEvent.deadline.split('T')
+          formData.value.deadlineDate = datePart
+          formData.value.deadlineTime = timePart.substring(0, 5)
+        } else {
+          formData.value.deadlineDate = ''
+          formData.value.deadlineTime = ''
+        }
+
+        const participant = updatedEvent.participants.find(
+          (p) => p.userId === currentUserId.value
+        )
+
+        if (participant) {
+          if (participant.status === 'confirmed') {
+            attendanceConfirmed.value = 'confirmed'
+          } else if (participant.status === 'pending') {
+            attendanceConfirmed.value = 'pending'
+          } else {
+            attendanceConfirmed.value = 'not_joined'
+          }
+        } else {
+          attendanceConfirmed.value = 'not_joined'
+        }
+      }
+    }
+  })
+
+  // Debug : Écouteur générique pour tous les événements socket
+  // socket.onAny((eventName, ...args) => {
+  //   if (eventName.includes('outsider')) {
+  //     console.log('🔍 Socket événement reçu:', eventName, args)
+  //   }
+  // })
 
   // Récupérer l'utilisateur connecté depuis le localStorage
   const storedUser = localStorage.getItem('user')
@@ -482,7 +704,7 @@ async function triggerDeleteEvent() {
   //Essaie de suppression d'event
   try {
     // Appel de l'api de suppression de l'event
-    await deleteEvent(route.params.id).then(() => {
+    await deleteEvent(route.params.id as string).then(() => {
       notification.value = {
         message: 'Événement supprimé avec succès !',
         type: 'success',
@@ -550,6 +772,11 @@ onUnmounted(() => {
     socket.off('event-update')
     socket.off('event-participant-join')
     socket.off('event-delete')
+    socket.off('event-outsider-join')
+    socket.off('event-outsider-quit')
+    socket.off('memory-changed')
+    socket.off('memory-updated')
+    socket.off('memory-deleted')
   }
 })
 
@@ -559,32 +786,42 @@ async function quitFromPending() {
   isLoading.value = true
 
   try {
-    await toggleParticipantStatus(event.value.id, { isJoining: false });
+    await toggleParticipantStatus(event.value.id, { isJoining: false }).then(
+      async (response) => {
+        if (response.redirect) {
+          router.push('/')
+          return
+        } else {
 
-    // Re-fetch event to get fresh data
-    const updatedEvent = await getEventById(event.value.id)
-    event.value = {
-      ...updatedEvent,
-      id: updatedEvent._id,
-    }
+          if (!event.value?.id) return
+          // Re-fetch event to get fresh data
+          const updatedEvent = await getEventById(event.value.id)
+            event.value = {
+            ...updatedEvent,
+            id:  updatedEvent._id,
+          }
 
-    // Update attendanceConfirmed state based on new event data
-    const participant = updatedEvent.participants.find(
-      (p) => p.userId === currentUserId.value
-    )
-    if (participant) {
-      if (participant.status === 'confirmed') {
-        attendanceConfirmed.value = 'confirmed'
-      } else if (participant.status === 'pending') {
-        attendanceConfirmed.value = 'pending'
-      } else {
-        attendanceConfirmed.value = 'not_joined'
+          // Update attendanceConfirmed state based on new event data
+          const participant = updatedEvent.participants.find(
+            (p) => p.userId === currentUserId.value
+          )
+          if (participant) {
+            if (participant.status === 'confirmed') {
+              attendanceConfirmed.value = 'confirmed'
+            } else if (participant.status === 'pending') {
+              attendanceConfirmed.value = 'pending'
+            } else {
+              attendanceConfirmed.value = 'not_joined'
+            }
+          } else {
+            attendanceConfirmed.value = 'not_joined'
+          }
+          showNotification('Vous avez quitté l\'événement.', 'success')
+        }
       }
-    } else {
-      attendanceConfirmed.value = 'not_joined'
-    }
+    )
 
-    showNotification('Vous avez quitté l\'événement.', 'success')
+
   } catch (error) {
     console.error('Erreur lors de la mise à jour de la participation :', error)
     showNotification(error?.message || 'Une erreur est survenue. Veuillez réessayer.', 'error')
@@ -727,6 +964,9 @@ async function submitNewMemory() {
 
     await fetchEventMemories(route.params.id as string)
 
+    // Forcer la mise à jour du Swiper après l'ajout d'un souvenir
+    updateSwiperAfterDataChange()
+
     showNotification("Souvenir ajouté avec succès ! 📸", 'success')
     resetMemoryForm()
   } catch (error) {
@@ -748,6 +988,10 @@ async function confirmDeleteMemory() {
   try {
     await deleteMemory(memoryToDelete.value)
     await fetchEventMemories(route.params.id as string)
+
+    // Forcer la mise à jour du Swiper après la suppression d'un souvenir
+    updateSwiperAfterDataChange()
+
     showNotification("Souvenir supprimé avec succès", 'success')
   } catch (error) {
     console.error("Erreur lors de la suppression du souvenir:", error)
@@ -774,10 +1018,28 @@ async function handleEditMemory(memoryId: string, text: string, image: File | nu
 
     await updateMemory(memoryId, formData)
     await fetchEventMemories(route.params.id as string)
+
+    // Forcer la mise à jour du Swiper après la modification d'un souvenir
+    updateSwiperAfterDataChange()
+
     showNotification("Souvenir modifié avec succès", 'success')
   } catch (error) {
     console.error("Erreur lors de la modification du souvenir:", error)
     showNotification("Impossible de modifier le souvenir", 'error')
+  }
+}
+
+function updateSwiperAfterDataChange() {
+  // Force la mise à jour du swiper après changement des données
+  if (swiperInstance.value) {
+    // Utilise nextTick pour attendre que Vue mette à jour le DOM
+    nextTick(() => {
+      // Force la mise à jour du swiper
+      swiperInstance.value?.update()
+
+      // Met à jour l'état des boutons de navigation du swiper (précédent/suivant)
+      updateNavigationState()
+    })
   }
 }
 

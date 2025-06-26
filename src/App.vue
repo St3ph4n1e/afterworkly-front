@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, computed } from 'vue';
 import { notification, showError, showSuccess } from './utils/errors';
-import 'firebase/compat/auth';
-import 'firebase/compat/firestore';
+// import 'firebase/compat/auth';
+// import 'firebase/compat/firestore';
 import { messaging, getMessagingToken, onMessage } from './utils/firebase.ts'
 
 const isOffline = ref(false);

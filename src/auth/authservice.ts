@@ -3,6 +3,7 @@ import { login, signUp } from '@/axios/api.ts'
 import type { User } from '../assets/vue/types/types.ts';
 import { showError } from "../utils/errors.ts"
 import { setupSocket } from '@/utils/socket.ts'
+import { trackUserSession } from '@/utils/metrics.ts'
 
 export async function loginUser(mail: string, password: string) {
   try {
@@ -10,12 +11,11 @@ export async function loginUser(mail: string, password: string) {
 
     // Stocker le jeton d'accès dans sessionStorage
     localStorage.setItem('access_token', response.token);
-
     // Le jeton d'actualisation devrait idéalement être stocké dans un cookie httpOnly
     // utilisation temporaire de localStorage (moins sécurisé)
     localStorage.setItem('refresh_token', response.refresh_token);
-
     localStorage.setItem('user', JSON.stringify(response.user));
+    trackUserSession.start(response.user.id || response.user._id);
 
     const socket = setupSocket();
 
@@ -54,6 +54,13 @@ export async function createUser(userData: User) {
 
 export function logoutUser() {
 
+  const user = localStorage.getItem('user');
+  if (user) {
+    try {
+      const userData = JSON.parse(user);
+      trackUserSession.end(userData.id || userData._id);
+    } catch (e) { console.warn('Could not parse user data for metrics'); }
+  }
   const refreshToken = localStorage.getItem("refresh_token");
 
   if (!refreshToken) {

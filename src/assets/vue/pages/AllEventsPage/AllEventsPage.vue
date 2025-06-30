@@ -97,8 +97,8 @@ onUnmounted(() => {
 <template>
   <div>
     <HeaderComponent />
-    <div class="container mx-auto p-4">
-      <!-- Titre dynamique -->
+    <div class="container mx-auto p-4" style="overflow: hidden;">
+    <!-- Titre dynamique -->
       <h1
         class="text-2xl font-bold mb-6 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-transparent bg-clip-text"
       >
@@ -177,9 +177,9 @@ onUnmounted(() => {
       <!-- Liste des événements -->
       <section
         v-if="!isLoading && !errorMessage"
-        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-2"
+        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-14 mb-2"
       >
-        <!-- Tous les événements -->
+      <!-- Tous les événements -->
         <template v-if="activeTab === 'all'">
           <EventCardComponent
             v-for="event in events"

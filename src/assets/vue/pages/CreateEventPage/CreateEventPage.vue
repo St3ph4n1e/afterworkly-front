@@ -267,7 +267,7 @@ onMounted(async () => {
 <template>
   <div>
     <HeaderComponent />
-    <div class="container mx-auto p-4">
+    <div class="container mx-auto p-4" style="overflow: hidden;">
       <!-- Notification -->
       <NotificationComponent
         v-if="notification.isVisible"

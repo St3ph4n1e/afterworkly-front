@@ -66,7 +66,7 @@ onUnmounted(() => {
 <template>
   <div>
     <HeaderComponent />
-    <div class="container mx-auto p-4">
+    <div class="container mx-auto p-4" style="overflow: hidden;">
       <!-- Message de bienvenue -->
       <h1
         class="text-3xl font-bold mb-8 text-center lg:text-left bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 text-transparent bg-clip-text"

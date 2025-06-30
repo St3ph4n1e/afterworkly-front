@@ -2,6 +2,10 @@ main {
   max-width: 800px;
 }
 
+.container {
+  overflow-x: hidden;
+}
+
 button {
   border: none;
   outline: none;

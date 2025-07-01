@@ -17,6 +17,7 @@ import 'swiper/css/pagination';
 
 
 
+
 dayjs.locale('fr')
 
 const route = useRoute()
@@ -53,24 +54,6 @@ const fakeParticipants = [
   { userId: "user-5", username: "Ethan", status: "pending", photo: "https://i.pravatar.cc" },
   { userId: "user-6", username: "Fiona", status: "unknown", photo: "https://i.pravatar.cc" },
   { userId: "user-7", username: "George", status: "confirmed", photo: "https://i.pravatar.cc" },
-  { userId: "user-8", username: "Hannah", status: "pending", photo: null },
-  { userId: "user-9", username: "Isaac", status: "unknown", photo: null },
-  { userId: "user-10", username: "Julia", status: "confirmed", photo: null },
-  { userId: "user-11", username: "Kevin", status: "pending", photo: null },
-  { userId: "user-12", username: "Laura", status: "unknown", photo: null },
-  { userId: "user-13", username: "Mark", status: "confirmed", photo: null },
-  { userId: "user-14", username: "Nina", status: "pending", photo: null },
-  { userId: "user-15", username: "Oscar", status: "unknown", photo: null },
-  { userId: "user-16", username: "Paula", status: "confirmed", photo: null },
-  { userId: "user-17", username: "Quentin", status: "pending", photo: null },
-  { userId: "user-18", username: "Rachel", status: "unknown", photo: null },
-  { userId: "user-19", username: "Steve", status: "confirmed", photo: null },
-  { userId: "user-20", username: "Tina", status: "pending", photo: null },
-  { userId: "user-21", username: "Ugo", status: "unknown", photo: null },
-  { userId: "user-22", username: "Valerie", status: "confirmed", photo: null },
-  { userId: "user-23", username: "William", status: "pending", photo: null },
-  { userId: "user-24", username: "Xenia", status: "unknown", photo: null },
-  { userId: "user-25", username: "Yann", status: "confirmed", photo: null },
   { userId: "user-26", username: "Zoe", status: "pending", photo: "https://i.pravatar.cc" },
   { userId: "user-27", username: "Alex", status: "unknown", photo: "https://i.pravatar.cc" },
   { userId: "user-28", username: "Bella", status: "confirmed", photo: "https://i.pravatar.cc" },
@@ -1240,57 +1223,61 @@ function updateSwiperAfterDataChange() {
           </div>
           <div v-if="event.participants && event.participants.length > 0">
             <h3 class="font-semibold text-gray-800">Participants</h3>
-            <div style="width: 100%; overflow: hidden; position: relative; padding: 0% 10%;">
-              <div
-                ref="scrollContainer"
-                class="space-y-2 scroll-div"
-                style="
-                  display: flex;
-                  justify-content: flex-start;
-                  align-items: center;
-                  gap: 5%;
-                  flex-wrap: nowrap;
-                  overflow-x: auto;
-                  scroll-behavior: smooth;
-                  min-height: 90px;
-                "
-              >
+            <div style="width: 100%; overflow: hidden; position: relative; padding: 0 15%;" class="responsive-padding">
+              <div class="faded-edges">
                 <div
-                  v-for="participant in fakeParticipants"
-                  :key="participant.userId"
-                  class="flex items-center flex-shrink-0"
-                  style="width: 80px; margin: 0;"
+                  ref="scrollContainer"
+                  class="space-y-2 scroll-div"
+                  style="
+                    display: flex;
+                    justify-content: flex-start;
+                    align-items: center;
+                    gap: 4%;
+                    flex-wrap: nowrap;
+                    overflow-x: auto;
+                    scroll-behavior: smooth;
+                    min-height: 90px;
+                    width: 100%;
+                    padding: 0% 0% 0% 4%
+                  "
                 >
-                  <ParticipantListComponent
-                    :participantInfos="participant"
-                    confirmed-class="text-green-600 font-bold"
-                    undecided-class="text-yellow-500 italic"
-                    :eventId="event.id"
-                    :isCreator="event.creator === currentUserId"
-                    @participantRemoved="(id) => handleRemoveParticipant(id, event, participant.username)"
-                    @participantClicked="handleParticipantClick"
-                  />
+                  <div
+                    v-for="participant in event.participants"
+                    :key="participant.userId"
+                    class="flex items-center flex-shrink-0"
+                    style="width: 80px; margin: 0;"
+                  >
+                    <ParticipantListComponent
+                      :participantInfos="participant"
+                      confirmed-class="text-green-600 font-bold"
+                      undecided-class="text-yellow-500 italic"
+                      :eventId="event.id"
+                      :isCreator="event.creator === currentUserId"
+                      @participantRemoved="(id) => handleRemoveParticipant(id, event, participant.username)"
+                      @participantClicked="handleParticipantClick"
+                    />
+                  </div>
                 </div>
               </div>
 
               <button
                 @click="scrollLeft"
                 style="
-                position: absolute;
-                left: 10px;
-                top: 50%;
-                transform: translateY(-50%);
-                width: 40px;
-                height: 40px;
-                background-color: rgba(195, 192, 192, 0.5);
-                border: none;
-                border-radius: 50%;
-                cursor: pointer;
-                z-index: 2;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-              "
+                  position: absolute;
+                  left: 10px;
+                  top: 50%;
+                  transform: translateY(-50%);
+                  width: 40px;
+                  height: 40px;
+                  background-color: rgba(195, 192, 192, 0.5);
+                  border: none;
+                  border-radius: 50%;
+                  cursor: pointer;
+                  z-index: 2;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                "
               >
                 <i class="fa-solid fa-chevron-left" style="font-size: 16px; color: #333;"></i>
               </button>
@@ -1298,27 +1285,26 @@ function updateSwiperAfterDataChange() {
               <button
                 @click="scrollRight"
                 style="
-                position: absolute;
-                right: 10px;
-                top: 50%;
-                transform: translateY(-50%);
-                width: 40px;
-                height: 40px;
-                background-color: rgba(195, 192, 192, 0.5);
-                border: none;
-                border-radius: 50%;
-                cursor: pointer;
-                z-index: 2;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-              "
+                  position: absolute;
+                  right: 10px;
+                  top: 50%;
+                  transform: translateY(-50%);
+                  width: 40px;
+                  height: 40px;
+                  background-color: rgba(195, 192, 192, 0.5);
+                  border: none;
+                  border-radius: 50%;
+                  cursor: pointer;
+                  z-index: 2;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                "
               >
                 <i class="fa-solid fa-chevron-right" style="font-size: 16px; color: #333;"></i>
               </button>
-
-
             </div>
+
           </div>
         </div>
 

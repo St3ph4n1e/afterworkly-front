@@ -45,6 +45,37 @@ const isEnd = ref(false)
 const memories = ref<Memory[]>([])
 const isLoadingMemories = ref(false)
 
+const fakeParticipants = [
+  { userId: "user-1", username: "Alice", status: "confirmed", photo: "https://i.pravatar.cc/" },
+  { userId: "user-2", username: "Bob", status: "pending", photo: "https://i.pravatar.cc/" },
+  { userId: "user-3", username: "Charlie", status: "unknown", photo: "https://i.pravatar.cc" },
+  { userId: "user-4", username: "Diana", status: "confirmed", photo: "https://i.pravatar.cc" },
+  { userId: "user-5", username: "Ethan", status: "pending", photo: "https://i.pravatar.cc" },
+  { userId: "user-6", username: "Fiona", status: "unknown", photo: "https://i.pravatar.cc" },
+  { userId: "user-7", username: "George", status: "confirmed", photo: "https://i.pravatar.cc" },
+  { userId: "user-8", username: "Hannah", status: "pending", photo: null },
+  { userId: "user-9", username: "Isaac", status: "unknown", photo: null },
+  { userId: "user-10", username: "Julia", status: "confirmed", photo: null },
+  { userId: "user-11", username: "Kevin", status: "pending", photo: null },
+  { userId: "user-12", username: "Laura", status: "unknown", photo: null },
+  { userId: "user-13", username: "Mark", status: "confirmed", photo: null },
+  { userId: "user-14", username: "Nina", status: "pending", photo: null },
+  { userId: "user-15", username: "Oscar", status: "unknown", photo: null },
+  { userId: "user-16", username: "Paula", status: "confirmed", photo: null },
+  { userId: "user-17", username: "Quentin", status: "pending", photo: null },
+  { userId: "user-18", username: "Rachel", status: "unknown", photo: null },
+  { userId: "user-19", username: "Steve", status: "confirmed", photo: null },
+  { userId: "user-20", username: "Tina", status: "pending", photo: null },
+  { userId: "user-21", username: "Ugo", status: "unknown", photo: null },
+  { userId: "user-22", username: "Valerie", status: "confirmed", photo: null },
+  { userId: "user-23", username: "William", status: "pending", photo: null },
+  { userId: "user-24", username: "Xenia", status: "unknown", photo: null },
+  { userId: "user-25", username: "Yann", status: "confirmed", photo: null },
+  { userId: "user-26", username: "Zoe", status: "pending", photo: "https://i.pravatar.cc" },
+  { userId: "user-27", username: "Alex", status: "unknown", photo: "https://i.pravatar.cc" },
+  { userId: "user-28", username: "Bella", status: "confirmed", photo: "https://i.pravatar.cc" },
+];
+
 interface ExtendedParticipant {
   userId: string;
   username: string;
@@ -1209,7 +1240,7 @@ function updateSwiperAfterDataChange() {
           </div>
           <div v-if="event.participants && event.participants.length > 0">
             <h3 class="font-semibold text-gray-800">Participants</h3>
-            <div style="width: 100%; overflow: hidden; position: relative">
+            <div style="width: 100%; overflow: hidden; position: relative; padding: 0% 10%;">
               <div
                 ref="scrollContainer"
                 class="space-y-2 scroll-div"
@@ -1217,16 +1248,15 @@ function updateSwiperAfterDataChange() {
                   display: flex;
                   justify-content: flex-start;
                   align-items: center;
-                  gap: 10px;
+                  gap: 5%;
                   flex-wrap: nowrap;
                   overflow-x: auto;
                   scroll-behavior: smooth;
-                  padding: 10px 0;
                   min-height: 90px;
                 "
               >
                 <div
-                  v-for="participant in event.participants"
+                  v-for="participant in fakeParticipants"
                   :key="participant.userId"
                   class="flex items-center flex-shrink-0"
                   style="width: 80px; margin: 0;"
@@ -1246,38 +1276,48 @@ function updateSwiperAfterDataChange() {
               <button
                 @click="scrollLeft"
                 style="
-                  position: absolute;
-                  left: -10px;
-                  top: 50%;
-                  transform: translateY(-50%);
-                  background-color: rgba(195, 192, 192, 0.5);
-                  border: none;
-                  padding: 10px;
-                  border-radius: 50%;
-                  cursor: pointer;
-                  z-index: 2;
-                "
+                position: absolute;
+                left: 10px;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 40px;
+                height: 40px;
+                background-color: rgba(195, 192, 192, 0.5);
+                border: none;
+                border-radius: 50%;
+                cursor: pointer;
+                z-index: 2;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              "
               >
-                ⟨
+                <i class="fa-solid fa-chevron-left" style="font-size: 16px; color: #333;"></i>
               </button>
 
               <button
                 @click="scrollRight"
                 style="
-                  position: absolute;
-                  right: -10px;
-                  top: 50%;
-                  transform: translateY(-50%);
-                  background-color: rgba(195, 192, 192, 0.5);
-                  border: none;
-                  padding: 10px;
-                  border-radius: 50%;
-                  cursor: pointer;
-                  z-index: 2;
-                "
+                position: absolute;
+                right: 10px;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 40px;
+                height: 40px;
+                background-color: rgba(195, 192, 192, 0.5);
+                border: none;
+                border-radius: 50%;
+                cursor: pointer;
+                z-index: 2;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              "
               >
-                〉
+                <i class="fa-solid fa-chevron-right" style="font-size: 16px; color: #333;"></i>
               </button>
+
+
             </div>
           </div>
         </div>
@@ -1381,7 +1421,7 @@ function updateSwiperAfterDataChange() {
       </div>
 
       <div v-else-if="showMemory">
-        <div class="relative flex items-center justify-center h-[32rem] sm:h-[40rem] p-6" :style="themeStyle">
+        <div class="w-full px-12 relative flex items-center justify-center h-[32rem] sm:h-[40rem] p-8" :style="themeStyle">
           <button
             @click="toggleMemory()"
             class="absolute top-4 right-4 text-gray-700 hover:text-gray-900 transition"
@@ -1390,27 +1430,28 @@ function updateSwiperAfterDataChange() {
             <i class="fa-solid fa-circle-info text-2xl"></i>
           </button>
 
-          <!-- Left Arrow -->
+          <!-- Chevron gauche -->
           <button
             @click="slidePrev"
-            class="absolute left-2 top-1/2 transform -translate-y-1/2 z-10 bg-white/80 hover:bg-white rounded-full p-3 shadow-md transition-all duration-200 hover:scale-110"
+            class="absolute left-2 top-1/2 transform -translate-y-1/2 z-10 bg-gray-200 hover:bg-gray-300 rounded-full shadow transition-all duration-200 hover:scale-110 w-10 h-10 flex items-center justify-center"
             :disabled="isBeginning"
             :class="{ 'opacity-50 cursor-not-allowed': isBeginning }"
           >
-            <i class="fa-solid fa-chevron-left text-gray-700"></i>
+            <i class="fa-solid fa-chevron-left text-gray-700 text-base leading-none"></i>
           </button>
 
-          <!-- Right Arrow -->
+          <!-- Chevron droit -->
           <button
             @click="slideNext"
-            class="absolute right-2 top-1/2 transform -translate-y-1/2 z-10 bg-white/80 hover:bg-white rounded-full p-3 shadow-md transition-all duration-200 hover:scale-110"
+            class="absolute right-2 top-1/2 transform -translate-y-1/2 z-10 bg-gray-200 hover:bg-gray-300 rounded-full shadow transition-all duration-200 hover:scale-110 w-10 h-10 flex items-center justify-center"
             :disabled="isEnd"
             :class="{ 'opacity-50 cursor-not-allowed': isEnd }"
           >
-            <i class="fa-solid fa-chevron-right text-gray-700"></i>
+            <i class="fa-solid fa-chevron-right text-gray-700 text-base leading-none"></i>
           </button>
 
           <swiper
+            class="w-full h-full px-18"
             :slides-per-view="1"
             :space-between="20"
             :auto-height="true"
@@ -1431,7 +1472,6 @@ function updateSwiperAfterDataChange() {
             }"
             @swiper="onSwiper"
             @slideChange="onSlideChange"
-            class="w-full h-full"
           >
             <swiper-slide v-if="canAddMemories" class="h-auto py-4">
               <div class="memory-card w-full h-auto min-h-[400px] flex flex-col p-4 bg-white rounded-lg shadow-md">

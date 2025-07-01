@@ -46,19 +46,6 @@ const isEnd = ref(false)
 const memories = ref<Memory[]>([])
 const isLoadingMemories = ref(false)
 
-const fakeParticipants = [
-  { userId: "user-1", username: "Alice", status: "confirmed", photo: "https://i.pravatar.cc/" },
-  { userId: "user-2", username: "Bob", status: "pending", photo: "https://i.pravatar.cc/" },
-  { userId: "user-3", username: "Charlie", status: "unknown", photo: "https://i.pravatar.cc" },
-  { userId: "user-4", username: "Diana", status: "confirmed", photo: "https://i.pravatar.cc" },
-  { userId: "user-5", username: "Ethan", status: "pending", photo: "https://i.pravatar.cc" },
-  { userId: "user-6", username: "Fiona", status: "unknown", photo: "https://i.pravatar.cc" },
-  { userId: "user-7", username: "George", status: "confirmed", photo: "https://i.pravatar.cc" },
-  { userId: "user-26", username: "Zoe", status: "pending", photo: "https://i.pravatar.cc" },
-  { userId: "user-27", username: "Alex", status: "unknown", photo: "https://i.pravatar.cc" },
-  { userId: "user-28", username: "Bella", status: "confirmed", photo: "https://i.pravatar.cc" },
-];
-
 interface ExtendedParticipant {
   userId: string;
   username: string;
@@ -1060,7 +1047,7 @@ function updateSwiperAfterDataChange() {
 </script>
 
 <template>
-  <div class="event-detail min-h-screen flex flex-col bg-gray-100">
+  <div class="event-detail flex flex-col bg-gray-100">
     <NotificationComponent
       v-if="currentNotification.isVisible"
       :message="currentNotification.message"
@@ -1223,22 +1210,21 @@ function updateSwiperAfterDataChange() {
           </div>
           <div v-if="event.participants && event.participants.length > 0">
             <h3 class="font-semibold text-gray-800">Participants</h3>
-            <div style="width: 100%; overflow: hidden; position: relative; padding: 0 15%;" class="responsive-padding">
+            <div style="width: 100%; overflow: hidden; position: relative;" class="responsive-padding">
               <div class="faded-edges">
                 <div
                   ref="scrollContainer"
-                  class="space-y-2 scroll-div"
+                  class="space-y-2 scroll-div responsive-gap"
                   style="
                     display: flex;
                     justify-content: flex-start;
                     align-items: center;
-                    gap: 4%;
                     flex-wrap: nowrap;
                     overflow-x: auto;
                     scroll-behavior: smooth;
                     min-height: 90px;
                     width: 100%;
-                    padding: 0% 0% 0% 4%
+                    padding: 0% 0% 0% 6%
                   "
                 >
                   <div

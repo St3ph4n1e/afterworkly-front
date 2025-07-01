@@ -66,10 +66,10 @@ onUnmounted(() => {
 <template>
   <div>
     <HeaderComponent />
-    <div class="container mx-auto p-4" style="overflow: hidden;">
+    <div class="container mx-auto px-4" style="overflow: hidden;">
       <!-- Message de bienvenue -->
       <h1
-        class="text-3xl font-bold mb-8 text-center lg:text-left bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 text-transparent bg-clip-text"
+        class="text-3xl font-bold mb-8 text-center lg:text-left bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 text-transparent bg-clip-text py-[2%]"
       >
         Bienvenue, {{ userName }} <span class="text-gray-800">😃</span> !
       </h1>
@@ -92,9 +92,9 @@ onUnmounted(() => {
       <section v-if="!isLoading && !errorMessage" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6 items-stretch">
         <!-- Carte d'action -->
         <div
-          class="bg-white shadow-lg rounded-lg p-6 flex flex-col justify-center items-center space-y-4 h-full"
+          class="bg-white shadow-lg rounded-lg p-6 flex flex-col justify-center items-center space-y-4 h-full mx-[7%] my-0"
         >
-          <!-- Bouton pour créer un événement -->
+        <!-- Bouton pour créer un événement -->
           <button
             @click="createEvent"
             class="flex items-center justify-center bg-green-500 text-white w-16 h-16 rounded-full shadow-md hover:bg-green-600 transition"

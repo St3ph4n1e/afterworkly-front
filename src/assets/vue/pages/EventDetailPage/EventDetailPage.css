@@ -9,6 +9,10 @@
   height: 16rem;
 }
 
+html {
+  height: auto;
+}
+
 .event-detail .relative img:not(.memory-preview) {
   padding-top: 1rem;
   position: absolute;
@@ -88,12 +92,23 @@ div::-webkit-scrollbar {
 }
 
 .responsive-padding {
-  padding: 0 15%;
+  padding: 0 10%;
 }
 
-@media (min-width: 1024px) {
+@media (max-width: 767px) {
   .responsive-padding {
-    padding: 0 10%;
+    padding: 0 15%;
   }
 }
+
+.responsive-gap {
+  gap: 4%;
+}
+
+@media (max-width: 767px) {
+  .responsive-gap {
+    gap: 9%;
+  }
+}
+
 

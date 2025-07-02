@@ -146,11 +146,11 @@ function toggleDay(day: string) {
 
 </script>
 <template>
-  <div class="min-h-screen flex flex-col bg-gray-50">
-    <HeaderComponent />
+  <div class="min-h-screen flex flex-col bg-gray-50 overflow-x-hidden">
+  <HeaderComponent />
 
-    <main class="container mx-auto p-6 flex-grow space-y-6">
-      <!-- Notification -->
+    <main class="container mx-auto p-6 flex-grow space-y-6 overflow-x-hidden">
+    <!-- Notification -->
       <NotificationComponent
       v-if="currentNotification.isVisible"
       :message="currentNotification.message"

@@ -17,6 +17,7 @@ import 'swiper/css/pagination';
 
 
 
+
 dayjs.locale('fr')
 
 const route = useRoute()
@@ -1046,7 +1047,7 @@ function updateSwiperAfterDataChange() {
 </script>
 
 <template>
-  <div class="event-detail min-h-screen flex flex-col bg-gray-100">
+  <div class="event-detail flex flex-col bg-gray-100">
     <NotificationComponent
       v-if="currentNotification.isVisible"
       :message="currentNotification.message"
@@ -1209,37 +1210,39 @@ function updateSwiperAfterDataChange() {
           </div>
           <div v-if="event.participants && event.participants.length > 0">
             <h3 class="font-semibold text-gray-800">Participants</h3>
-            <div style="width: 100%; overflow: hidden; position: relative">
-              <div
-                ref="scrollContainer"
-                class="space-y-2 scroll-div"
-                style="
-                  display: flex;
-                  justify-content: flex-start;
-                  align-items: center;
-                  gap: 10px;
-                  flex-wrap: nowrap;
-                  overflow-x: auto;
-                  scroll-behavior: smooth;
-                  padding: 10px 0;
-                  min-height: 90px;
-                "
-              >
+            <div style="width: 100%; overflow: hidden; position: relative;" class="responsive-padding">
+              <div class="faded-edges">
                 <div
-                  v-for="participant in event.participants"
-                  :key="participant.userId"
-                  class="flex items-center flex-shrink-0"
-                  style="width: 80px; margin: 0;"
+                  ref="scrollContainer"
+                  class="space-y-2 scroll-div responsive-gap"
+                  style="
+                    display: flex;
+                    justify-content: flex-start;
+                    align-items: center;
+                    flex-wrap: nowrap;
+                    overflow-x: auto;
+                    scroll-behavior: smooth;
+                    min-height: 90px;
+                    width: 100%;
+                    padding: 0% 0% 0% 6%
+                  "
                 >
-                  <ParticipantListComponent
-                    :participantInfos="participant"
-                    confirmed-class="text-green-600 font-bold"
-                    undecided-class="text-yellow-500 italic"
-                    :eventId="event.id"
-                    :isCreator="event.creator === currentUserId"
-                    @participantRemoved="(id) => handleRemoveParticipant(id, event, participant.username)"
-                    @participantClicked="handleParticipantClick"
-                  />
+                  <div
+                    v-for="participant in event.participants"
+                    :key="participant.userId"
+                    class="flex items-center flex-shrink-0"
+                    style="width: 80px; margin: 0;"
+                  >
+                    <ParticipantListComponent
+                      :participantInfos="participant"
+                      confirmed-class="text-green-600 font-bold"
+                      undecided-class="text-yellow-500 italic"
+                      :eventId="event.id"
+                      :isCreator="event.creator === currentUserId"
+                      @participantRemoved="(id) => handleRemoveParticipant(id, event, participant.username)"
+                      @participantClicked="handleParticipantClick"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -1247,38 +1250,47 @@ function updateSwiperAfterDataChange() {
                 @click="scrollLeft"
                 style="
                   position: absolute;
-                  left: -10px;
+                  left: 10px;
                   top: 50%;
                   transform: translateY(-50%);
+                  width: 40px;
+                  height: 40px;
                   background-color: rgba(195, 192, 192, 0.5);
                   border: none;
-                  padding: 10px;
                   border-radius: 50%;
                   cursor: pointer;
                   z-index: 2;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
                 "
               >
-                ⟨
+                <i class="fa-solid fa-chevron-left" style="font-size: 16px; color: #333;"></i>
               </button>
 
               <button
                 @click="scrollRight"
                 style="
                   position: absolute;
-                  right: -10px;
+                  right: 10px;
                   top: 50%;
                   transform: translateY(-50%);
+                  width: 40px;
+                  height: 40px;
                   background-color: rgba(195, 192, 192, 0.5);
                   border: none;
-                  padding: 10px;
                   border-radius: 50%;
                   cursor: pointer;
                   z-index: 2;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
                 "
               >
-                〉
+                <i class="fa-solid fa-chevron-right" style="font-size: 16px; color: #333;"></i>
               </button>
             </div>
+
           </div>
         </div>
 
@@ -1381,7 +1393,7 @@ function updateSwiperAfterDataChange() {
       </div>
 
       <div v-else-if="showMemory">
-        <div class="relative flex items-center justify-center h-[32rem] sm:h-[40rem] p-6" :style="themeStyle">
+        <div class="w-full px-12 relative flex items-center justify-center h-[32rem] sm:h-[40rem] p-8" :style="themeStyle">
           <button
             @click="toggleMemory()"
             class="absolute top-4 right-4 text-gray-700 hover:text-gray-900 transition"
@@ -1390,27 +1402,28 @@ function updateSwiperAfterDataChange() {
             <i class="fa-solid fa-circle-info text-2xl"></i>
           </button>
 
-          <!-- Left Arrow -->
+          <!-- Chevron gauche -->
           <button
             @click="slidePrev"
-            class="absolute left-2 top-1/2 transform -translate-y-1/2 z-10 bg-white/80 hover:bg-white rounded-full p-3 shadow-md transition-all duration-200 hover:scale-110"
+            class="absolute left-2 top-1/2 transform -translate-y-1/2 z-10 bg-gray-200 hover:bg-gray-300 rounded-full shadow transition-all duration-200 hover:scale-110 w-10 h-10 flex items-center justify-center"
             :disabled="isBeginning"
             :class="{ 'opacity-50 cursor-not-allowed': isBeginning }"
           >
-            <i class="fa-solid fa-chevron-left text-gray-700"></i>
+            <i class="fa-solid fa-chevron-left text-gray-700 text-base leading-none"></i>
           </button>
 
-          <!-- Right Arrow -->
+          <!-- Chevron droit -->
           <button
             @click="slideNext"
-            class="absolute right-2 top-1/2 transform -translate-y-1/2 z-10 bg-white/80 hover:bg-white rounded-full p-3 shadow-md transition-all duration-200 hover:scale-110"
+            class="absolute right-2 top-1/2 transform -translate-y-1/2 z-10 bg-gray-200 hover:bg-gray-300 rounded-full shadow transition-all duration-200 hover:scale-110 w-10 h-10 flex items-center justify-center"
             :disabled="isEnd"
             :class="{ 'opacity-50 cursor-not-allowed': isEnd }"
           >
-            <i class="fa-solid fa-chevron-right text-gray-700"></i>
+            <i class="fa-solid fa-chevron-right text-gray-700 text-base leading-none"></i>
           </button>
 
           <swiper
+            class="w-full h-full px-18"
             :slides-per-view="1"
             :space-between="20"
             :auto-height="true"
@@ -1431,7 +1444,6 @@ function updateSwiperAfterDataChange() {
             }"
             @swiper="onSwiper"
             @slideChange="onSlideChange"
-            class="w-full h-full"
           >
             <swiper-slide v-if="canAddMemories" class="h-auto py-4">
               <div class="memory-card w-full h-auto min-h-[400px] flex flex-col p-4 bg-white rounded-lg shadow-md">

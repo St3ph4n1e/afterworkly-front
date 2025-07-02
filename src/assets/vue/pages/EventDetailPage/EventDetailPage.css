@@ -9,7 +9,10 @@
   height: 16rem;
 }
 
-/* Main event image styling - more specific selector */
+html {
+  height: auto;
+}
+
 .event-detail .relative img:not(.memory-preview) {
   padding-top: 1rem;
   position: absolute;
@@ -52,3 +55,60 @@ todo not apply it to all div
 div::-webkit-scrollbar {
   display: none;
 }
+
+.faded-edges {
+  position: relative;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  display: flex;
+  gap: 2%;
+  flex-wrap: nowrap;
+  min-height: 90px;
+  width: 100%;
+}
+
+.faded-edges::before,
+.faded-edges::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 10%;
+  height: 100%;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 10;
+}
+
+.faded-edges::before {
+  left: 0;
+  background: linear-gradient(to right, white, transparent);
+  opacity: 1;
+}
+
+.faded-edges::after {
+  right: 0;
+  background: linear-gradient(to left, white, transparent);
+  opacity: 1;
+}
+
+.responsive-padding {
+  padding: 0 10%;
+}
+
+@media (max-width: 767px) {
+  .responsive-padding {
+    padding: 0 15%;
+  }
+}
+
+.responsive-gap {
+  gap: 4%;
+}
+
+@media (max-width: 767px) {
+  .responsive-gap {
+    gap: 9%;
+  }
+}
+
+

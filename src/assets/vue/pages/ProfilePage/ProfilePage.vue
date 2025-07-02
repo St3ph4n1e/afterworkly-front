@@ -35,7 +35,7 @@ const user = ref({
 const eventsCreated = ref<Event[]>([]);
 const eventsParticipating = ref<Event[]>([]);
 
-const allDays = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'];
+const allDays = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 const allPreferences = [
   { label: 'Végan', value: 'vegan' },
   { label: 'Consomme de l\'alcool', value: 'alcool' },
@@ -277,7 +277,7 @@ function toggleDay(day: string) {
                 <textarea v-model="user.bio" class="w-full border rounded p-2" placeholder="Bio"></textarea>
                 <div>
                   <label class="block text-gray-800 font-medium mb-2">Jours de disponibilité :</label>
-                  <div class="flex flex-wrap gap-2">
+                  <div class="flex flex-wrap gap-2 justify-center">
                     <TagComponent
                       v-for="day in allDays"
                       :key="day"
